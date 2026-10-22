@@ -397,7 +397,7 @@ export async function listNotifications(): Promise<Notification[]> {
   );
 }
 
-// ---- asistente IA (solo contra el mock) ----
+// ---- asistente Presti (implementado en el backend, sin LLM) ----
 
 export function getMarket(): Promise<MarketSnapshot> {
   return apiGet<MarketSnapshot>("/assistant/market/");

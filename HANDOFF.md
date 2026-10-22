@@ -16,6 +16,10 @@
 >
 > **Auth (2026-10-22):** reseteo de contraseña y verificación de email
 > implementados (21 tests nuevos, **771** en total). Ver ADR 0016.
+>
+> **Presti (2026-10-22):** asistente por reglas **sin LLM** en `apps/assistant`:
+> mercado (dólar y cripto), noticias, marco legal curado y chat con datos del
+> usuario. **19 tests nuevos, 794 en total.** Ver ADR 0017.
 
 ---
 

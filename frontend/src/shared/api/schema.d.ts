@@ -4,6 +4,106 @@
  */
 
 export interface paths {
+    "/api/v1/assistant/chat/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preguntarle algo a Presti
+         * @description Responde la consulta con datos del usuario o contenido curado.
+         */
+        post: operations["assistant_chat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/market/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver el snapshot de mercado de Presti
+         * @description Devuelve la cotización del dólar y de las criptomonedas.
+         */
+        get: operations["assistant_market"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/news/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver las noticias de Presti
+         * @description Devuelve las noticias cacheadas del feed configurado.
+         */
+        get: operations["assistant_news"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/regulations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar el marco regulatorio de Presti
+         * @description Devuelve las fichas regulatorias, con filtros opcionales.
+         */
+        get: operations["assistant_regulations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/regulations/{regulation_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver una ficha del marco regulatorio
+         * @description Devuelve la ficha indicada, o 404 si no existe.
+         */
+        get: operations["assistant_regulation_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/email/resend/": {
         parameters: {
             query?: never;
@@ -950,6 +1050,15 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /** @description Consulta del usuario a Presti. */
+        ChatMessage: {
+            message: string;
+        };
+        /** @description Respuesta de Presti. */
+        ChatReply: {
+            reply: string;
+            intent: components["schemas"]["IntentEnum"];
+        };
         /** @description Identificadores de las ofertas a comparar. */
         CompareOffers: {
             offer_ids: string[];
@@ -1098,6 +1207,13 @@ export interface components {
          * @enum {string}
          */
         InstallmentStatusEnum: "pending" | "paid" | "overdue";
+        /**
+         * @description * `rules` - rules
+         *     * `fallback` - fallback
+         *     * `empty` - empty
+         * @enum {string}
+         */
+        IntentEnum: "rules" | "fallback" | "empty";
         /** @description Una posición de inversión dentro del reporte. */
         InvestmentPosition: {
             /** Format: uuid */
@@ -1304,6 +1420,45 @@ export interface components {
             access: string;
             user: components["schemas"]["User"];
         };
+        /** @description Cotización de una criptomoneda. */
+        MarketCoin: {
+            symbol: string;
+            name: string;
+            /** Format: double */
+            price_usd: number | null;
+            /** Format: double */
+            change_24h_pct: number | null;
+        };
+        /** @description Cotizaciones del dólar. */
+        MarketDollar: {
+            /** Format: double */
+            oficial: number | null;
+            /** Format: double */
+            oficial_avg: number | null;
+            /** Format: double */
+            blue: number | null;
+            /** Format: double */
+            blue_avg: number | null;
+        };
+        /** @description Cotización de un índice o acción. */
+        MarketIndex: {
+            symbol: string;
+            name: string;
+            /** Format: double */
+            price_usd?: number | null;
+            /** Format: double */
+            price_local?: number | null;
+            currency: string;
+            /** Format: double */
+            change_24h_pct?: number | null;
+        };
+        /** @description Snapshot de mercado que muestra Presti. */
+        MarketSnapshot: {
+            updated_at: string;
+            coins: components["schemas"]["MarketCoin"][];
+            indices: components["schemas"]["MarketIndex"][];
+            dollar: components["schemas"]["MarketDollar"] | null;
+        };
         /** @description Información pública del modo en que corre la aplicación. */
         Meta: {
             mode: string;
@@ -1322,6 +1477,18 @@ export interface components {
             occurred_at: string;
             description: string;
             is_reversed: boolean;
+        };
+        /** @description Feed de noticias que muestra Presti. */
+        NewsFeed: {
+            updated_at: string;
+            items: components["schemas"]["NewsItem"][];
+        };
+        /** @description Una noticia del feed. */
+        NewsItem: {
+            title: string;
+            link: string | null;
+            published_at: string | null;
+            source: string;
         };
         /** @description La próxima cuota a pagar de un préstamo. */
         NextInstallment: {
@@ -1577,6 +1744,43 @@ export interface components {
             email: string;
             password: string;
         };
+        /** @description Ficha del marco regulatorio. */
+        RegulationCard: {
+            id: string;
+            category: string;
+            title: string;
+            summary: string;
+            key_points: string[];
+            norms: components["schemas"]["RegulationNorm"][];
+            links: components["schemas"]["RegulationLink"][];
+            applies_to: string;
+        };
+        /** @description Categoría del marco regulatorio. */
+        RegulationCategory: {
+            id: string;
+            label: string;
+        };
+        /** @description Detalle de una ficha regulatoria. */
+        RegulationDetail: {
+            disclaimer: string;
+            item: components["schemas"]["RegulationCard"];
+        };
+        /** @description Enlace oficial de una ficha regulatoria. */
+        RegulationLink: {
+            label: string;
+            url: string;
+        };
+        /** @description Norma citada en una ficha regulatoria. */
+        RegulationNorm: {
+            code: string;
+            note: string;
+        };
+        /** @description Listado de fichas regulatorias. */
+        RegulationsResponse: {
+            disclaimer: string;
+            categories: components["schemas"]["RegulationCategory"][];
+            items: components["schemas"]["RegulationCard"][];
+        };
         /** @description El gasto acumulado de una categoría en el período. */
         SpendingCategory: {
             /** Format: uuid */
@@ -1629,6 +1833,120 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    assistant_chat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatMessage"];
+                "application/x-www-form-urlencoded": components["schemas"]["ChatMessage"];
+                "multipart/form-data": components["schemas"]["ChatMessage"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatReply"];
+                };
+            };
+        };
+    };
+    assistant_market: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketSnapshot"];
+                };
+            };
+        };
+    };
+    assistant_news: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsFeed"];
+                };
+            };
+        };
+    };
+    assistant_regulations: {
+        parameters: {
+            query?: {
+                /**
+                 * @description * `prestamos` - Préstamos entre particulares
+                 *     * `entidades` - Entidades y captación de fondos
+                 *     * `inversion` - Inversión y oferta pública
+                 *     * `consumidor` - Derechos del consumidor
+                 *     * `antilavado` - Prevención de lavado (PLA/FT)
+                 *     * `general` - General
+                 */
+                category?: "prestamos" | "entidades" | "inversion" | "consumidor" | "antilavado" | "general";
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegulationsResponse"];
+                };
+            };
+        };
+    };
+    assistant_regulation_detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                regulation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegulationDetail"];
+                };
+            };
+        };
+    };
     auth_email_resend: {
         parameters: {
             query?: never;

@@ -31,6 +31,7 @@ apps/reports/      # reportes de solo lectura y exportación a CSV
 apps/notifications/# avisos por email
 apps/payments/    # pagos: depósitos, retiros y transferencias (el saldo lo mueve el ledger)
 apps/demo/        # comando `seed_demo`: escenario de demostración (no tiene modelos)
+apps/assistant/   # Presti: mercado, noticias, marco legal y chat por reglas (sin LLM)
 frontend/          # front React + Vite + TypeScript (consume la API)
 docs/              # arquitectura, ADRs y guías de despliegue
 deploy/            # proxy inverso (Caddy) y backup de PostgreSQL
@@ -122,6 +123,7 @@ entorno real sin cambiar la contraseña.
 | budgets | `GET/POST /api/v1/budgets/`, `GET/PATCH /api/v1/budgets/{id}/`, `GET /api/v1/budgets/{id}/status/`, `GET/POST /api/v1/budgets/categories/`, `GET/PATCH /api/v1/budgets/categories/{id}/`, `GET/POST /api/v1/budgets/expenses/` |
 | reports | `GET /api/v1/reports/spending/`, `GET /api/v1/reports/investments/`, `GET /api/v1/reports/loans/`, `GET /api/v1/reports/movements/` |
 | notifications | `GET /api/v1/notifications/`, `GET/PUT /api/v1/notifications/preferences/` |
+| assistant | `GET /api/v1/assistant/market/`, `GET /api/v1/assistant/news/`, `GET /api/v1/assistant/regulations/`, `GET /api/v1/assistant/regulations/<str:regulation_id>/`, `POST /api/v1/assistant/chat/` |
 | payments | `GET/POST /api/v1/payments/`, `GET /api/v1/payments/{id}/`, `POST /api/v1/payments/webhooks/<str:provider_name>/` (webhook del proveedor: lo llama el proveedor, no el usuario) |
 
 Los errores usan un formato uniforme:

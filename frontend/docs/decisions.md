@@ -53,11 +53,10 @@ suite hay que correrla completa y arreglar ese caso.
 La interfaz está en español rioplatense y no usa librería de i18n (el spec
 no la exige).
 
-### D-5 · Asistente solo contra el mock
+### D-5 · Presti pasó del mock al backend
 
-La feature **Presti** (mercado, noticias, marco regulatorio, chat) no existe
-en el backend: depende de `mock/assistant.mjs` y de `mock/regulations.mjs`.
-Con el backend real esas pantallas fallan, así que la ruta y el ítem del menú
-quedan **ocultos por defecto** (`VITE_ENABLE_ASSISTANT=false`). Para verlos
-contra el mock, levantá `pnpm mock` y activá la variable. Queda pendiente el
-contrato de API para llevarlo al backend.
+La feature **Presti** (mercado, noticias, marco regulatorio y chat) nació como
+mock. Ahora está implementada en el backend (`apps/assistant`) **sin LLM**:
+mercado y noticias de fuentes externas con caché, fichas legales curadas y chat
+por intenciones con datos reales del usuario. El mock sigue sirviendo para
+trabajar offline (`pnpm mock`). Ver ADR 0017.

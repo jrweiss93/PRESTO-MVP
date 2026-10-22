@@ -23,7 +23,7 @@ datos PostgreSQL, un solo despliegue.
      │           │           │          │           │            │
      └───────────┴─────┬─────┴──────────┴───────────┴────────────┘
                        ▼
-          payments · budgets · reports · notifications
+          payments · budgets · reports · notifications · assistant
                        │
                        ▼
               PostgreSQL 16 · Redis (Celery)
@@ -48,6 +48,7 @@ de datos. El motivo está en el ADR del orden de las apps y en `AGENTS.md` §2.
 | `notifications` | Avisos por email | `Notification`, `NotificationPreference` | `notifications.services`, `notifications.selectors` |
 | `payments` | Pagos: depósitos, retiros y transferencias; el saldo lo mueve el ledger | `Payment`, `WebhookEvent` | `payments.services`, `payments.selectors` |
 | `demo` | Siembra del escenario de demostración (`manage.py seed_demo`); no tiene modelos | — | `demo.seeds` |
+| `assistant` | Presti: mercado, noticias, marco legal curado y chat por reglas (solo lectura) | — | `assistant.services`, `assistant.selectors` |
 
 ### Cómo se comunican
 
@@ -233,3 +234,4 @@ fechas en ISO 8601 UTC. Los errores usan siempre el mismo formato:
 | [0014](adr/0014-refresh-token-en-cookie-httponly.md) | El refresh token en cookie httpOnly |
 | [0015](adr/0015-imagenes-fijadas-a-digest.md) | Las imágenes de producción, fijadas a digest |
 | [0016](adr/0016-reseteo-de-contrasena-y-verificacion-de-email.md) | Reseteo de contraseña y verificación de email |
+| [0017](adr/0017-presti-asistente-sin-llm.md) | Presti: asistente por reglas, sin LLM |

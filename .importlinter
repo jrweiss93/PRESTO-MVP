@@ -498,3 +498,36 @@ forbidden_modules =
     apps.notifications.serializers
     apps.notifications.admin
     apps.notifications.urls
+
+[importlinter:contract:assistant-only-services-and-selectors]
+name = assistant-only-services-and-selectors
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.assistant
+forbidden_modules =
+    apps.identity.models
+    apps.identity.views
+    apps.identity.serializers
+    apps.identity.admin
+    apps.identity.urls
+    apps.ledger.models
+    apps.ledger.views
+    apps.ledger.serializers
+    apps.ledger.admin
+    apps.ledger.urls
+    apps.loans.models
+    apps.loans.views
+    apps.loans.serializers
+    apps.loans.admin
+    apps.loans.urls
+    apps.investments.models
+    apps.investments.views
+    apps.investments.serializers
+    apps.investments.admin
+    apps.investments.urls
+    apps.offers.models
+    apps.offers.views
+    apps.offers.serializers
+    apps.offers.admin
+    apps.offers.urls

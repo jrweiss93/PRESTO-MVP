@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'apps.reports',
     'apps.notifications',
     'apps.demo',
+    'apps.assistant',
     # Third party
     'rest_framework',
     'drf_spectacular',
@@ -82,6 +83,10 @@ REST_FRAMEWORK = {
         # usar para inundar de correos ni para probar emails.
         'password_reset': '5/hour',
         'email_verification': '5/hour',
+        # Asistente: la pantalla pide mercado y noticias al abrir, y el chat es
+        # por demanda. 120/hora alcanza para una demo sin abrir la puerta a
+        # abusos contra las fuentes externas.
+        'assistant': '120/hour',
     },
 }
 
@@ -231,6 +236,18 @@ FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173').rstrip('/')
 # Los enlaces de reseteo y de verificación vencen en una hora. Se puede subir
 # por entorno; los tokens se invalidan igual al cambiar la contraseña.
 PASSWORD_RESET_TIMEOUT = int(os.getenv('PASSWORD_RESET_TIMEOUT') or 3600)
+
+# Asistente Presti (sin LLM). Las fuentes externas son de solo lectura y se
+# cachean; si no responden, el asistente devuelve la parte que pudo armar.
+ASSISTANT_MARKET_ENABLED = os.getenv('ASSISTANT_MARKET_ENABLED', 'True').strip().lower() == 'true'
+ASSISTANT_HTTP_TIMEOUT = float(os.getenv('ASSISTANT_HTTP_TIMEOUT') or 5)
+ASSISTANT_MARKET_CACHE_SECONDS = int(os.getenv('ASSISTANT_MARKET_CACHE_SECONDS') or 60)
+ASSISTANT_NEWS_CACHE_SECONDS = int(os.getenv('ASSISTANT_NEWS_CACHE_SECONDS') or 300)
+# Un feed RSS público; vacío lo desactiva (la pantalla muestra solo mercado).
+ASSISTANT_NEWS_FEED_URL = os.getenv(
+    'ASSISTANT_NEWS_FEED_URL',
+    'https://www.ambito.com/rss/pages/economia.xml',
+)
 
 # Celery (AGENTS §3 y §4): tareas asíncronas y periódicas con Redis como broker.
 # No hay result backend persistente: las tareas del proyecto no devuelven

@@ -4,6 +4,130 @@ info:
   version: 1.0.0
   description: API de finanzas e inversiones con marketplace de préstamos.
 paths:
+  /api/v1/assistant/chat/:
+    post:
+      operationId: assistant_chat
+      description: Responde la consulta con datos del usuario o contenido curado.
+      summary: Preguntarle algo a Presti
+      tags:
+      - assistant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatMessage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChatMessage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChatMessage'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatReply'
+          description: ''
+  /api/v1/assistant/market/:
+    get:
+      operationId: assistant_market
+      description: Devuelve la cotización del dólar y de las criptomonedas.
+      summary: Ver el snapshot de mercado de Presti
+      tags:
+      - assistant
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketSnapshot'
+          description: ''
+  /api/v1/assistant/news/:
+    get:
+      operationId: assistant_news
+      description: Devuelve las noticias cacheadas del feed configurado.
+      summary: Ver las noticias de Presti
+      tags:
+      - assistant
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsFeed'
+          description: ''
+  /api/v1/assistant/regulations/:
+    get:
+      operationId: assistant_regulations
+      description: Devuelve las fichas regulatorias, con filtros opcionales.
+      summary: Listar el marco regulatorio de Presti
+      parameters:
+      - in: query
+        name: category
+        schema:
+          enum:
+          - prestamos
+          - entidades
+          - inversion
+          - consumidor
+          - antilavado
+          - general
+          type: string
+          minLength: 1
+        description: |-
+          * `prestamos` - Préstamos entre particulares
+          * `entidades` - Entidades y captación de fondos
+          * `inversion` - Inversión y oferta pública
+          * `consumidor` - Derechos del consumidor
+          * `antilavado` - Prevención de lavado (PLA/FT)
+          * `general` - General
+      - in: query
+        name: q
+        schema:
+          type: string
+          maxLength: 100
+          minLength: 1
+      tags:
+      - assistant
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegulationsResponse'
+          description: ''
+  /api/v1/assistant/regulations/{regulation_id}/:
+    get:
+      operationId: assistant_regulation_detail
+      description: Devuelve la ficha indicada, o 404 si no existe.
+      summary: Ver una ficha del marco regulatorio
+      parameters:
+      - in: path
+        name: regulation_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - assistant
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegulationDetail'
+          description: ''
   /api/v1/auth/email/resend/:
     post:
       operationId: auth_email_resend
@@ -1408,6 +1532,26 @@ components:
       - created_at
       - id
       - name
+    ChatMessage:
+      type: object
+      description: Consulta del usuario a Presti.
+      properties:
+        message:
+          type: string
+          maxLength: 500
+      required:
+      - message
+    ChatReply:
+      type: object
+      description: Respuesta de Presti.
+      properties:
+        reply:
+          type: string
+        intent:
+          $ref: '#/components/schemas/IntentEnum'
+      required:
+      - intent
+      - reply
     CompareOffers:
       type: object
       description: Identificadores de las ofertas a comparar.
@@ -1729,6 +1873,16 @@ components:
         * `pending` - Pendiente
         * `paid` - Pagada
         * `overdue` - Vencida
+    IntentEnum:
+      enum:
+      - rules
+      - fallback
+      - empty
+      type: string
+      description: |-
+        * `rules` - rules
+        * `fallback` - fallback
+        * `empty` - empty
     InvestmentPosition:
       type: object
       description: Una posición de inversión dentro del reporte.
@@ -2193,6 +2347,101 @@ components:
       required:
       - access
       - user
+    MarketCoin:
+      type: object
+      description: Cotización de una criptomoneda.
+      properties:
+        symbol:
+          type: string
+        name:
+          type: string
+        price_usd:
+          type: number
+          format: double
+          nullable: true
+        change_24h_pct:
+          type: number
+          format: double
+          nullable: true
+      required:
+      - change_24h_pct
+      - name
+      - price_usd
+      - symbol
+    MarketDollar:
+      type: object
+      description: Cotizaciones del dólar.
+      properties:
+        oficial:
+          type: number
+          format: double
+          nullable: true
+        oficial_avg:
+          type: number
+          format: double
+          nullable: true
+        blue:
+          type: number
+          format: double
+          nullable: true
+        blue_avg:
+          type: number
+          format: double
+          nullable: true
+      required:
+      - blue
+      - blue_avg
+      - oficial
+      - oficial_avg
+    MarketIndex:
+      type: object
+      description: Cotización de un índice o acción.
+      properties:
+        symbol:
+          type: string
+        name:
+          type: string
+        price_usd:
+          type: number
+          format: double
+          nullable: true
+        price_local:
+          type: number
+          format: double
+          nullable: true
+        currency:
+          type: string
+        change_24h_pct:
+          type: number
+          format: double
+          nullable: true
+      required:
+      - currency
+      - name
+      - symbol
+    MarketSnapshot:
+      type: object
+      description: Snapshot de mercado que muestra Presti.
+      properties:
+        updated_at:
+          type: string
+        coins:
+          type: array
+          items:
+            $ref: '#/components/schemas/MarketCoin'
+        indices:
+          type: array
+          items:
+            $ref: '#/components/schemas/MarketIndex'
+        dollar:
+          allOf:
+          - $ref: '#/components/schemas/MarketDollar'
+          nullable: true
+      required:
+      - coins
+      - dollar
+      - indices
+      - updated_at
     Meta:
       type: object
       description: Información pública del modo en que corre la aplicación.
@@ -2237,6 +2486,38 @@ components:
       - is_reversed
       - occurred_at
       - type
+    NewsFeed:
+      type: object
+      description: Feed de noticias que muestra Presti.
+      properties:
+        updated_at:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NewsItem'
+      required:
+      - items
+      - updated_at
+    NewsItem:
+      type: object
+      description: Una noticia del feed.
+      properties:
+        title:
+          type: string
+        link:
+          type: string
+          nullable: true
+        published_at:
+          type: string
+          nullable: true
+        source:
+          type: string
+      required:
+      - link
+      - published_at
+      - source
+      - title
     NextInstallment:
       type: object
       description: La próxima cuota a pagar de un préstamo.
@@ -2795,6 +3076,103 @@ components:
       required:
       - email
       - password
+    RegulationCard:
+      type: object
+      description: Ficha del marco regulatorio.
+      properties:
+        id:
+          type: string
+        category:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        key_points:
+          type: array
+          items:
+            type: string
+        norms:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegulationNorm'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegulationLink'
+        applies_to:
+          type: string
+      required:
+      - applies_to
+      - category
+      - id
+      - key_points
+      - links
+      - norms
+      - summary
+      - title
+    RegulationCategory:
+      type: object
+      description: Categoría del marco regulatorio.
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+      required:
+      - id
+      - label
+    RegulationDetail:
+      type: object
+      description: Detalle de una ficha regulatoria.
+      properties:
+        disclaimer:
+          type: string
+        item:
+          $ref: '#/components/schemas/RegulationCard'
+      required:
+      - disclaimer
+      - item
+    RegulationLink:
+      type: object
+      description: Enlace oficial de una ficha regulatoria.
+      properties:
+        label:
+          type: string
+        url:
+          type: string
+      required:
+      - label
+      - url
+    RegulationNorm:
+      type: object
+      description: Norma citada en una ficha regulatoria.
+      properties:
+        code:
+          type: string
+        note:
+          type: string
+      required:
+      - code
+      - note
+    RegulationsResponse:
+      type: object
+      description: Listado de fichas regulatorias.
+      properties:
+        disclaimer:
+          type: string
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegulationCategory'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegulationCard'
+      required:
+      - categories
+      - disclaimer
+      - items
     SpendingCategory:
       type: object
       description: El gasto acumulado de una categoría en el período.

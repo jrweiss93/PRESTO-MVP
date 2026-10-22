@@ -60,7 +60,7 @@ src/
     marketplace/             # búsqueda de ofertas y ofertas propias
     loans/                   # préstamos y detalle con pago de cuotas
     investments/             # productos y posiciones
-    assistant/               # Presti (asistente, solo contra el mock)
+    assistant/               # Presti: mercado, noticias, marco legal y chat
   shared/
     api/
       client.ts              # fetch: token en memoria, refresh por cookie, idempotencia
@@ -103,11 +103,12 @@ Para que el navegador acepte las peticiones del front, la API necesita:
 ## Pantallas
 
 Dashboard, billetera, pagos, presupuestos, marketplace, ofertas propias,
-préstamos (con detalle y pago de cuotas), inversiones y perfil/KYC.
+préstamos (con detalle y pago de cuotas), inversiones, perfil/KYC y el asistente
+**Presti**.
 
-El asistente **Presti** solo existe en el mock (`docs/decisions.md` D-5): contra
-la API real la pantalla falla, así que está **oculta por defecto**. Para verla,
-levantá `pnpm mock` y poné `VITE_ENABLE_ASSISTANT=true`.
+Presti está implementado en el backend (`apps/assistant`): mercado (dólar y
+cripto), noticias, marco legal curado y chat por reglas, **sin LLM**. Se puede
+ocultar con `VITE_ENABLE_ASSISTANT=false`.
 
 ## Recordatorio interno de revisión legal
 

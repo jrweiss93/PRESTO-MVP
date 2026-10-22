@@ -115,9 +115,11 @@ Todo el dinero es **simulado** (`DEMO_MODE=true`): no hay pasarela conectada.
   credenciales y el header `idempotency-key` permitido.
 - **Contrato**: `frontend/contract/openapi.yaml` es la copia que consume el
   front; los tipos se regeneran con `pnpm gen:api`.
-- **Asistente "Presti"**: solo existe en el mock (`frontend/mock`). Contra la
-  API real está oculto por defecto (`VITE_ENABLE_ASSISTANT=false`). Para verlo:
-  `pnpm mock` y `VITE_ENABLE_ASSISTANT=true`.
+- **Asistente "Presti"**: implementado en el backend (`apps/assistant`) **sin
+  LLM**. Mercado (dólar y cripto) y noticias de fuentes externas con caché,
+  marco legal curado y chat por intenciones con los datos reales del usuario.
+  Si una fuente externa falla, la pantalla sigue funcionando con lo disponible.
+  No da asesoramiento: cada ficha legal lleva el aviso correspondiente.
 
 ## 4. Verificación
 

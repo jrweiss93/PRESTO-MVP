@@ -79,7 +79,7 @@ export type ComplianceItem = Schema<"ComplianceItem">;
 
 export type Notification = Schema<"Notification">;
 
-// ---- tipos del asistente (solo disponibles contra el mock) ----
+// ---- tipos del asistente (Presti) ----
 
 export interface MarketCoin {
   symbol: string;
