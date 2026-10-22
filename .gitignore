@@ -30,7 +30,7 @@ staticfiles/
 static/
 
 # Docker
-.dockerignore
+# (el .dockerignore se versiona: excluye el front y los artefactos del build)
 
 # IDE
 .vscode/

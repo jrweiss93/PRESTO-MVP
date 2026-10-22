@@ -40,12 +40,13 @@ valida con atributos HTML nativos. Es el desvío más grande: antes de
 producción hay que migrar el fetching a TanStack Query y los formularios a
 Zod + React Hook Form.
 
-### D-3 · Sin tests end-to-end
+### D-3 · End-to-end fuera de la CI
 
-Hay tests unitarios con Vitest (25) sobre lo que más importa: formato de
-dinero, token en memoria, refresh ante 401, `Idempotency-Key` y banner de
-cumplimiento. No hay E2E (Playwright): es la próxima todo pendiente del
-spec.
+Hay specs de Playwright en `e2e/` (auth, marketplace y wallet) contra el mock y
+contra la API real, pero **no corren en la CI**: el pipeline solo ejecuta
+`typecheck`, los tests unitarios de Vitest y el build. Además quedó registrado un
+caso de marketplace con fallo (`test-results/`), así que antes de confiar en la
+suite hay que correrla completa y arreglar ese caso.
 
 ### D-4 · Sin i18n
 
@@ -56,5 +57,7 @@ no la exige).
 
 La feature **Presti** (mercado, noticias, marco regulatorio, chat) no existe
 en el backend: depende de `mock/assistant.mjs` y de `mock/regulations.mjs`.
-Con el backend real esas pantallas fallan; queda marcado como pendiente de
-contrato de API.
+Con el backend real esas pantallas fallan, así que la ruta y el ítem del menú
+quedan **ocultos por defecto** (`VITE_ENABLE_ASSISTANT=false`). Para verlos
+contra el mock, levantá `pnpm mock` y activá la variable. Queda pendiente el
+contrato de API para llevarlo al backend.
