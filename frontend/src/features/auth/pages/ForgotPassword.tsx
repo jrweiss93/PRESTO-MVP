@@ -42,10 +42,7 @@ export default function ForgotPassword() {
             la contraseña. Revisá también la carpeta de spam.
           </div>
           <p className="mt-6 text-center text-theme-sm text-gray-700">
-            <Link
-              to="/login"
-              className="text-brand-500 hover:text-brand-600"
-            >
+            <Link to="/login" className="text-brand-500 hover:text-brand-600">
               Volver a iniciar sesión
             </Link>
           </p>

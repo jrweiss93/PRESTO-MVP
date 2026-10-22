@@ -31,7 +31,7 @@ export default function Login() {
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
       <div className="flex w-full flex-col justify-between bg-brand-500 px-6 py-10 sm:px-10 lg:w-2/5 lg:py-12 xl:w-1/3">
-        <Link to="/login" className="text-title-sm font-semibold text-white">
+        <Link to="/" className="text-title-sm font-semibold text-white">
           Presto<span className="text-brand-100">.</span>
         </Link>
         <div className="my-10">

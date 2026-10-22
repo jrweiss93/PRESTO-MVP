@@ -84,9 +84,7 @@ export default function Investments() {
   if (loading) return <div className="loading">Cargando inversiones…</div>;
 
   const activePositions = positions.filter((p) => p.status === "active");
-  const totalInvested = sumDecimals(
-    activePositions.map((p) => p.amount),
-  );
+  const totalInvested = sumDecimals(activePositions.map((p) => p.amount));
 
   return (
     <>

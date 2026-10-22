@@ -104,7 +104,8 @@ Para que el navegador acepte las peticiones del front, la API necesita:
 
 Dashboard, billetera, pagos, presupuestos, marketplace, ofertas propias,
 préstamos (con detalle y pago de cuotas), inversiones, perfil/KYC y el asistente
-**Presti**.
+**Presti**. La raíz `/` es una **landing pública** con las cuentas de demo y
+`/legal` explica el alcance (dinero simulado, sin asesoramiento).
 
 Presti está implementado en el backend (`apps/assistant`): mercado (dólar y
 cripto), noticias, marco legal curado y chat por reglas, **sin LLM**. Se puede

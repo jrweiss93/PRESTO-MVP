@@ -9,6 +9,8 @@ import ResetPassword from "@/features/auth/pages/ResetPassword";
 import VerifyEmail from "@/features/auth/pages/VerifyEmail";
 import Budgets from "@/features/budgets/pages/Budgets";
 import Investments from "@/features/investments/pages/Investments";
+import Landing from "@/features/marketing/pages/Landing";
+import Legal from "@/features/marketing/pages/Legal";
 import LoanDetail from "@/features/loans/pages/LoanDetail";
 import Loans from "@/features/loans/pages/Loans";
 import Marketplace from "@/features/marketplace/pages/Marketplace";
@@ -46,6 +48,8 @@ export default function App() {
       <Route path="/recuperar" element={<ForgotPassword />} />
       <Route path="/restablecer" element={<ResetPassword />} />
       <Route path="/verificar" element={<VerifyEmail />} />
+      <Route path="/" element={<Landing />} />
+      <Route path="/legal" element={<Legal />} />
       <Route
         element={
           <Protected>
@@ -53,7 +57,6 @@ export default function App() {
           </Protected>
         }
       >
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/billetera" element={<Wallet />} />
         <Route path="/pagos" element={<Payments />} />

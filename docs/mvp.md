@@ -177,7 +177,9 @@ Después del primer arranque: `python manage.py seed_demo` y
 > `api.presto.com`), alcanza con `SameSite=Lax`. Si el front está en Vercel y la
 > API en otro sitio, **hacen falta** `SameSite=None` y `Secure`.
 
-La guía larga de despliegue sigue en [`deploy-demo.md`](deploy-demo.md).
+La guía larga de despliegue sigue en [`deploy-demo.md`](deploy-demo.md). Para el
+camino corto (Vercel + un host con Docker) y el checklist de la demo, ver
+[`deploy-mvp.md`](deploy-mvp.md).
 
 ## 6. Qué falta antes de abrir al público con dinero real
 

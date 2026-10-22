@@ -131,7 +131,10 @@ export default function ResetPassword() {
           </form>
           <p className="mt-6 text-center text-theme-sm text-gray-700">
             ¿El enlace venció?{" "}
-            <Link to="/recuperar" className="text-brand-500 hover:text-brand-600">
+            <Link
+              to="/recuperar"
+              className="text-brand-500 hover:text-brand-600"
+            >
               Pedí otro
             </Link>
           </p>

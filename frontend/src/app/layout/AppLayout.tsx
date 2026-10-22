@@ -5,6 +5,7 @@ import AppHeader from "./AppHeader";
 import AppSidebar from "./AppSidebar";
 import Backdrop from "./Backdrop";
 import ComplianceBanner from "./ComplianceBanner";
+import DemoModeBanner from "./DemoModeBanner";
 
 const LayoutContent: React.FC = () => {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
@@ -22,6 +23,7 @@ const LayoutContent: React.FC = () => {
         )}
       >
         <AppHeader />
+        <DemoModeBanner />
         <ComplianceBanner />
         <main className="mx-auto max-w-(--breakpoint-2xl) p-4 md:p-6">
           <Outlet />

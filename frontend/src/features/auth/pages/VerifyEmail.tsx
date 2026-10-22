@@ -20,7 +20,9 @@ export default function VerifyEmail() {
     requested.current = true;
     if (!uid || !token) {
       setState("error");
-      setMessage("El enlace está incompleto o venció. Pedí uno nuevo desde tu perfil.");
+      setMessage(
+        "El enlace está incompleto o venció. Pedí uno nuevo desde tu perfil.",
+      );
       return;
     }
     api
