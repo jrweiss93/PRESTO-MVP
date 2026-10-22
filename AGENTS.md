@@ -29,8 +29,8 @@
 
 | Área | Tecnología |
 |---|---|
-| Lenguaje | Python 3.12+ |
-| Framework | Django 5.x |
+| Lenguaje | Python 3.14 |
+| Framework | Django 6.x |
 | API | Django REST Framework |
 | Base de datos | PostgreSQL 16 |
 | Tareas asíncronas | Celery + Redis (solo para tareas reales: emails, reportes pesados, importaciones) |

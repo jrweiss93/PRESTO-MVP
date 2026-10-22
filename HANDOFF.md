@@ -8,6 +8,11 @@
 > **Última actualización:** 2026-10-21 · rama `main` · HEAD `b3cbf8b` · 73 commits
 > (74 después de este commit). `main` está sincronizada con `origin/main` y el árbol
 > de trabajo está limpio.
+>
+> **Actualización 2026-10-22 — runtime:** el proyecto pasó a **Python 3.14 +
+> Django 6.1** en CI, imagen Docker y producción. Verificado con **750 tests**,
+> `check --deploy`, `makemigrations --check` y el esquema OpenAPI.
+> `psycopg2-binary` se reemplazó por `psycopg[binary]`.
 
 ---
 
@@ -39,8 +44,8 @@ demás siguen abiertas (§11.1).
 
 | Área | Tecnología | Versión |
 |---|---|---|
-| Lenguaje | Python | 3.12+ (la imagen usa 3.12) |
-| Framework | Django | `>=5.2,<6` (instalado: 5.2.18) |
+| Lenguaje | Python | 3.14 (la imagen usa 3.14) |
+| Framework | Django | `>=6.1,<7` (instalado: 6.1.2) |
 | API | Django REST Framework | 3.18.3 |
 | Auth | JWT con `djangorestframework-simplejwt` | 5.5.1 (con `token_blacklist`) |
 | Documentación | `drf-spectacular` | 0.30.0 |
@@ -72,7 +77,7 @@ Sin dependencias agregadas desde el Bloque 5: `celery` y `redis` ya estaban en
 │   ├── Caddyfile                  # proxy inverso con TLS automático (perfil proxy)
 │   └── backup-postgres.sh         # backup diario de PostgreSQL con rotación
 ├── docker-compose.prod.yml        # producción: sin puertos de db/redis, secretos por env
-├── Dockerfile                    # python:3.12-slim + deps + usuario `presto` sin root
+├── Dockerfile                    # python:3.14-slim + deps + usuario `presto` sin root
 ├── pytest.ini                    # DJANGO_SETTINGS_MODULE + --ds=config.settings.test
 ├── pyproject.toml                # deps + config de ruff
 ├── .importlinter                 # 31 contratos de límites entre apps
@@ -1024,7 +1029,7 @@ Orden real de lo que falta, de mayor a menor prioridad.
    levantado de verdad). Pendiente de producción: el proxy inverso con TLS, los
    backups automáticos y el despliegue real en el VPS. Las imágenes ya están
    fijadas a **digest** (ADR 0015); falta fijar la imagen base del `Dockerfile`
-   (`python:3.12-slim`).
+   (`python:3.14-slim`).
 4. **Producción**: el endpoint **`/health/`** y el `docker-compose.prod.yml` ya
    están. Falta la integración con **Sentry**, los **backups automáticos
    diarios** de PostgreSQL con prueba periódica de restauración, el **proxy

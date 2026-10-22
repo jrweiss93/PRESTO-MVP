@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 # The application never runs as root: the web, worker and beat containers
 # use this unprivileged user (audit M-3).
@@ -6,17 +6,14 @@ RUN groupadd --gid 1000 presto \
     && useradd --uid 1000 --gid 1000 --create-home --home-dir /home/presto \
         --shell /usr/sbin/nologin --no-log-init presto
 
-# Install uv (project dependency resolver)
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-
 WORKDIR /app
 
 # Copy the whole project
 COPY --chown=presto:presto . .
 
-# Install required packages with Django 5.x constraint
+# Install required packages (Django 6.x on Python 3.14)
 RUN pip install --no-cache-dir \
-    "Django>=5.2,<6" \
+    "Django>=6.1,<7" \
     "djangorestframework>=3.14" \
     "drf-spectacular>=0.30" \
     "djangorestframework-simplejwt>=5.3" \
@@ -26,7 +23,7 @@ RUN pip install --no-cache-dir \
     "factory-boy>=3.0" \
     "ruff>=0.1.0" \
     "import-linter>=2.0" \
-    "psycopg2-binary>=2.9" \
+    "psycopg[binary]>=3.2" \
     "python-dotenv>=1.0" \
     "argon2-cffi>=21.0.0" \
     "gunicorn>=22.2.0" \

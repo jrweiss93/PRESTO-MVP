@@ -30,13 +30,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
           cache: pip
 
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install "Django>=5.2,<6" \
+          pip install "Django>=6.1,<7" \
             "djangorestframework>=3.14" \
             "drf-spectacular>=0.30" \
             "djangorestframework-simplejwt>=5.3" \
@@ -46,7 +46,7 @@ jobs:
             "factory-boy>=3.0" \
             "ruff>=0.1.0" \
             "import-linter>=2.0" \
-            "psycopg2-binary>=2.9" \
+            "psycopg[binary]>=3.2" \
             "python-dotenv>=1.0" \
             "argon2-cffi>=21.0.0" \
             "gunicorn>=22.0.0" \
@@ -95,13 +95,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
           cache: pip
 
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install "Django>=5.2,<6" \
+          pip install "Django>=6.1,<7" \
             "djangorestframework>=3.14" \
             "drf-spectacular>=0.30" \
             "djangorestframework-simplejwt>=5.3" \
@@ -111,7 +111,7 @@ jobs:
             "factory-boy>=3.0" \
             "ruff>=0.1.0" \
             "import-linter>=2.0" \
-            "psycopg2-binary>=2.9" \
+            "psycopg[binary]>=3.2" \
             "python-dotenv>=1.0" \
             "argon2-cffi>=21.0.0" \
             "gunicorn>=22.0.0" \
@@ -151,13 +151,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
           cache: pip
 
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install "Django>=5.2,<6" \
+          pip install "Django>=6.1,<7" \
             "djangorestframework>=3.14" \
             "drf-spectacular>=0.30" \
             "djangorestframework-simplejwt>=5.3" \
@@ -167,7 +167,7 @@ jobs:
             "factory-boy>=3.0" \
             "ruff>=0.1.0" \
             "import-linter>=2.0" \
-            "psycopg2-binary>=2.9" \
+            "psycopg[binary]>=3.2" \
             "python-dotenv>=1.0" \
             "argon2-cffi>=21.0.0" \
             "gunicorn>=22.0.0" \

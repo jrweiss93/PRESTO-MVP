@@ -45,7 +45,6 @@ La API queda en `http://localhost:8000`, Swagger en `/api/docs/` y el admin en
 > cookie del refresh no viaja.
 
 ### 1.b Sin Docker (Windows, sin permisos de administrador)
-
 Docker Desktop necesita virtualización habilitada en la BIOS, WSL2 y permisos de
 administrador. Si eso no está disponible, el stack se puede correr nativo con
 PostgreSQL y Redis portables (es lo que quedó instalado en esta máquina, en
@@ -72,6 +71,25 @@ El worker y el beat también corren nativos:
 ```powershell
 .\.venv\Scripts\python.exe -m celery -A config worker -l info
 .\.venv\Scripts\python.exe -m celery -A config beat -l info --schedule .\celerybeat-schedule
+```
+
+### 1.c Docker (cuando la máquina lo permita)
+
+Docker Desktop necesita **tres cosas**: sesión de administrador, virtualización
+habilitada en la BIOS (SVM/AMD-V o VT-x) y WSL2. El instalador ya está
+descargado en `%LOCALAPPDATA%\presto\installers`.
+
+```powershell
+# PowerShell como administrador, después de habilitar SVM/VT-x en la BIOS
+.\scripts\install-docker.ps1
+```
+
+El script verifica los requisitos, instala WSL2 si falta y corre el instalador.
+Si algo no está listo, lo explica y no toca nada. Después del reinicio:
+
+```sh
+docker run --rm hello-world
+docker compose up -d --build
 ```
 
 ## 2. Guion de demo (5 minutos)
@@ -123,6 +141,10 @@ Sin Docker, con el entorno nativo:
 .\.venv\Scripts\python.exe -m pytest -q
 .\.venv\Scripts\python.exe -m ruff check .
 ```
+
+> CI, la imagen Docker y producción corren **Python 3.14 + Django 6.1**. El
+> entorno local puede ser 3.12 o superior; el `.venv` de esta máquina quedó con
+> 3.14.
 
 ## 5. Desplegar para mostrarlo
 

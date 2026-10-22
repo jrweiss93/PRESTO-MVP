@@ -4,7 +4,8 @@ API de finanzas e inversiones con marketplace de préstamos. Presto **no custodi
 los fondos**: los mantiene en cuentas segregadas y solo mueve dinero entre sus
 usuarios (monedas ARS y USD).
 
-Stack: Django 5.x + DRF + PostgreSQL 16 + JWT (simplejwt) + Celery/Redis.
+Stack: Django 6.1 + DRF + PostgreSQL 16 + JWT (simplejwt) + Celery/Redis.
+Python 3.14 (misma versión en CI, en la imagen de Docker y en producción).
 
 Las reglas del proyecto viven en [AGENTS.md](AGENTS.md): es la fuente de verdad.
 La arquitectura está en [docs/architecture.md](docs/architecture.md) y el estado

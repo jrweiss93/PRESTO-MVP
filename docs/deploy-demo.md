@@ -210,7 +210,7 @@ verificó contra esa arquitectura el **2026-10-21**:
 
 | Imagen | `linux/arm64` | `linux/amd64` |
 |---|---|---|
-| `python:3.12-slim` (base del `Dockerfile`) | ✅ | ✅ |
+| `python:3.14-slim` (base del `Dockerfile`) | ✅ | ✅ |
 | `postgres:16` | ✅ | ✅ |
 | `redis:7-alpine` | ✅ | ✅ |
 | `caddy:2-alpine` (perfil `proxy`) | ✅ | ✅ |
@@ -218,17 +218,17 @@ verificó contra esa arquitectura el **2026-10-21**:
 Cómo se verificó:
 
 ```sh
-docker buildx imagetools inspect python:3.12-slim     # y postgres:16, redis:7-alpine, caddy:2-alpine
+docker buildx imagetools inspect python:3.14-slim     # y postgres:16, redis:7-alpine, caddy:2-alpine
 docker buildx build --platform linux/arm64 --load -t presto:arm64-check .
 docker run --rm presto:arm64-check uname -m           # aarch64
 ```
 
 El build de la imagen completa **para arm64 funciona** ✓ y dentro de la imagen
 importan sin problema `django`, `djangorestframework`, `drf_spectacular`,
-`psycopg2`, `argon2`, `celery`, `gunicorn` y `django-cors-headers` ✓.
+`psycopg`, `argon2`, `celery`, `gunicorn` y `django-cors-headers` ✓.
 
 Las dos únicas dependencias con código nativo tienen ruedas para aarch64 ✓
-(`psycopg2-binary` 18 ruedas aarch64 y `argon2-cffi-bindings` 16 ✓), así que
+(`psycopg[binary]` 18 ruedas aarch64 y `argon2-cffi-bindings` 16 ✓), así que
 no hace falta compilar nada en la VM. El resto son paquetes puros de Python ✓.
 
 En el `Dockerfile` no hay nada específico de x86 ✓ (no hay `apt` con paquetes
