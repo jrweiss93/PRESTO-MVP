@@ -16,7 +16,9 @@ services:
       - "127.0.0.1:6379:6379"
 
   web:
-    build: .
+    build:
+      context: .
+      target: development
     command: >
       bash -c "export PYTHONPATH=/app && \
                python manage.py migrate --no-input && \
@@ -42,7 +44,9 @@ services:
       - "127.0.0.1:8000:8000"
 
   worker:
-    build: .
+    build:
+      context: .
+      target: development
     command: >
       bash -c "export PYTHONPATH=/app && \
                celery -A config worker -l info"
@@ -58,7 +62,9 @@ services:
       - .:/app
 
   beat:
-    build: .
+    build:
+      context: .
+      target: development
     command: >
       bash -c "export PYTHONPATH=/app && \
                celery -A config beat -l info --schedule /var/celerybeat/celerybeat-schedule"
