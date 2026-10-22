@@ -17,6 +17,10 @@ DEBUG = os.getenv('DJANGO_DEBUG', '1') == '1'
 ALLOWED_HOSTS = (
     os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',') if os.getenv('DJANGO_ALLOWED_HOSTS') else []
 )
+# Render inyecta el hostname público del servicio. Se agrega solo para que el
+# deploy no dependa de que el blueprint sincronice DJANGO_ALLOWED_HOSTS.
+if os.getenv('RENDER_EXTERNAL_HOSTNAME'):
+    ALLOWED_HOSTS.append(os.getenv('RENDER_EXTERNAL_HOSTNAME'))
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
