@@ -1,9 +1,12 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthContext";
 import Assistant from "@/features/assistant/pages/Assistant";
+import ForgotPassword from "@/features/auth/pages/ForgotPassword";
 import Login from "@/features/auth/pages/Login";
 import Profile from "@/features/auth/pages/Profile";
 import Register from "@/features/auth/pages/Register";
+import ResetPassword from "@/features/auth/pages/ResetPassword";
+import VerifyEmail from "@/features/auth/pages/VerifyEmail";
 import Budgets from "@/features/budgets/pages/Budgets";
 import Investments from "@/features/investments/pages/Investments";
 import LoanDetail from "@/features/loans/pages/LoanDetail";
@@ -40,6 +43,9 @@ export default function App() {
           user && !loading ? <Navigate to="/dashboard" replace /> : <Register />
         }
       />
+      <Route path="/recuperar" element={<ForgotPassword />} />
+      <Route path="/restablecer" element={<ResetPassword />} />
+      <Route path="/verificar" element={<VerifyEmail />} />
       <Route
         element={
           <Protected>

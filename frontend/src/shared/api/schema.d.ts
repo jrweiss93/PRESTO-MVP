@@ -4,6 +4,46 @@
  */
 
 export interface paths {
+    "/api/v1/auth/email/resend/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reenviar el correo de verificación
+         * @description Reenvía el enlace; si el email ya está verificado, lo informa.
+         */
+        post: operations["auth_email_resend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/email/verify/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirmar el email con el token del enlace
+         * @description Marca el email como verificado si el token es válido.
+         */
+        post: operations["auth_email_verify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login/": {
         parameters: {
             query?: never;
@@ -66,6 +106,49 @@ export interface paths {
          * @description Actualiza los datos del perfil del usuario autenticado.
          */
         patch: operations["auth_me_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/auth/password-reset/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pedir un enlace para restablecer la contraseña
+         * @description Envía el enlace de reseteo si el email está registrado.
+         *
+         *     La respuesta es la misma exista o no la cuenta: no se puede usar el
+         *     endpoint para averiguar qué emails están registrados.
+         */
+        post: operations["auth_password_reset_request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password-reset/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restablecer la contraseña con el token del enlace
+         * @description Cambia la contraseña si el token es válido.
+         */
+        post: operations["auth_password_reset_confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/auth/register/": {
@@ -951,6 +1034,10 @@ export interface components {
          * @enum {string}
          */
         CurrencyEnum: "ARS" | "USD";
+        /** @description Mensaje informativo de una operación sin más datos. */
+        DetailMessage: {
+            detail: string;
+        };
         /**
          * @description * `deposit` - Depósito
          *     * `withdrawal` - Retiro
@@ -958,6 +1045,17 @@ export interface components {
          * @enum {string}
          */
         DirectionEnum: "deposit" | "withdrawal" | "transfer";
+        /** @description Datos del enlace de verificación de email. */
+        EmailVerification: {
+            uid: string;
+            token: string;
+        };
+        /** @description Resultado de confirmar el email. */
+        EmailVerificationResponse: {
+            /** Format: email */
+            email: string;
+            email_verified: boolean;
+        };
         /**
          * @description * `installment_due_soon` - Cuota por vencer
          *     * `installment_overdue` - Cuota vencida
@@ -1361,6 +1459,17 @@ export interface components {
             amount: string;
             currency?: string;
         };
+        /** @description Datos del enlace de reseteo y la contraseña nueva. */
+        PasswordResetConfirm: {
+            uid: string;
+            token: string;
+            new_password: string;
+        };
+        /** @description Email de la cuenta que quiere recuperar la contraseña. */
+        PasswordResetRequest: {
+            /** Format: email */
+            email: string;
+        };
         /** @description Campos del perfil que el usuario puede actualizar sobre sí mismo. */
         PatchedMeUpdate: {
             phone_number?: string;
@@ -1503,6 +1612,7 @@ export interface components {
             readonly email: string;
             first_name?: string;
             last_name?: string;
+            readonly email_verified: boolean;
         };
         /** @description Respuesta del endpoint de webhook. */
         WebhookEvent: {
@@ -1519,6 +1629,50 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    auth_email_resend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailMessage"];
+                };
+            };
+        };
+    };
+    auth_email_verify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailVerification"];
+                "application/x-www-form-urlencoded": components["schemas"]["EmailVerification"];
+                "multipart/form-data": components["schemas"]["EmailVerification"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailVerificationResponse"];
+                };
+            };
+        };
+    };
     auth_login_create: {
         parameters: {
             query?: never;
@@ -1602,6 +1756,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["User"];
+                };
+            };
+        };
+    };
+    auth_password_reset_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PasswordResetRequest"];
+                "multipart/form-data": components["schemas"]["PasswordResetRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailMessage"];
+                };
+            };
+        };
+    };
+    auth_password_reset_confirm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetConfirm"];
+                "application/x-www-form-urlencoded": components["schemas"]["PasswordResetConfirm"];
+                "multipart/form-data": components["schemas"]["PasswordResetConfirm"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailMessage"];
                 };
             };
         };

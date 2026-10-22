@@ -110,13 +110,15 @@ print(
     shell(
         'from apps.identity.models import KYCVerification, User\n'
         'from apps.identity.services import resolve_kyc\n'
-        "staff = User.objects.filter(is_staff=True).first()\n"
+        'staff = User.objects.filter(is_staff=True).first()\n'
         'if staff is None:\n'
         f"    staff = User.objects.create_superuser(email='staff@presto.demo', password='{PASSWORD}')\n"
         'n = 0\n'
         'for v in KYCVerification.objects.filter(status="pending"):\n'
         '    resolve_kyc(verification_id=v.id, status="approved", resolved_by_user_id=staff.id)\n'
         '    n += 1\n'
+        'from django.utils import timezone\n'
+        'User.objects.filter(email_verified_at__isnull=True).update(email_verified_at=timezone.now())\n'
         'print(f"aprobadas: {n}")'
     ),
 )

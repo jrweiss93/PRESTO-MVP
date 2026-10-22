@@ -189,7 +189,12 @@ Sigue pendiente:
    el flujo real en sandbox → producción.
 2. **KYC con documentos**: hoy el KYC es metadata JSON aprobada a mano desde el
    admin. Hace falta subida de archivos y/o proveedor de identidad.
-3. **Recuperación de contraseña y verificación de email**: no existen todavía.
+3. **Recuperación de contraseña y verificación de email**: ✅ implementadas
+   (ADR 0016). El reseteo responde siempre 202 para no filtrar qué emails
+   existen, cierra las sesiones abiertas al cambiar la clave y la verificación
+   de email se muestra en el perfil. En la demo los correos salen por consola.
+   La verificación es informativa: el requisito para mover dinero sigue siendo
+   el KYC.
 4. **Legal**: términos y condiciones, política de privacidad, aviso de "dinero
    simulado" en la demo y cierre de las definiciones regulatorias
    (`docs/regulatorio-bcra.md`).

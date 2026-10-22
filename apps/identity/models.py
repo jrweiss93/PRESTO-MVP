@@ -54,6 +54,16 @@ class User(AbstractUser):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
+    email_verified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Cuándo se confirmó el email (null si todavía no se verificó).',
+    )
+
+    @property
+    def email_verified(self) -> bool:
+        """Indica si el email del usuario ya fue confirmado."""
+        return self.email_verified_at is not None
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

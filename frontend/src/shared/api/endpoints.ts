@@ -23,6 +23,9 @@ import type {
   CreateOffer,
   CreatePayment,
   CreateTransaction,
+  DetailMessage,
+  EmailVerification,
+  EmailVerificationResponse,
   Expense,
   Installment,
   InvestmentProduct,
@@ -42,6 +45,8 @@ import type {
   OfferMatch,
   OpenPosition,
   OrderingField,
+  PasswordResetConfirm,
+  PasswordResetRequest,
   PatchedMeUpdate,
   PatchedUpdateOffer,
   Payment,
@@ -77,6 +82,32 @@ export function updateMe(payload: PatchedMeUpdate): Promise<User> {
 /** Cierra la sesión: el backend blacklistea el refresh y borra la cookie. */
 export function logout(): Promise<void> {
   return apiPost<void>("/auth/logout/");
+}
+
+/** Pide el enlace de reseteo. Responde siempre lo mismo, exista o no la cuenta. */
+export function requestPasswordReset(
+  payload: PasswordResetRequest,
+): Promise<DetailMessage> {
+  return apiPost<DetailMessage>("/auth/password-reset/", payload);
+}
+
+/** Cambia la contraseña con el uid y el token del enlace. */
+export function confirmPasswordReset(
+  payload: PasswordResetConfirm,
+): Promise<DetailMessage> {
+  return apiPost<DetailMessage>("/auth/password-reset/confirm/", payload);
+}
+
+/** Confirma el email con el uid y el token del enlace. */
+export function verifyEmail(
+  payload: EmailVerification,
+): Promise<EmailVerificationResponse> {
+  return apiPost<EmailVerificationResponse>("/auth/email/verify/", payload);
+}
+
+/** Reenvía el correo de verificación al usuario autenticado. */
+export function resendEmailVerification(): Promise<DetailMessage> {
+  return apiPost<DetailMessage>("/auth/email/resend/");
 }
 
 // ---- meta (modo, bandera de revisión legal) ----

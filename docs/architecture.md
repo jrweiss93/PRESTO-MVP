@@ -232,3 +232,4 @@ fechas en ISO 8601 UTC. Los errores usan siempre el mismo formato:
 | [0013](adr/0013-reintento-de-avisos-por-email.md) | Reintentos de los avisos por email |
 | [0014](adr/0014-refresh-token-en-cookie-httponly.md) | El refresh token en cookie httpOnly |
 | [0015](adr/0015-imagenes-fijadas-a-digest.md) | Las imágenes de producción, fijadas a digest |
+| [0016](adr/0016-reseteo-de-contrasena-y-verificacion-de-email.md) | Reseteo de contraseña y verificación de email |

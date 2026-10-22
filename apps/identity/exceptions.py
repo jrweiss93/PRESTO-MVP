@@ -33,3 +33,7 @@ class InvalidProfileField(IdentityError):
 
 class WeakPassword(IdentityError):
     """La contraseña no pasa los validadores de Django."""
+
+
+class InvalidToken(IdentityError):
+    """El token de un enlace no es válido o venció."""

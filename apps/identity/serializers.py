@@ -26,10 +26,12 @@ class LoginSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     """Datos públicos de un usuario."""
 
+    email_verified = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name']
-        read_only_fields = ['id', 'email']
+        fields = ['id', 'email', 'first_name', 'last_name', 'email_verified']
+        read_only_fields = ['id', 'email', 'email_verified']
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -95,3 +97,41 @@ class TokenRefreshResponseSerializer(serializers.Serializer):
     """Respuesta del refresh: solo el access token nuevo."""
 
     access = serializers.CharField()
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Email de la cuenta que quiere recuperar la contraseña."""
+
+    email = serializers.EmailField()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """Datos del enlace de reseteo y la contraseña nueva."""
+
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+        style={'input_type': 'password'},
+    )
+
+
+class EmailVerificationSerializer(serializers.Serializer):
+    """Datos del enlace de verificación de email."""
+
+    uid = serializers.CharField()
+    token = serializers.CharField()
+
+
+class EmailVerificationResponseSerializer(serializers.Serializer):
+    """Resultado de confirmar el email."""
+
+    email = serializers.EmailField()
+    email_verified = serializers.BooleanField()
+
+
+class DetailMessageSerializer(serializers.Serializer):
+    """Mensaje informativo de una operación sin más datos."""
+
+    detail = serializers.CharField()

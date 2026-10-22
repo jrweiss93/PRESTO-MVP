@@ -25,6 +25,10 @@ def create_user(email=EMAIL):
         status='approved',
         resolved_by_user_id=None,
     )
+    # El registro manda el email de verificación; estos tests son sobre los
+    # avisos de notificaciones, así que se vacía la bandeja para no mezclar los
+    # dos flujos (las aserciones sobre los avisos siguen intactas).
+    mail.outbox.clear()
     return user
 
 

@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 
 from django.apps import apps as django_apps
+from django.utils import timezone
 
 from apps.budgets import selectors as budget_selectors
 from apps.budgets import services as budget_services
@@ -380,6 +381,11 @@ def seed_demo(currency: str = 'ARS', password: str = DEMO_PASSWORD) -> DemoSumma
 
     for user in (borrower, lender, investor):
         _ensure_kyc(user)
+        # Las cuentas de la demo ya vienen con el email confirmado: no tiene
+        # sentido mostrar el aviso de "verificá tu correo" en la demo.
+        if user.email_verified_at is None:
+            user.email_verified_at = timezone.now()
+            user.save(update_fields=['email_verified_at'])
 
     _ensure_deposit(
         lender,

@@ -4,6 +4,50 @@ info:
   version: 1.0.0
   description: API de finanzas e inversiones con marketplace de préstamos.
 paths:
+  /api/v1/auth/email/resend/:
+    post:
+      operationId: auth_email_resend
+      description: Reenvía el enlace; si el email ya está verificado, lo informa.
+      summary: Reenviar el correo de verificación
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailMessage'
+          description: ''
+  /api/v1/auth/email/verify/:
+    post:
+      operationId: auth_email_verify
+      description: Marca el email como verificado si el token es válido.
+      summary: Confirmar el email con el token del enlace
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerification'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmailVerification'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmailVerification'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailVerificationResponse'
+          description: ''
   /api/v1/auth/login/:
     post:
       operationId: auth_login_create
@@ -90,6 +134,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/auth/password-reset/:
+    post:
+      operationId: auth_password_reset_request
+      description: |-
+        Envía el enlace de reseteo si el email está registrado.
+
+        La respuesta es la misma exista o no la cuenta: no se puede usar el
+        endpoint para averiguar qué emails están registrados.
+      summary: Pedir un enlace para restablecer la contraseña
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailMessage'
+          description: ''
+  /api/v1/auth/password-reset/confirm/:
+    post:
+      operationId: auth_password_reset_confirm
+      description: Cambia la contraseña si el token es válido.
+      summary: Restablecer la contraseña con el token del enlace
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailMessage'
           description: ''
   /api/v1/auth/register/:
     post:
@@ -1489,6 +1593,14 @@ components:
       description: |-
         * `ARS` - Peso argentino
         * `USD` - Dólar
+    DetailMessage:
+      type: object
+      description: Mensaje informativo de una operación sin más datos.
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
     DirectionEnum:
       enum:
       - deposit
@@ -1499,6 +1611,29 @@ components:
         * `deposit` - Depósito
         * `withdrawal` - Retiro
         * `transfer` - Transferencia
+    EmailVerification:
+      type: object
+      description: Datos del enlace de verificación de email.
+      properties:
+        uid:
+          type: string
+        token:
+          type: string
+      required:
+      - token
+      - uid
+    EmailVerificationResponse:
+      type: object
+      description: Resultado de confirmar el email.
+      properties:
+        email:
+          type: string
+          format: email
+        email_verified:
+          type: boolean
+      required:
+      - email
+      - email_verified
     EventTypeEnum:
       enum:
       - installment_due_soon
@@ -2394,6 +2529,31 @@ components:
       required:
       - amount
       - product_id
+    PasswordResetConfirm:
+      type: object
+      description: Datos del enlace de reseteo y la contraseña nueva.
+      properties:
+        uid:
+          type: string
+        token:
+          type: string
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 8
+      required:
+      - new_password
+      - token
+      - uid
+    PasswordResetRequest:
+      type: object
+      description: Email de la cuenta que quiere recuperar la contraseña.
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+      - email
     PatchedMeUpdate:
       type: object
       description: Campos del perfil que el usuario puede actualizar sobre sí mismo.
@@ -2710,8 +2870,12 @@ components:
         last_name:
           type: string
           maxLength: 150
+        email_verified:
+          type: boolean
+          readOnly: true
       required:
       - email
+      - email_verified
       - id
     WebhookEvent:
       type: object

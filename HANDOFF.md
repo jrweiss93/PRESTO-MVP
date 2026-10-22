@@ -13,6 +13,9 @@
 > Django 6.1** en CI, imagen Docker y producción. Verificado con **750 tests**,
 > `check --deploy`, `makemigrations --check` y el esquema OpenAPI.
 > `psycopg2-binary` se reemplazó por `psycopg[binary]`.
+>
+> **Auth (2026-10-22):** reseteo de contraseña y verificación de email
+> implementados (21 tests nuevos, **771** en total). Ver ADR 0016.
 
 ---
 

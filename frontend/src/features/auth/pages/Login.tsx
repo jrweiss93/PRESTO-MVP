@@ -114,6 +114,15 @@ export default function Login() {
             </button>
           </form>
 
+          <div className="mt-4 text-end">
+            <Link
+              to="/recuperar"
+              className="text-theme-sm text-brand-500 hover:text-brand-600"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
+
           <div className="mt-6">
             <p className="text-center text-theme-sm text-gray-700">
               ¿No tenés cuenta?{" "}
@@ -128,10 +137,11 @@ export default function Login() {
 
           <div className="mt-8 rounded-lg bg-gray-50 p-4 text-theme-xs text-gray-500">
             <p className="mb-1 font-medium text-gray-700">
-              Cuentas de prueba (mock):
+              Cuentas de demostración:
             </p>
-            <p>Prestatario: demo@presto.com / demo123456</p>
-            <p>Prestamista: lender@presto.com / lender123456</p>
+            <p>Prestataria: ana@presto.demo / Presto123!</p>
+            <p>Prestamista: beto@presto.demo / Presto123!</p>
+            <p>Inversora: carla@presto.demo / Presto123!</p>
           </div>
         </div>
       </div>

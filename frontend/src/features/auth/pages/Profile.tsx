@@ -28,6 +28,7 @@ export default function Profile() {
   const [docType, setDocType] = useState("dni");
   const [docNumber, setDocNumber] = useState("");
   const [requestingKyc, setRequestingKyc] = useState(false);
+  const [resending, setResending] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -93,6 +94,25 @@ export default function Profile() {
     }
   }
 
+  async function handleResendVerification() {
+    setResending(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await api.resendEmailVerification();
+      setNotice(res.detail);
+      await refreshUser().catch(() => undefined);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo reenviar el correo de verificación.",
+      );
+    } finally {
+      setResending(false);
+    }
+  }
+
   return (
     <>
       <h1>Perfil y KYC</h1>
@@ -106,7 +126,12 @@ export default function Profile() {
       <div className="card">
         <h2>Cuenta</h2>
         <p className="mt-0 mb-0">
-          <strong>Email:</strong> {user?.email}
+          <strong>Email:</strong> {user?.email}{" "}
+          {user?.email_verified ? (
+            <span className="badge success">Verificado</span>
+          ) : (
+            <span className="badge warning">Sin verificar</span>
+          )}
           {user?.first_name && (
             <>
               <br />
@@ -116,6 +141,22 @@ export default function Profile() {
           <br />
           <strong>ID:</strong> <span className="mono">{user?.id}</span>
         </p>
+        {!user?.email_verified && (
+          <div style={{ marginTop: "0.9rem" }}>
+            <p className="small text-muted">
+              Confirmá tu email para recibir los avisos de cuotas, inversiones y
+              movimientos.
+            </p>
+            <button
+              className="btn"
+              type="button"
+              onClick={handleResendVerification}
+              disabled={resending}
+            >
+              {resending ? "Enviando…" : "Reenviar correo de verificación"}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="card">

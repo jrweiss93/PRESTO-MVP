@@ -20,6 +20,20 @@ class RegisterThrottle(ScopedRateThrottle):
     """
 
 
+class PasswordResetThrottle(ScopedRateThrottle):
+    """Limita los pedidos de reseteo de contraseña por IP.
+
+    El scope lo define la vista con `throttle_scope = 'password_reset'`.
+    """
+
+
+class EmailVerificationThrottle(ScopedRateThrottle):
+    """Limita los pedidos y reenvíos de verificación de email por IP.
+
+    El scope lo define la vista con `throttle_scope = 'email_verification'`.
+    """
+
+
 class IsKycApproved(BasePermission):
     """Permite el acceso solo a usuarios con verificación KYC aprobada (AGENTS §9.9)."""
 

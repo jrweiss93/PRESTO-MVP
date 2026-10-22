@@ -78,6 +78,10 @@ REST_FRAMEWORK = {
         'login': '5/min',
         'register': '5/hour',
         'webhook': '60/min',
+        # Enlaces de reseteo y verificación: estrictos, para que no se puedan
+        # usar para inundar de correos ni para probar emails.
+        'password_reset': '5/hour',
+        'email_verification': '5/hour',
     },
 }
 
@@ -219,6 +223,14 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').strip().lower() == 'true'
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'no-reply@presto.local')
+
+# URL del front: con ella se arman los enlaces de los correos (reseteo de
+# contraseña y verificación de email). En producción es el dominio real.
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173').rstrip('/')
+
+# Los enlaces de reseteo y de verificación vencen en una hora. Se puede subir
+# por entorno; los tokens se invalidan igual al cambiar la contraseña.
+PASSWORD_RESET_TIMEOUT = int(os.getenv('PASSWORD_RESET_TIMEOUT') or 3600)
 
 # Celery (AGENTS §3 y §4): tareas asíncronas y periódicas con Redis como broker.
 # No hay result backend persistente: las tareas del proyecto no devuelven

@@ -13,15 +13,30 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.identity.exceptions import EmailAlreadyRegistered, PendingKYCExists, WeakPassword
-from apps.identity.permissions import LoginThrottle, RegisterThrottle
+from apps.identity.exceptions import (
+    EmailAlreadyRegistered,
+    InvalidToken,
+    PendingKYCExists,
+    WeakPassword,
+)
+from apps.identity.permissions import (
+    EmailVerificationThrottle,
+    LoginThrottle,
+    PasswordResetThrottle,
+    RegisterThrottle,
+)
 from apps.identity.selectors import get_kyc_by_id, get_kyc_for_user, get_profile
 from apps.identity.serializers import (
+    DetailMessageSerializer,
+    EmailVerificationResponseSerializer,
+    EmailVerificationSerializer,
     KYCRequestSerializer,
     KYCVerificationSerializer,
     LoginResponseSerializer,
     LoginSerializer,
     MeUpdateSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
     ProfileSerializer,
     RegisterSerializer,
     TokenRefreshResponseSerializer,
@@ -29,8 +44,12 @@ from apps.identity.serializers import (
 )
 from apps.identity.services import (
     clear_refresh_cookie,
+    confirm_email_verification,
+    confirm_password_reset,
     get_refresh_token,
     register_user,
+    request_password_reset,
+    send_email_verification,
     set_refresh_cookie,
     submit_kyc,
     update_profile,
@@ -251,3 +270,121 @@ class KycDetailView(APIView):
         if verification is None:
             raise NotFound('La verificación KYC no existe.')
         return Response(KYCVerificationSerializer(verification).data, status=status.HTTP_200_OK)
+
+
+class PasswordResetRequestView(APIView):
+    """Pedido de reseteo de contraseña (siempre responde 202)."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = [PasswordResetThrottle]
+    throttle_scope = 'password_reset'
+
+    @extend_schema(
+        request=PasswordResetRequestSerializer,
+        responses={202: DetailMessageSerializer},
+        summary='Pedir un enlace para restablecer la contraseña',
+        operation_id='auth_password_reset_request',
+    )
+    def post(self, request):
+        """Envía el enlace de reseteo si el email está registrado.
+
+        La respuesta es la misma exista o no la cuenta: no se puede usar el
+        endpoint para averiguar qué emails están registrados.
+        """
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        request_password_reset(email=serializer.validated_data['email'])
+        return Response(
+            {
+                'detail': (
+                    'Si el email está registrado, te enviamos un enlace para '
+                    'restablecer la contraseña.'
+                )
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
+
+
+class PasswordResetConfirmView(APIView):
+    """Confirmación del reseteo con el token del enlace."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = [PasswordResetThrottle]
+    throttle_scope = 'password_reset'
+
+    @extend_schema(
+        request=PasswordResetConfirmSerializer,
+        responses={200: DetailMessageSerializer},
+        summary='Restablecer la contraseña con el token del enlace',
+        operation_id='auth_password_reset_confirm',
+    )
+    def post(self, request):
+        """Cambia la contraseña si el token es válido."""
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            confirm_password_reset(
+                uid=serializer.validated_data['uid'],
+                token=serializer.validated_data['token'],
+                new_password=serializer.validated_data['new_password'],
+            )
+        except InvalidToken as exc:
+            raise ValidationError({'token': [str(exc)]}) from exc
+        except WeakPassword as exc:
+            raise ValidationError({'new_password': [str(exc)]}) from exc
+        return Response(
+            {'detail': 'Contraseña actualizada. Ya podés iniciar sesión con la nueva.'},
+            status=status.HTTP_200_OK,
+        )
+
+
+class EmailVerificationView(APIView):
+    """Confirmación del email con el token del enlace."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = [EmailVerificationThrottle]
+    throttle_scope = 'email_verification'
+
+    @extend_schema(
+        request=EmailVerificationSerializer,
+        responses={200: EmailVerificationResponseSerializer},
+        summary='Confirmar el email con el token del enlace',
+        operation_id='auth_email_verify',
+    )
+    def post(self, request):
+        """Marca el email como verificado si el token es válido."""
+        serializer = EmailVerificationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            user = confirm_email_verification(
+                uid=serializer.validated_data['uid'],
+                token=serializer.validated_data['token'],
+            )
+        except InvalidToken as exc:
+            raise ValidationError({'token': [str(exc)]}) from exc
+        return Response({'email': user.email, 'email_verified': True})
+
+
+class EmailVerificationResendView(APIView):
+    """Reenvío del correo de verificación para el usuario autenticado."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [EmailVerificationThrottle]
+    throttle_scope = 'email_verification'
+
+    @extend_schema(
+        request=None,
+        responses={202: DetailMessageSerializer},
+        summary='Reenviar el correo de verificación',
+        operation_id='auth_email_resend',
+    )
+    def post(self, request):
+        """Reenvía el enlace; si el email ya está verificado, lo informa."""
+        sent = send_email_verification(request.user)
+        detail = (
+            'Te enviamos el correo de verificación.' if sent else 'Tu email ya está verificado.'
+        )
+        return Response({'detail': detail}, status=status.HTTP_202_ACCEPTED)

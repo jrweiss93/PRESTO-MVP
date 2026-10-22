@@ -29,6 +29,11 @@ export type Register = Schema<"Register">;
 export type LoginResponse = Schema<"LoginResponse">;
 export type TokenRefreshResponse = Schema<"TokenRefreshResponse">;
 export type PatchedMeUpdate = Schema<"PatchedMeUpdate">;
+export type PasswordResetRequest = Schema<"PasswordResetRequest">;
+export type PasswordResetConfirm = Schema<"PasswordResetConfirm">;
+export type EmailVerification = Schema<"EmailVerification">;
+export type EmailVerificationResponse = Schema<"EmailVerificationResponse">;
+export type DetailMessage = Schema<"DetailMessage">;
 
 export type Account = Schema<"Account">;
 export type CreateAccount = Schema<"CreateAccount">;
