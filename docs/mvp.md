@@ -44,6 +44,36 @@ La API queda en `http://localhost:8000`, Swagger en `/api/docs/` y el admin en
 > y la API en `127.0.0.1`, el navegador los trata como sitios distintos y la
 > cookie del refresh no viaja.
 
+### 1.b Sin Docker (Windows, sin permisos de administrador)
+
+Docker Desktop necesita virtualización habilitada en la BIOS, WSL2 y permisos de
+administrador. Si eso no está disponible, el stack se puede correr nativo con
+PostgreSQL y Redis portables (es lo que quedó instalado en esta máquina, en
+`%LOCALAPPDATA%\presto`):
+
+```powershell
+# Una sola vez
+.\scripts\install-services.ps1     # baja PostgreSQL 16 y Redis portables
+.\scripts\setup-venv.ps1           # crea .venv e instala dependencias
+
+# Cada vez que se trabaja
+.\scripts\start-services.ps1
+. .\scripts\env.ps1
+.\.venv\Scripts\python.exe manage.py migrate
+.\.venv\Scripts\python.exe manage.py seed_demo
+.\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
+
+# Al terminar
+.\scripts\stop-services.ps1
+```
+
+El worker y el beat también corren nativos:
+
+```powershell
+.\.venv\Scripts\python.exe -m celery -A config worker -l info
+.\.venv\Scripts\python.exe -m celery -A config beat -l info --schedule .\celerybeat-schedule
+```
+
 ## 2. Guion de demo (5 minutos)
 
 1. Entrar como **ana**: dashboard con saldo, préstamo activo y cuota próxima.
@@ -84,6 +114,14 @@ cd frontend
 pnpm typecheck
 pnpm test
 pnpm build
+```
+
+Sin Docker, con el entorno nativo:
+
+```powershell
+. .\scripts\env.ps1
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe -m ruff check .
 ```
 
 ## 5. Desplegar para mostrarlo
