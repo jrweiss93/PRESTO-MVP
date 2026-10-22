@@ -17,6 +17,26 @@ corto.
 
 ## 2. Backend
 
+### Opción rápida: Render con el blueprint
+
+El repo trae `render.yaml`. En Render: **New → Blueprint → elegir el repo**. Crea
+la base PostgreSQL, el Redis y el servicio web desde el `Dockerfile`, con
+`RUN_MIGRATIONS=1` (el entrypoint aplica las migraciones al arrancar).
+
+Al crear el blueprint, dejá **vacías** `CORS_ALLOWED_ORIGINS` y `FRONTEND_URL`:
+se completan cuando exista la URL de Vercel (paso 3). Después, en la **Shell**
+del servicio:
+
+```sh
+python manage.py seed_demo
+python manage.py createsuperuser
+```
+
+> El plan `free` duerme el servicio por inactividad: la primera visita puede
+> tardar unos segundos. Para una demo en vivo, considerá `starter`.
+
+### Opción manual (Northflank, Railway, VPS, etc.)
+
 Crear un servicio desde el `Dockerfile` del repo, con el puerto **8000** y estas
 variables (los valores entre `<>` se reemplazan):
 
@@ -26,7 +46,7 @@ variables (los valores entre `<>` se reemplazan):
 | `DJANGO_SECRET_KEY` | secreto de 50+ caracteres (`python -c "import secrets; print(secrets.token_urlsafe(50))"`) |
 | `DJANGO_DEBUG` | `False` |
 | `DJANGO_ALLOWED_HOSTS` | `<api.mi-dominio.com>` |
-| `DATABASE_URL` | la del PostgreSQL administrado (con `DB_SSLMODE=require` si hace falta) |
+| `DATABASE_URL` | la del PostgreSQL administrado (si exige SSL, agregá `?sslmode=require` al final de la URL) |
 | `REDIS_URL` | la del Redis administrado |
 | `DEMO_MODE` | `true` |
 | `LEDGER_SIMULATED_DEPOSITS_ENABLED` | `true` |
@@ -111,7 +131,7 @@ refresh, Presti (mercado y chat) y las rutas profundas del front.
 | `403 CSRF` en el admin | `CSRF_TRUSTED_ORIGINS` sin el dominio | agregarlo con `https://` |
 | 404 al refrescar `/dashboard` | falta el rewrite de SPA | `vercel.json` en `frontend/` |
 | `DisallowedHost` | `DJANGO_ALLOWED_HOSTS` sin el dominio | agregar el host de la API |
-| 502/503 al arrancar | migraciones o DB/Redis mal configurados | revisar logs, `RUN_MIGRATIONS=1`, `DATABASE_URL` y `DB_SSLMODE` |
+| 502/503 al arrancar | migraciones o DB/Redis mal configurados | revisar logs, `RUN_MIGRATIONS=1`, `DATABASE_URL` y `REDIS_URL` |
 | Correos que no llegan | backend de consola | configurar `EMAIL_HOST`/SMTP |
 | Presti sin mercado/noticias | fuente externa caída o bloqueada | es degradable: la pantalla sigue; revisar logs |
 

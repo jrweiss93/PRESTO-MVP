@@ -1,0 +1,69 @@
+# Blueprint de Render para la demo de Presto.
+#
+# Crear en Render: New → Blueprint → elegir este repo. Render crea la base, el
+# Redis y el web desde el Dockerfile. Después:
+#   1. Completar CORS_ALLOWED_ORIGINS y FRONTEND_URL con la URL de Vercel.
+#   2. En la Shell del servicio: python manage.py seed_demo
+#      y python manage.py createsuperuser.
+#
+# Los planes `free` alcanzan para una demo (el web se duerme por inactividad).
+# Si querés que no se duerma, cambiá el plan del web a `starter`.
+
+databases:
+  - name: presto-db
+    databaseName: presto
+    user: presto
+    plan: free
+
+services:
+  - type: redis
+    name: presto-redis
+    plan: free
+    ipAllowList: []
+
+  - type: web
+    name: presto-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health/
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_ALLOWED_HOSTS
+        fromService:
+          type: web
+          name: presto-api
+          property: host
+      - key: DATABASE_URL
+        fromDatabase:
+          name: presto-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: presto-redis
+          property: connectionString
+      - key: DEMO_MODE
+        value: "true"
+      - key: LEDGER_SIMULATED_DEPOSITS_ENABLED
+        value: "true"
+      - key: RUN_MIGRATIONS
+        value: "1"
+      - key: JWT_REFRESH_COOKIE_SAMESITE
+        value: "None"
+      - key: JWT_REFRESH_COOKIE_SECURE
+        value: "true"
+      - key: ASSISTANT_MARKET_ENABLED
+        value: "true"
+      - key: ASSISTANT_NEWS_FEED_URL
+        value: https://www.ambito.com/rss/pages/economia.xml
+      # Se completan después de crear el front en Vercel.
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
