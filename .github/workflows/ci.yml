@@ -250,6 +250,9 @@ jobs:
   docker:
     name: Docker image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -266,3 +269,22 @@ jobs:
             -e REDIS_URL=redis://localhost:6379/0 \
             -e LEGAL_REVIEW_ACKNOWLEDGED=1 \
             presto:ci python manage.py check
+
+      - name: Log in to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish the image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          SHORT_SHA="${GITHUB_SHA::12}"
+          docker tag presto:ci "$IMAGE:latest"
+          docker tag presto:ci "$IMAGE:$SHORT_SHA"
+          docker push "$IMAGE:latest"
+          docker push "$IMAGE:$SHORT_SHA"
+          echo "Imagen publicada: $IMAGE:latest"

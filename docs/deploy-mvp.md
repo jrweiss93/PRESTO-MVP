@@ -35,6 +35,24 @@ python manage.py createsuperuser
 > El plan `free` duerme el servicio por inactividad: la primera visita puede
 > tardar unos segundos. Para una demo en vivo, considerá `starter`.
 
+#### La imagen se publica desde GitHub (GHCR)
+
+El blueprint ya **no construye** la imagen en Render: usa la que publica GitHub
+Actions en cada push a `main`:
+
+```
+ghcr.io/jrweiss93/presto-mvp:latest
+```
+
+1. En GitHub, entrá a **Packages → presto-mvp → Package settings → Change
+   visibility → Public** (la primera vez). Sin eso, Render no puede bajarla.
+2. En Render, **Manual Deploy → Deploy latest image** para tomar la última.
+   Los servicios con imagen preconstruida no se redeployan solos cuando cambia
+   el tag.
+
+> Si preferís mantener el paquete privado, agregá un *registry credential* de
+> GHCR en Render y sumá `image.creds.fromRegistryCreds` al blueprint.
+
 ### Opción manual (Northflank, Railway, VPS, etc.)
 
 Crear un servicio desde el `Dockerfile` del repo, con el puerto **8000** y estas

@@ -1,9 +1,12 @@
 # Blueprint de Render para la demo de Presto.
 #
 # Crear en Render: New → Blueprint → elegir este repo. Render crea la base, el
-# Redis y el web desde el Dockerfile. Después:
-#   1. Completar CORS_ALLOWED_ORIGINS y FRONTEND_URL con la URL de Vercel.
-#   2. En la Shell del servicio: python manage.py seed_demo
+# Redis y el web. El web NO construye la imagen: usa la que publica GitHub
+# Actions en GHCR (ghcr.io/jrweiss93/presto-mvp:latest).
+#
+#   1. Hacé público el paquete en GitHub (Packages → presto-mvp → settings).
+#   2. Completar CORS_ALLOWED_ORIGINS y FRONTEND_URL con la URL de Vercel.
+#   3. En la Shell del servicio: python manage.py seed_demo
 #      y python manage.py createsuperuser.
 #
 # Los planes `free` alcanzan para una demo (el web se duerme por inactividad).
@@ -23,9 +26,10 @@ services:
 
   - type: web
     name: presto-api
-    runtime: docker
+    runtime: image
+    image:
+      url: ghcr.io/jrweiss93/presto-mvp:latest
     plan: free
-    dockerfilePath: ./Dockerfile
     healthCheckPath: /health/
     envVars:
       - key: DJANGO_SETTINGS_MODULE
