@@ -246,3 +246,23 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build the production image
+        run: docker build -t presto:ci .
+
+      - name: Check the app inside the image
+        run: |
+          docker run --rm \
+            -e DJANGO_SETTINGS_MODULE=config.settings.production \
+            -e DJANGO_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(50))')" \
+            -e DJANGO_ALLOWED_HOSTS=localhost \
+            -e REDIS_URL=redis://localhost:6379/0 \
+            -e LEGAL_REVIEW_ACKNOWLEDGED=1 \
+            presto:ci python manage.py check

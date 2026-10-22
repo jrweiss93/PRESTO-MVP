@@ -37,6 +37,9 @@ RUN pip install --no-cache-dir \
 # right owner makes the named volume inherit that ownership.
 RUN mkdir -p /var/celerybeat && chown presto:presto /var/celerybeat
 
+# Entrypoint: aplica migraciones si RUN_MIGRATIONS=1 y después ejecuta el CMD.
+RUN chmod +x /app/deploy/entrypoint.sh
+
 # In development the code arrives as a volume owned by the host user, so the
 # container keeps every write (bytecode, pytest cache, coverage, linters) out
 # of it.
@@ -49,5 +52,6 @@ USER presto
 
 EXPOSE 8000
 
-# Migrations + Gunicorn (docker-compose overrides the CMD to run migrations first)
+# Migraciones (si RUN_MIGRATIONS=1) + comando de la plataforma.
+ENTRYPOINT ["sh", "/app/deploy/entrypoint.sh"]
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
