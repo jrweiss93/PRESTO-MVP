@@ -1,0 +1,48 @@
+# Databases
+*.sqlite3
+*.db
+
+# Environment
+.env
+.env.*
+!.env.example
+!.env.prod.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pyvenv/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Import linter / grimp
+.import_linter_cache/
+.grimp_cache/
+
+# Static files (Django)
+staticfiles/
+static/
+
+# Docker
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
+# Generated OpenAPI schema
+schema.yml
+schema.json
+
+# Frontend (Vite + pnpm)
+frontend/node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/
+frontend/*.tsbuildinfo
+frontend/.vite/

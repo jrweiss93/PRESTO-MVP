@@ -1,0 +1,533 @@
+# PROYECTO: Presto (Django + PostgreSQL)
+
+> **Para la IA que lea este documento:** este archivo es la fuente de verdad del proyecto. Seguí estas reglas al pie de la letra. Si una instrucción del usuario contradice este documento, **avisá del conflicto antes de actuar** y esperá confirmación. Si algo no está definido acá, **preguntá en lugar de inventar**. Nunca tomes decisiones de arquitectura por tu cuenta.
+
+---
+
+## 1. Contexto
+
+- **Producto:** Presto. App de finanzas e inversiones con marketplace de préstamos. Se crean ofertas de préstamo y quien busca préstamo las compara y elige la que mejor se adapta.
+- **Presto CUSTODIA los fondos de los usuarios y mueve dinero entre ellos.**
+- **Monedas:** ARS y USD. Cada usuario tiene una cuenta por moneda, sin conversión implícita.
+- **Usuarios:** personas que buscan préstamos y personas que prestan o invierten.
+- **Frontend:** solo backend (API-only). **Fecha de entrega:** sin definir.
+- **TODO:** proveedor de pagos y bancos, KYC, marco regulatorio (custodia de fondos, bonos y fondos), método de amortización (francés por defecto).
+
+---
+
+## 2. Decisión de arquitectura (NO modificar)
+
+**Monolito modular.** Un solo proyecto Django, una sola base de datos PostgreSQL, un solo despliegue.
+
+- **Prohibido:** microservicios, API gateway, brokers de mensajes (RabbitMQ, Kafka), múltiples bases de datos, múltiples repositorios, Kubernetes.
+- **Motivo:** un solo desarrollador, proyecto de cliente, dominio financiero donde las transacciones ACID de una única base son más seguras que la consistencia distribuida.
+- Si en el futuro hace falta extraer un módulo, las reglas de la sección 5 garantizan que sea posible. **No anticipes esa extracción.**
+
+---
+
+## 3. Stack tecnológico
+
+| Área | Tecnología |
+|---|---|
+| Lenguaje | Python 3.12+ |
+| Framework | Django 5.x |
+| API | Django REST Framework |
+| Base de datos | PostgreSQL 16 |
+| Tareas asíncronas | Celery + Redis (solo para tareas reales: emails, reportes pesados, importaciones) |
+| Autenticación | JWT con `djangorestframework-simplejwt` |
+| Documentación API | `drf-spectacular` (OpenAPI) |
+| Tests | `pytest`, `pytest-django`, `factory_boy` |
+| Calidad | `ruff` (lint + formato), `pre-commit`, `import-linter` |
+| Gestión de dependencias | `uv` o `poetry` (usar el que ya esté en el repo; no mezclar) |
+| Contenedores | Docker + Docker Compose |
+| CI | GitHub Actions |
+| Errores en producción | Sentry |
+
+**Regla de dependencias:** no agregues librerías nuevas sin justificarlas y pedir confirmación. Preferí la librería estándar y Django antes que un paquete externo.
+
+---
+
+## 4. Estructura del repositorio
+
+```
+finanzas/
+├── AGENTS.md                 # Este documento
+├── README.md
+├── docker-compose.yml
+├── docker-compose.prod.yml
+├── Dockerfile
+├── .env.example                # Todas las variables, sin valores secretos
+├── pyproject.toml
+├── .pre-commit-config.yaml
+├── .importlinter               # Contratos de límites entre apps
+├── manage.py
+├── config/
+│   ├── settings/
+│   │   ├── base.py
+│   │   ├── local.py
+│   │   ├── test.py
+│   │   └── production.py
+│   ├── urls.py
+│   ├── celery.py
+│   ├── wsgi.py
+│   └── asgi.py
+├── apps/
+│   ├── core/                   # Utilidades transversales, SIN lógica de negocio
+│   │   ├── models.py           # BaseModel abstracto (UUID, timestamps)
+│   │   ├── money.py            # Helpers de dinero
+│   │   ├── exceptions.py
+│   │   └── pagination.py
+│   ├── identity/               # Usuarios, autenticación, perfiles
+│   ├── ledger/                 # Libro mayor de doble entrada (núcleo)
+│   ├── payments/               # Depósitos y retiros vía proveedor externo, webhooks, conciliación
+│   ├── offers/                 # Ofertas de préstamo (monto, moneda, tasa, plazo, requisitos, estado)
+│   ├── matching/               # Búsqueda, comparación y recomendación (solo lectura, vía selectors)
+│   ├── loans/                  # Préstamos tomados, cuotas, estados
+│   ├── investments/            # Productos: plazo fijo, bono, fondo
+│   ├── budgets/                # Presupuestos, metas, alertas
+│   ├── reports/                # Resúmenes y exportaciones
+│   ├─ notifications/          # Emails y avisos
+│   └─ demo/                   # Comando `seed_demo`: escenario de demostración (sin modelos)
+├── docs/
+│   ├── architecture.md
+│   └── adr/                    # Un archivo por decisión importante
+└── .github/workflows/ci.yml
+```
+
+### Estructura obligatoria dentro de cada app de dominio
+
+```
+apps/<nombre>/
+├── __init__.py
+├── apps.py
+├── models.py
+├── services.py        # Lógica de ESCRITURA y reglas de negocio (interfaz pública)
+├── selectors.py       # Lógica de LECTURA / consultas (interfaz pública)
+├── serializers.py
+├── views.py           # Finas: validan, llaman a services/selectors, responden
+├── urls.py
+├── permissions.py
+├── signals.py         # Eventos internos (si aplica)
+├── tasks.py           # Tareas Celery (si aplica)
+├── admin.py
+├── migrations/
+└── tests/
+    ├── test_models.py
+    ├── test_services.py
+    ├── test_selectors.py
+    ├── test_api.py
+    └── factories.py
+```
+
+---
+
+## 5. Reglas de diseño (OBLIGATORIAS)
+
+### 5.1 Capas y responsabilidades
+
+- **`views.py`:** sin lógica de negocio. Solo: autenticar, validar entrada con serializers, llamar a un service o selector, devolver respuesta.
+- **`services.py`:** toda la lógica que **modifica** estado. Funciones con argumentos explícitos y tipados. Usan `transaction.atomic` cuando corresponde.
+- **`selectors.py`:** toda la lógica que **lee** datos y arma consultas (filtros, agregaciones, `select_related`/`prefetch_related`).
+- **`models.py`:** campos, constraints, métodos triviales. **Sin** lógica de negocio compleja y **sin** llamadas a servicios.
+- **Prohibido** poner lógica de negocio en serializers, signals, `save()` sobreescritos o templates.
+
+### 5.2 Límites entre apps
+
+1. Una app **solo puede usar a otra mediante su `services.py` y `selectors.py`**. Nunca importar modelos de otra app para consultarlos o modificarlos directamente. **Excepción documentada:** `signals.py` puede importar modelos de otra app para implementar la comunicación por señales (§5.3); los receptores resuelven la lógica de negocio llamando a `services.py` de la app dueña.
+2. **Prohibidas las `ForeignKey` entre apps de dominios distintos.** Referenciar con un campo `UUIDField` (ej. `user_id`) y resolver mediante el selector de la app dueña. Excepción única: `ledger` puede apuntar a `settings.AUTH_USER_MODEL`.
+3. `core` no puede importar de ninguna otra app. Las demás apps pueden importar de `core`.
+4. Estos límites se verifican con `import-linter` en CI. **Si el chequeo falla, el cambio no se acepta.**
+
+### 5.3 Comunicación entre apps
+
+- Para efectos secundarios (ej. "se creó una transacción → recalcular presupuesto"), usar **señales personalizadas de Django** definidas en la app emisora (`signals.py`) y receptores en la app interesada.
+- Los receptores que hagan trabajo pesado o con I/O externo deben delegar a una **tarea Celery**.
+- Los receptores deben ser **idempotentes** (ejecutarlos dos veces no debe romper nada).
+
+---
+
+## 6. Reglas de dinero (CRÍTICAS)
+
+1. **Nunca usar `float`** para montos. Usar `DecimalField(max_digits=18, decimal_places=2)` o enteros en la unidad mínima. **Elegir uno y usarlo en todo el proyecto**: `DecimalField` por defecto.
+2. Usar `Decimal` de Python en toda la lógica. Construir siempre desde `str`, nunca desde `float` (`Decimal("10.50")`, no `Decimal(10.5)`).
+3. Cada monto está asociado a una **moneda** (código ISO 4217, ej. `ARS`, `USD`). No sumar ni comparar montos de monedas distintas sin conversión explícita.
+4. **Las transacciones son inmutables.** No se editan ni se borran físicamente. Para corregir un error se crea una **transacción compensatoria (reverso)** que referencia la original.
+5. Todo endpoint o service que cree dinero/transacciones debe soportar una **`idempotency_key`** única para evitar duplicados por reintentos.
+6. Toda operación que afecte varios registros (ej. transferencia entre cuentas) va dentro de `transaction.atomic()` y debe bloquear filas con `select_for_update()` cuando haya riesgo de condición de carrera.
+7. El saldo de una cuenta se **deriva de las transacciones** (o se mantiene como campo denormalizado verificable contra ellas). Nunca editar un saldo "a mano".
+8. Redondeo: definir una única función en `core/money.py` y usarla en todo el proyecto. No redondear en otros lugares.
+
+## Reglas adicionales de dinero
+
+1. **Doble entrada:** cada movimiento genera asientos; débitos = créditos, validado en DB y en tests. La igualdad se garantiza en la base con un **constraint trigger diferido** de PostgreSQL: al commit de la transacción, `sum(debits) = sum(credits)`. Además, triggers bloquean `UPDATE` y `DELETE` sobre `LedgerTransaction` y `LedgerEntry` (inmutabilidad, §6 regla 4).
+2. **Custodia:** los fondos de usuarios se registran en cuentas de custodia del ledger. El total de saldos de usuarios debe coincidir con el saldo real en el banco o proveedor (conciliación diaria automática con alerta si hay diferencia).
+3. **Saldo nunca negativo:** un `user_wallet` nunca puede quedar negativo. Las cuentas de contrapartida (`custody`, `system`) reflejan el mundo exterior y **pueden** quedar negativas: la restricción aplica solo a `user_wallet`. Reservas (holds) para operaciones en curso: ** diferido a Fase 2**.
+4. **Depósito con confirmación del proveedor:** un depósito se acredita solo con confirmación del proveedor (webhook firmado, idempotente). Nunca por confirmación del cliente.
+5. **Retiros:** verificación, límites y registro de auditoría completo.
+6. **Snapshot de oferta al aceptar:** al aceptar una oferta se guarda un snapshot inmutable de sus términos (tasa, plazo, reglas), con fecha y usuario. El cronograma de cuotas se calcula una sola vez, en core/money.py con Decimal, y se persiste. Editar una oferta nunca modifica préstamos ya creados.
+7. **Estados de préstamo como máquina de estados:** transiciones válidas entre estados, en inglés: `active` | `paid` | `defaulted`. El estado `pending` **no se usa**: un préstamo nace `active` al aceptarse la oferta.
+8. **Todo movimiento por ledger:** todo movimiento de dinero, incluidos investments, pasa por ledger.
+
+## Reglas adicionales del ledger
+
+1. **`Account.balance` denormalizado:** el saldo se materializa en la columna `balance` y se mantiene igual a `sum(créditos) - sum(débitos)` de sus asientos. `CheckConstraint(balance >= 0)` **solo para `user_wallet`**. El saldo **nunca** se edita a mano: solo se modifica dentro de `services.py`, bajo `select_for_update()`, bloqueando las cuentas involucradas **en orden ascendente por `id`** (evita deadlocks). Existe un test de invariante que verifica `balance == creditos - debitos` para toda cuenta.
+2. **`idempotency_key` única por `(created_by_user_id, idempotency_key)`** (no global). Se guarda además un `request_hash` del payload: misma clave y mismo hash devuelven la transacción original; misma clave y hash distinto devuelven `409`. Ante un `IntegrityError` por concurrencia, el service reintenta y devuelve la transacción original.
+3. **Transferencias:** se identifican por `destination_account_id`. La cuenta destino debe ser de la **misma moneda**, debe ser un `user_wallet` y **no puede ser la cuenta origen**.
+4. **Reversos:** un reverso es una transacción compensatoria con `reverses` apuntando a la original (un solo reverso por original, `UniqueConstraint`). **Solo un usuario staff puede ejecutarlo y no hay endpoint público**: se dispara desde el admin. Falla con `insufficient_funds` si el reverso dejaría un `user_wallet` negativo.
+5. **Depósito/retiro simulados:** el depósito acredita el `user_wallet` y debita `custody`; el retiro hace lo inverso. Solo funcionan con `LEDGER_SIMULATED_DEPOSITS_ENABLED=True`, que **jamás** puede estar activo en `production.py` (lo garantiza un system check de Django, no `DEBUG`).
+6. **KYC obligatorio:** depósito, retiro y transferencia exigen KYC aprobada, resuelto con `identity.selectors.is_kyc_approved(user_id)`.
+7. **Límites entre apps:** `ledger` solo puede usar de `identity` sus `services.py` y `selectors.py`, **nunca** sus `models`, `views` ni `serializers`. Las referencias a usuarios se guardan como `UUIDField` (`user_id`), **sin `ForeignKey`**, para no depender de modelos de otra app.
+
+---
+
+## Reglas adicionales de ofertas y matching
+
+1. **TNA anual en `%`:** `Offer.interest_rate` es la tasa nominal anual en porcentaje (ej. `24.00` = 24% TNA). La tasa mensual equivalente es `TNA / 100 / 12`.
+2. **Cuota mensual francesa:** el cronograma se calcula **una sola vez** en `core/money.py` con `Decimal` (`french_installment`), sin redondeos intermedios; el redondeo a 2 decimales se aplica una sola vez, con `round_two` (§6 regla 8).
+3. **Crear una oferta no reserva fondos:** publicar una oferta no mueve dinero ni bloquea saldo. La reserva ocurre recién al aceptar el préstamo (Fase 3, `loans`).
+4. **Prestamista con KYC aprobado:** solo un usuario con `identity.selectors.is_kyc_approved(user_id)` puede crear o actualizar una oferta.
+5. **`matching` es solo lectura:** `matching` no escribe estado; expone únicamente selectores construidos sobre `offers.selectors`. Nunca importa `offers.models` (ni sus vistas ni serializers).
+6. **`offers` no importa `matching`:** la búsqueda y la comparación viven en `matching`; `offers` no depende de `matching` en ningún sentido.
+7. **Rango de montos en la búsqueda:** como el préstamo toma el **monto completo** de la oferta, la búsqueda filtra por rango (`amount_min` y `amount_max`), no por un monto exacto. El resto de filtros son `currency`, `max_rate` y `term_months`; el orden por defecto es `rate`, con desempate por plazo y luego monto.
+
+---
+
+## Reglas adicionales de loans
+
+1. **Aceptar una oferta es una operación atómica:** `services.accept_offer` corre dentro de un único `transaction.atomic()` que bloquea la oferta (`select_for_update`), la marca `accepted` vía `offers.services`, guarda el snapshot inmutable, calcula y persiste el cronograma de cuotas y finalmente desbrosa el capital. Si el desembolso falla (saldo insuficiente), **todo** se revierte y la oferta vuelve a estar activa.
+2. **Préstamo iniciado por un tercero:** el desembolso lo ejecuta un service interno del `ledger` que mueve dinero entre dos usuarios con `type = transfer` y una `idempotency_key` derivada del `loan_id`. Las reglas de saldo no negativo y de bloqueo de cuentas **no cambian**.
+3. **Cronograma francés:** las cuotas se calculan con `core/money.py`; la **última cuota ajusta la parte de capital** para que la suma de los capitales sea exactamente igual al principal del préstamo.
+4. **Pago de cuotas:** solo el **prestatario** puede pagar, **en orden** (no se puede pagar la cuota *n* si la *n-1* no está pagada) y por el **importe completo** de la cuota. Al pagar la última cuota el préstamo pasa a `paid`.
+5. **Vencimientos:** `services.mark_overdue(today)` marca como `overdue` las cuotas con `due_date` anterior a la fecha y pasa el préstamo a `defaulted`. Si se pagan las cuotas vencidas, el préstamo vuelve a `active`. Corre con el management command `mark_overdue_loans`.
+6. **Máquina de estados:** transiciones válidas `active → paid`, `active → defaulted`, `defaulted → active`, `defaulted → paid`. Cualquier otra transición lanza un error de dominio. El estado `pending` **no existe** en `Loan`.
+7. **Visibilidad:** solo las partes del préstamo (prestatario y prestamista) pueden verlo; un tercero recibe `404`.
+
+---
+
+## Reglas adicionales de investments
+
+1. **Interés simple:** `core.money.simple_interest(amount, tna, days)` calcula el interés con `Decimal` y redondea **una sola vez**, al final.
+2. **Apertura:** `services.open_position` exige KYC aprobado, producto activo, monto `>= min_amount` y la misma moneda que el producto. Todo corre dentro de un `transaction.atomic()`: mueve el saldo del `user_wallet` a la cuenta `system` de inversiones (vía `ledger`) y crea la posición. Si el saldo no alcanza, **no** queda posición ni movimiento.
+3. **Liquidación:** `services.settle_matured_positions(today)` paga el capital y el interés desde la cuenta `system` al `user_wallet` (el interés con `type = interest` en el ledger), **una sola vez por posición** (idempotente) y la posición pasa a `matured`.
+4. **Sin cancelación anticipada:** no existe ningún camino para cancelar una posición antes de su vencimiento.
+5. **La cuenta `system` es la contraparte de las inversiones:** el invariante del ledger por moneda es `Σ(custody) + Σ(system) = -Σ(user_wallet)`, es decir la suma de todos los saldos es cero.
+6. **Solo staff crea productos:** los `InvestmentProduct` se dan de alta únicamente desde el admin de Django; la API solo los lista.
+
+---
+
+## 7. Modelos base (punto de partida)
+
+Todos los modelos heredan de `core.models.BaseModel`:
+
+```python
+class BaseModel(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+```
+
+### `identity`
+
+- **User:** `AbstractUser` con email como login y **sin `username`** (migración que lo elimina). `UserManager` propio: `create_user(email, password)`. Clave primaria `UUID`.
+- **Profile:** `user` (1:1 con User), `phone_number`, `date_of_birth`, `country` (ISO 3166-1 alpha-2).
+- **KYCVerification:** `user` (FK, historial de solicitudes), `status` (`pending` | `approved` | `rejected`), `requested_at`, `resolved_at` (nullable), `resolved_by_user_id` (`UUIDField` nullable), `documents` (JSON, **solo metadata**, sin datos sensibles). **Una sola verificación `pending` por usuario** (`UniqueConstraint` condicional).
+
+### `ledger`
+
+- **Account:** `user_id` (`UUIDField`, nullable: `null` solo para `custody`/`system`), `currency` (`ARS` | `USD`), `kind` (`user_wallet` | `custody` | `system`), `balance` (`Decimal`, denormalizado, §Reglas del ledger 1). **Unico** por `(user_id, currency)` cuando `kind = user_wallet`, y por `(kind, currency)` cuando `kind` es `custody` o `system`. `CheckConstraint(balance >= 0)` **solo para `user_wallet`**. **Sin `ForeignKey` a `identity.User`.**
+- **LedgerTransaction:** `type` (`deposit` | `withdrawal` | `transfer` | `interest` | `fee` | `reversal`), `idempotency_key` (única por `(created_by_user_id, idempotency_key)`), `request_hash`, `created_by_user_id` (`UUIDField`), `destination_account_id` (`UUIDField`, solo transferencias), `occurred_at`, `description`, `reverses` (FK a sí misma, opcional, un solo reverso por original). **Regla DB:** por cada transacción, suma de débitos = suma de créditos (constraint trigger diferido). Inmutable: triggers bloquean `UPDATE` y `DELETE`.
+- **LedgerEntry:** `ledger_transaction`, `account`, `direction` (`debit` | `credit`), `amount` (`Decimal`, `> 0`), `currency`. **Por cada LedgerTransaction, sum(debits) = sum(credits).** Inmutable: triggers bloquean `UPDATE` y `DELETE`.
+
+### `payments`
+
+- **Payment:** `user_id` (`UUIDField`), `direction` (`deposit` | `withdrawal` | `transfer`), `amount` (`Decimal`, `> 0`), `currency`, `provider` (código proveedor externo), `provider_reference` (único), `status` (`pending` | `confirmed` | `failed` | `reversed`), `idempotency_key` (único por `(user_id, idempotency_key)`) con `request_hash`, `ledger_transaction_id` (`UUIDField`, nullable), `destination_user_id` (`UUIDField`, nullable: solo transferencias entre usuarios de la plataforma), `payload` (JSON), `error`. El `Payment` es la **intención** de mover dinero: el saldo lo mueve el ledger (ADR 0008).
+- **WebhookEvent:** `provider`, `external_id` (único por `(provider, external_id)`), `event_type`, `status` (`received` | `processed` | `ignored` | `failed`), `payment_id` (`UUIDField`, nullable), `payload` (JSON), `error`.
+
+### `offers`
+
+- **Offer:** `lender_user_id` (`UUIDField`, sin `ForeignKey`), `amount` (`Decimal`, `> 0`), `currency` (`ARS` | `USD`), `interest_rate` (`Decimal`, TNA anual en `%`, `> 0`), `term_months` (`Integer`, `> 0`), `requirements` (texto), `status` (`active` | `expired` | `accepted`). Crear una oferta **no reserva fondos** (§Reglas de ofertas 3).
+
+### `loans`
+
+- **Loan:** `borrower_user_id` (`UUIDField`), `lender_user_id` (`UUIDField`), `offer_id` (`UUIDField`), `principal` (`Decimal`, `> 0`), `currency` (`ARS` | `USD`), `interest_rate` (`Decimal`, TNA anual en `%`), `term_months` (`Integer`, `> 0`), `status` (`active` | `paid` | `defaulted`), `accepted_at`. `idempotency_key` **única por `(borrower_user_id, idempotency_key)`** con `request_hash`: misma clave y mismo hash devuelven el préstamo original; hash distinto devuelve `409`.
+- **OfferTermsSnapshot:** `loan` (único por loan), `accepted_at`, `accepted_by_user_id`, `snapshot_data` (JSON con tasa, plazo, reglas), `is_immutable` (siempre `True`).
+- **Installment:** `loan`, `number` (único por loan), `due_date`, `principal_amount` (`Decimal`, `> 0`), `interest_amount` (`Decimal`, `>= 0`), `amount` (`Decimal`, `> 0`, cuota total), `status` (`pending` | `paid` | `overdue`), `paid_at` (nullable).
+
+### `investments`
+
+- **InvestmentProduct:** `type` (`fixed_term`), `currency` (`ARS` | `USD`), `term_days` (`Integer`, `> 0`), `annual_rate_tna` (`Decimal`, TNA anual en `%`, `> 0`), `min_amount` (`Decimal`, `> 0`), `status` (`active` | `matured` | `cancelled`). **Se gestiona solo por staff desde el admin de Django.**
+- **Position:** `user_id` (`UUIDField`), `product` (FK a `InvestmentProduct`), `amount` (`Decimal`, `> 0`), `status` (`active` | `matured`), `opened_at`, `maturity_date`, `interest_amount` (`Decimal`, `>= 0`, calculado al abrir), `idempotency_key` **única por `(user_id, idempotency_key)`** con `request_hash`.
+
+### `budgets`
+
+- **Budget:** `user_id`, `category_id` (UUID, sin FK), `period` (`monthly`), `limit_amount` (`Decimal`, `> 0`), `currency`, `alert_threshold` (`Integer`, porcentaje).
+- **Goal:** `user_id`, `name`, `target_amount` (`Decimal`, `> 0`), `current_amount` (`Decimal`, `>= 0`), `deadline`.
+- **TODO (Fase 6):** categorías de gasto personal.
+
+**Regla de dinero:** todos los montos son `Decimal` con `constraint amount > 0` donde corresponda. Ninguna app de dominio distinto puede tener ForeignKey a models de otra app; usar `UUIDField` para referencias.
+
+---
+
+## 8. Convenciones de API
+
+- Prefijo y versión: `/api/v1/`.
+- Recursos en plural y en inglés: `/api/v1/accounts/`, `/api/v1/transactions/`.
+- Formato: JSON. Fechas en ISO 8601 (UTC). Montos como **string** decimal en las respuestas (`"1250.50"`) para evitar errores de coma flotante en el cliente.
+- Identificadores públicos: UUID. Nunca exponer IDs autoincrementales.
+- Paginación obligatoria en listados (por cursor para transacciones; límite máximo por página).
+- Filtros y ordenamiento mediante `django-filter` o parámetros explícitos documentados.
+- Errores con un formato uniforme:
+
+```json
+{
+  "error": {
+    "code": "insufficient_funds",
+    "message": "Mensaje legible en español.",
+    "details": {}
+  }
+}
+```
+
+- Códigos HTTP correctos: `201` crear, `400` validación, `401` sin autenticar, `403` sin permiso, `404` no encontrado, `409` conflicto (ej. idempotency key repetida con distinto payload).
+- Toda vista debe estar documentada con `drf-spectacular` (`extend_schema`).
+
+---
+
+## 9. Seguridad (OBLIGATORIO)
+
+1. **Aislamiento por usuario:** cada consulta filtra por el usuario autenticado. Un usuario nunca debe poder leer ni modificar datos de otro. **Cada endpoint debe tener un test que lo verifique** (intento de acceso cruzado → 404 o 403).
+2. Secretos solo en variables de entorno. **Nunca** commitear claves, tokens ni contraseñas. Mantener `.env.example` actualizado.
+3. `DEBUG=False` en producción. `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` y `CORS_ALLOWED_ORIGINS` configurados explícitamente (nada de `*`).
+4. HTTPS obligatorio en producción (`SECURE_SSL_REDIRECT`, cookies seguras, HSTS).
+5. Contraseñas con los validadores de Django activos; hasher Argon2 preferido.
+6. Rate limiting (throttling de DRF) en login, registro y recuperación de contraseña.
+7. Nunca registrar en logs: contraseñas, tokens, números de tarjeta ni datos personales sensibles.
+8. **No almacenar datos de tarjetas.** Si hace falta cobrar, se delega a un proveedor de pagos.
+9. **KYC obligatorio:** la verificación KYC es obligatoria antes de operar con dinero. No se permiten depósitos, retiros ni operaciones de inversión sin KYC completado.
+10. Auditoría: registrar quién hizo qué y cuándo en operaciones financieras.
+11. Usar siempre el ORM o consultas parametrizadas. **Prohibido** construir SQL concatenando strings.
+12. **CORS:** la API responde el CORS porque el front vive en otro origen. `CORS_ALLOWED_ORIGINS` viene del entorno y **nunca** es `*` (lista vacía = ningún origen). Se permiten **credenciales** (el refresh token viaja en una cookie httpOnly, ADR 0014) y el header `Idempotency-Key` está permitido (las operaciones de dinero lo exigen). La cookie de refresh usa `SameSite=Lax` si el front y la API comparten sitio; si el front está en otro dominio, `SameSite=None` (siempre con `Secure`).
+
+---
+
+## 10. Testing
+
+- **Cobertura mínima:** 90% en `services.py` de `ledger` y `budgets`; 80% general.
+- Tests obligatorios para:
+  - Toda regla de dinero (redondeo, saldos, reversos, transferencias, idempotencia).
+  - Permisos y aislamiento entre usuarios.
+  - Condiciones de borde (montos cero, negativos, muy grandes, monedas distintas).
+  - Concurrencia en operaciones que modifican saldos.
+- Usar `factory_boy` para datos de prueba. No usar fixtures JSON gigantes.
+- Los tests deben correr contra **PostgreSQL real** (no SQLite).
+- **Todo bug corregido debe incluir un test que lo reproduzca.**
+- No se da por terminada una tarea si los tests no pasan.
+
+---
+
+## 11. Estilo de código
+
+- Formato y lint con `ruff`. Línea máxima: 100 caracteres.
+- **Type hints** en todas las funciones de `services.py` y `selectors.py`.
+- Nombres descriptivos en inglés; funciones en `snake_case`, clases en `PascalCase`.
+- Funciones cortas con una sola responsabilidad. Si una función supera ~40 líneas, evaluar dividirla.
+- Docstrings en español para services y selectors públicos (qué hace, argumentos, excepciones).
+- Excepciones de dominio propias (en `core/exceptions.py` o por app); no usar `Exception` genérica.
+- Nada de `print()` para depurar: usar `logging`.
+- Sin código comentado, sin `TODO` sin explicación, sin "magia" innecesaria.
+
+---
+
+## 11.b Metodología: TDD y código limpio
+
+### TDD (Test-Driven Development)
+
+1. **Prohibido escribir código de producción sin antes tener un test que falle.**
+   El flujo comienza siempre con un test; sin test, no hay producción.
+2. **Red: escribí UN test, ejecutálo y confirmá que falla por la razón correcta.**
+   El test debe fallar por una razón esperada (módulo inexistente, función sin implementar, etc.). Si el test ya pasa, no estás escribiendo un test Rojo nuevo.
+3. **Green: escribí el mínimo código para que pase. Nada más.**
+   Implementá solo lo necesario para que el test pase. Sin funcionalidad extra, sin optimización prematura.
+4. **Refactor: limpiá el código con todos los tests en verde.**
+   Una vez que el test pasa, mejorá la estructura, nombres y diseño del código, asegurándote de que todos los tests sigan verdes.
+5. **Repetí en ciclos pequeños, un comportamiento por vez.**
+   Un test pequeño por cada comportamiento nuevo. No intentes cubrir todo el sistema de una sola vez.
+6. **Mostrá la salida real de pytest en cada paso (rojo y verde). Sin evidencia, el paso no cuenta.**
+   Los logs de los tests deben mostrarse y guardarse. Un paso "Rojo" o "Verde" sin salida registrada no es válido.
+7. **Nunca modifiques ni borres un test para hacerlo pasar.**
+   Si el test falla, el código está mal o falta implementar. Si el requisito cambió, avisá y esperá confirmación antes de modificar tests.
+8. **Bug: primero un test que lo reproduce, después el arreglo.**
+   Todo bug debe tener un test que lo reproduzca antes de implementar la corrección. El test reproduce el bug, luego se corrige el código.
+9. **Empezá siempre por los tests de las reglas de dinero (ledger, cuotas, redondeo, idempotencia).**
+   El manejo de dinero es crítico; la cobertura mínima es 90% en services.py de ledger y budgets.
+
+### CÓDIGO LIMPIO
+
+1. **Nombres que revelen la intención; sin abreviaturas crípticas.**
+   Variable y función nombres deben decir "qué hacen", no "cómo lo hacen".
+2. **Funciones cortas con una sola responsabilidad.**
+   Si una función supera ~40 líneas, evaluar dividirla. Cada función debe hacer una cosa bien.
+3. **Sin duplicación, pero sin abstracciones prematuras.**
+   Elimina la duplicación que ya existen; no construyas lo que no se pidió aún (YAGNI).
+4. **Si el código necesita un comentario para entenderse, reescribilo más claro.**
+   Código autoexplicativo es preferible a comentarios enredados.
+5. **Errores con excepciones de dominio, nunca silenciados.**
+   Usá excepciones propias de la aplicación (en `core/exceptions.py` o por app); no usar `Exception` genérica ni `try/except` vacíos.
+6. **Sin código muerto ni comentado.**
+   Todo código debe estar activo y justificado. Remover código que ya no se usa.
+7. **Dejá el código mejor de como lo encontraste, dentro del alcance de la tarea.**
+   Cada cambio debe mejorar la calidad del proyecto, aunque sea un pequeño paso.
+
+### PROFESIONALISMO
+
+1. **No declares una tarea terminada sin tests en verde, ruff e import-linter sin errores.**
+   El "Done" incluye la evidencia de tests, linting y límites de importación.
+2. **Si algo es ambiguo o riesgoso, avisame antes de implementar.**
+   Dudas o riesgos deben comunicarse antes de escribir código, no después.
+3. **Si una instrucción mía contradice AGENTS.md, advertilo antes de actuar.**
+   Las contradicciones al documento fuente deben señalarse antes de proceder.
+4. **Cambios pequeños y commits pequeños.**
+   Commits atómicos con mensajes claros (Conventional Commits). Un cambio por commit.
+
+---
+
+## 12. Base de datos y migraciones
+
+- Una sola base: PostgreSQL. Configuración por `DATABASE_URL`.
+- **Toda migración se revisa antes de aplicarse.** Nunca editar una migración ya aplicada en producción: crear una nueva.
+- Migraciones destructivas (borrar columnas/tablas) se hacen en dos pasos: primero dejar de usar el campo, después eliminarlo en un release posterior.
+- Definir constraints e índices **en la base de datos** (`CheckConstraint`, `UniqueConstraint`, `Index`), no solo en el código.
+- Evitar consultas N+1: usar `select_related` / `prefetch_related` y revisarlo en los selectors.
+- Backups automáticos diarios de PostgreSQL en producción, con prueba periódica de restauración.
+
+---
+
+## 13. Flujo de trabajo (Git)
+
+- Rama principal: `main` (siempre desplegable). Trabajo en ramas `feature/<descripcion>`, `fix/<descripcion>`.
+- Commits pequeños con mensajes en inglés siguiendo **Conventional Commits** (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`).
+- Antes de cada commit deben pasar: `ruff`, `import-linter` y los tests.
+- CI en cada push: lint, límites de importación, tests, chequeo de migraciones faltantes (`makemigrations --check`).
+- Decisiones de arquitectura importantes se documentan en `docs/adr/` (un archivo corto por decisión: contexto, decisión, consecuencias).
+
+---
+
+## 14. Entorno y despliegue
+
+- **Desarrollo:** `docker compose up` debe levantar todo (Django, PostgreSQL, Redis, worker de Celery). Un `Makefile` con comandos comunes: `make up`, `make test`, `make lint`, `make migrate`, `make shell`.
+- **Producción:** un VPS con Docker Compose: Django + Gunicorn, PostgreSQL, Redis, worker de Celery, proxy inverso (Nginx o Caddy) con HTTPS.
+- Variables de entorno documentadas en `.env.example`. Settings separados por entorno.
+- Logs estructurados; Sentry para errores; endpoint `/health/` para chequeo de estado.
+
+---
+
+## 15. Plan de desarrollo por fases
+
+Trabajar **una fase a la vez** y no avanzar sin confirmación del desarrollador.
+
+**Fase 0: Cimientos**
+Estructura del repo, Docker Compose, settings por entorno, `pre-commit`, CI, `import-linter`, `BaseModel`, modelo de usuario personalizado, `core/money.py`.
+
+**Fase 1: identity y ledger**
+`identity` (registro, login JWT, perfil) y `ledger` (cuentas, categorías, transacciones, reversos, transferencias, idempotencia) con depósitos simulados. Tests completos de dinero y permisos.
+
+**Fase 2: offers y matching**
+`offers` (ofertas de préstamo del prestamista) y `matching` (búsqueda, comparación y recomendación vía selectors, solo lectura).
+
+**Fase 3: loans y cuotas**
+`loans` (préstamos tomados, cuotas, estados). Máquina de estados con transiciones válidas.
+
+**Fase 4: investments**
+`investments` (plazo fijo primero; bonos y fondos después, requieren precios externos).
+
+**Fase 5: budgets, reports y notifications**
+budgets, reports (resúmenes y exportaciones) y notifications (emails).
+
+**Fase 6: payments**
+`payments` (proveedor real, sandbox primero; depósitos y retiros vía webhooks, conciliación). Va **al final**: requiere un proveedor real y los saldos ya están modelados. **Implementada (2026-10-22)**: app `payments` con la interfaz `PaymentProvider`, el proveedor simulado (demo y tests) y el de Mercado Pago; el saldo lo mueve el ledger y el webhook firmado es el que confirma (ADR 0008). Falta el **contrato comercial** con el proveedor y las credenciales reales: sin ellas, el proveedor real no se puede construir.
+
+**Fase 7: producción**
+Hardening de seguridad, backups, monitoreo, documentación final y despliegue.
+
+**App `demo` (herramienta de demostración, sin modelos)**
+`apps/demo/` no tiene modelos: es el comando `manage.py seed_demo`, que siembra un
+escenario completo (tres personas con KYC aprobado, un préstamo con su primera cuota
+pagada, un plazo fijo, un presupuesto con alerta disparada y dos pagos) con **claves
+de idempotencia fijas**, de modo que se puede volver a sembrar sin duplicar un solo
+movimiento. La app usa únicamente los `services` y los `selectors` de las demás apps
+(los dos modelos que necesita, el usuario y el producto de plazo fijo, los resuelve
+con `django.apps.apps.get_model()`), y el contrato `import-linter`
+`demo-only-services-and-selectors` lo verifica.
+
+---
+
+## 16. Cómo debe trabajar la IA (instrucciones directas)
+
+**Antes de escribir código:**
+1. Leé este documento completo.
+2. Confirmá en qué fase estamos y qué se pide.
+3. Si la tarea es ambigua o toca una decisión no definida, **hacé preguntas concretas antes de implementar**.
+
+**Al escribir código:**
+1. Respetá la estructura de carpetas y las capas (sección 4 y 5) sin excepciones.
+2. Entregá cambios **pequeños y completos**: código + tests + migración (si aplica) en el mismo paso.
+3. Explicá brevemente **qué hiciste y por qué**, y señalá cualquier decisión que hayas tenido que tomar.
+4. Si encontrás un error, riesgo o una mejor alternativa, **decilo**, aunque contradiga lo pedido.
+
+**Prohibiciones explícitas:**
+- No introducir microservicios, brokers, ni nuevas bases de datos.
+- No usar `float` para dinero.
+- No editar ni borrar transacciones: se compensan.
+- No crear `ForeignKey` entre apps de dominios distintos.
+- No poner lógica de negocio en views, serializers, signals ni modelos.
+- No agregar dependencias sin pedir confirmación.
+- No omitir tests ni "dejarlos para después".
+- No commitear secretos.
+- No inventar requisitos, campos o endpoints que no estén definidos: preguntar.
+
+**Definición de "terminado" (checklist):**
+- [ ] Cumple la estructura y reglas de este documento.
+- [ ] Tests nuevos escritos y toda la suite pasa.
+- [ ] `ruff` e `import-linter` sin errores.
+- [ ] Migraciones generadas y revisadas.
+- [ ] Endpoints documentados en OpenAPI.
+- [ ] Permisos y aislamiento entre usuarios verificados con tests.
+- [ ] Sin secretos ni datos sensibles en el código o los logs.
+- [ ] Documentación actualizada si cambió algo relevante (README / ADR).
+- [ ] **Ciclo Red-Green-Refactor evidenciado con la salida de pytest.**
+
+---
+
+## 17. Registro de cambios de este documento
+
+Todo cambio a este archivo debe ser aprobado por el desarrollador y anotarse aquí.
+
+| Fecha | Cambio |
+|---|---|
+| 2026-10-20 | Versión inicial: arquitectura de monolito modular. |
+| 2026-10-20 | Actualización de contexto, apps, reglas de dinero, modelos, seguridad y plan de fases para Presto con marketplace de préstamos, custodia, KYC, y nuevas apps (payments, offers, matching, loans, investments). |
+| 2026-10-20 | Sección 11.b añadida: Metodología TDD y código limpio. Sección 16 actualizada: item "Ciclo Red-Green-Refactor evidenciado con la salida de pytest". |
+| 2026-10-20 | Sección 7 actualizada: modelos de identidad, ledger (custodia doble entrada), payments, offers, loans, investments, budgets, con constraints de dinero y referencias UUID entre apps. |
+| 2026-10-20 | **Fase 1A (identity) — decisiones registradas.** (a) `User` sin `username` con `UserManager` por email; (b) `Profile` 1:1 con `User` y campos `phone_number`, `date_of_birth`, `country`; (c) `KYCVerification` con FK a `User` e historial, `UniqueConstraint` condicional de una sola verificación `pending` por usuario, campos `status`/`requested_at`/`resolved_at`/`resolved_by_user_id`/`documents`; (d) la resolución de KYC la hace una acción del Django admin que invoca `services.resolve_kyc`; (e) throttling con scope: login `5/min`, register `5/hour`; (f) log de decisiones de KYC con `logging`, sin datos sensibles. Extras: `selectors.is_kyc_approved(user_id)`, refresh de JWT con rotación y blacklist, `EXCEPTION_HANDLER` con el formato de error de §8, `drf-spectacular` en todas las vistas. |
+| 2026-10-20 | **Correcciones de nomenclatura y constraints.** Estados de préstamo en inglés: `active` \| `pending` \| `paid` \| `defaulted` (§6 regla 7 y §7 `loans`). `Account` **sin** campo `amount` ni constraint `amount >= 0`: el saldo se deriva de los asientos (§6 regla 7). `KYCVerification` con campos en inglés (`status`, `requested_at`, `resolved_at`, `resolved_by_user_id`, `documents`) (§7 `identity`). `signals.py` como **excepción documentada** a la regla de imports entre apps (§5.2 regla 1), con la lógica de negocio delegada a `services.py` de la app dueña. |
+| 2026-10-20 | **Fase 1B (ledger) — decisiones registradas en §6, §7 y acá.** `Account.balance` denormalizado con `CheckConstraint(balance >= 0)` **solo para `user_wallet`**; el saldo solo se modifica en `services.py` bajo `select_for_update()` bloqueando cuentas **en orden ascendente por `id`**; test de invariante `balance == creditos - debitos`. Doble entrada garantizada en DB con **constraint trigger diferido** de PostgreSQL (`sum(debits) = sum(credits)` por transacción) y **triggers que bloquean `UPDATE`/`DELETE`** en `LedgerTransaction` y `LedgerEntry`. `idempotency_key` única por `(created_by_user_id, idempotency_key)` con `request_hash`: mismo hash devuelve la original, hash distinto devuelve `409`, `IntegrityError` concurrente devuelve la original. **Sin `Hold` en 1B** (diferido a Fase 2). System check que **falla** si `LEDGER_SIMULATED_DEPOSITS_ENABLED=True` en `production.py` (no se usa `DEBUG`). Transferencias con `destination_account_id` (misma moneda, no a sí mismo, destino `user_wallet`). Reversos **solo staff**, **sin endpoint** (se disparan desde el admin), fallan con `insufficient_funds` si dejarían un `user_wallet` negativo. Depósito: acredita `user_wallet`, debita `custody`; retiro al revés. |
+| 2026-10-20 | **Conflictos de AGENTS.md resueltos y registrados (Fase 1B).** (1) El saldo no negativo aplica **solo a `user_wallet`**: las cuentas de contrapartida (`custody`, `system`) reflejan el mundo exterior y pueden quedar negativas (§6 regla 3 y §Reglas del ledger 3). (2) `Account` y `LedgerTransaction` referencian al usuario con **`UUIDField` sin `ForeignKey`**, de modo que se cumplen tanto la prohibición general de §7 como la excepción de §5.2 (§Reglas del ledger 7). (3) La unicidad de `Account` se define por `(user_id, currency)` para `user_wallet` y por `(kind, currency)` para `custody`/`system` (§7 `ledger`). (4) `ledger` solo importa de `identity` sus `services.py` y `selectors.py`, nunca `models`, `views` ni `serializers`; se verifica con `import-linter` (§5.2 regla 1 y §Reglas del ledger 7). |
+| 2026-10-20 | **Bloque 3 (offers + matching) — nuevo orden y decisiones registradas.** **Nuevo orden de fases:** `offers` + `matching` → `loans` → `payments` (§15). Decisiones: (a) `Offer.interest_rate` es la **TNA anual en `%`**; la tasa mensual equivalente es `TNA / 100 / 12`; (b) la **cuota mensual francesa** se calcula **una sola vez** en `core/money.py` con `Decimal` (`french_installment`), redondeando una única vez con `round_two`; (c) **crear una oferta no reserva fondos**: la reserva ocurre al aceptar el préstamo; (d) el **prestamista necesita KYC aprobado** para crear o actualizar una oferta; (e) `matching` es **solo lectura** y se apoya únicamente en `offers.selectors` (nunca `offers.models`); (f) `offers` **no importa** `matching`. Nueva sección §Reglas adicionales de ofertas y matching. |
+| 2026-10-20 | **Búsqueda por rango de montos:** como el préstamo toma el **monto completo** de la oferta, el filtro `amount` de la búsqueda se reemplaza por `amount_min` y `amount_max` (§Reglas de ofertas 7). Los selectores de `offers` y `matching` y los query params de `GET /api/v1/matching/offers/` quedan alineados con el nuevo contrato. |
+| 2026-10-20 | **Bloque 4 (loans) — decisiones registradas.** Nueva sección §Reglas adicionales de loans. Modelos: `Loan` con estados `active` \| `paid` \| `defaulted` (**el estado `pending` no se usa**, §6 regla 7 y §7 `loans`), `OfferTermsSnapshot` inmutable e `Installment`. `idempotency_key` **única por `(borrower_user_id, idempotency_key)`** con `request_hash`: misma clave y mismo payload devuelven el préstamo original. `services.accept_offer`: prestatario con **KYC aprobado**, que **no** puede aceptar su propia oferta; dentro de un único `transaction.atomic()` bloquea la oferta, la marca `accepted` vía `offers.services`, guarda el snapshot, calcula el cronograma francés con `core/money.py` (**la última cuota ajusta el capital** para que la suma iguale el principal) y desbrosa lender→borrower; si falta saldo, todo se revierte. El `ledger` suma un **service interno** que mueve dinero entre dos usuarios **iniciado por un tercero**, con `type = transfer`, descripción y `idempotency_key` derivada del `loan_id`, **sin cambiar** las reglas de saldo no negativo. `services.pay_installment`: solo el prestatario, **en orden**, por la **cuota completa**, borrower→lender; al pagar todas el préstamo pasa a `paid`. `services.mark_overdue(today)` + management command `mark_overdue_loans`: cuota vencida → `overdue` y préstamo → `defaulted`; al pagar las vencidas vuelve a `active`. Máquina de estados con transiciones válidas `active → paid`, `active → defaulted`, `defaulted → active`, `defaulted → paid`; las inválidas lanzan error de dominio. Endpoints `/api/v1/loans/`: `POST` (offer_id + header `Idempotency-Key`), `GET` lista propia (prestatario o prestamista), `GET /{id}/` con snapshot y cuotas, `POST /{id}/installments/{number}/pay/`; **solo las partes ven el préstamo, un tercero recibe `404`**; con `drf-spectacular`. Contratos `import-linter`: `loans` solo usa `services` y `selectors` de `ledger`, `offers` e `identity`; `ledger` y `offers` no importan `loans`. Nuevo orden de bloques: **Bloque 4 = loans**, Bloque 5 = payments. |
+| 2026-10-20 | **Bloque 5 (investments, plazo fijo) — decisiones registradas.** **Nuevo orden de fases:** `investments` → `budgets`/`reports`/`notifications` → `payments` **al final** (§15). Modelos: `InvestmentProduct` (`type = fixed_term`, `currency`, `term_days`, `annual_rate_tna`, `min_amount`, `status` `active`\|`matured`\|`cancelled`, **solo staff vía admin**) y `Position` (`user_id` `UUIDField`, `product`, `amount > 0`, `status` `active`\|`matured`, `opened_at`, `maturity_date`, `interest_amount` calculado al abrir, `idempotency_key` única por `(user_id, key)` con `request_hash`). `core.money.simple_interest(amount, tna, days)` con `Decimal` y **un solo redondeo**. `services.open_position`: KYC aprobado, producto activo, monto `>= min_amount` y misma moneda; en `transaction.atomic()` mueve `user_wallet` → cuenta `system` de inversiones por el `ledger` y crea la posición. `services.settle_matured_positions(today)` + management command pagan capital e interés desde la cuenta `system` al `user_wallet` (interés con `type = interest`), **una vez por posición** (idempotente) y la posición pasa a `matured`. **Sin cancelación anticipada**; cambios mínimos en `ledger`. Endpoints `/api/v1/investments/products/` (lista activos) y `/api/v1/investments/positions/` (`POST`, `GET` propias, `GET` detalle; terceros `404`) con `drf-spectacular`. Contratos `import-linter`: `investments` solo usa `services` y `selectors` de `ledger` e `identity`; `ledger` no importa `investments`. Nueva sección §Reglas adicionales de investments. |
+| 2026-10-21 | **Bloque 6a (reports + notifications) — decisiones registradas.** Nueva sección §Reglas adicionales de reports y notifications. `reports` es **de solo lectura**: expone selectores que agregan sobre `ledger`, `loans` e `investments` y **nunca escribe**; los endpoints aceptan `currency` y un rango de fechas (máximo 12 meses) y la exportación a CSV neutraliza la inyección de fórmulas. `notifications` **observa** lo que pasa: recibe señales de las demás apps y crea `Notification` + `NotificationPreference` por usuario y tipo de evento (`installment_due_soon`, `installment_overdue`, `investment_settled`, `budget_alert`); el envío es una **tarea Celery** y el receptor es idempotente. Las preferencias se guardan por `(usuario, tipo de evento)` y una preferencia apagada impide crear el aviso. Los avisos **no incluyen saldos completos ni datos de KYC**. |
+| 2026-10-21 | **Bloque 6b (budgets) — decisiones registradas.** Nueva sección §Reglas adicionales de budgets. El **importe del gasto no se guarda**: `Expense` solo apunta al `ledger_transaction_id` y el monto se **deriva del ledger al leer**, en lote (`ledger.selectors.list_movement_details` + `loans.selectors.list_loan_movement_breakdowns`), de modo que `budgets` no puede mostrar un importe que contradiga al ledger. `Category` es un modelo propio con FK **interna** a la app (AGENTS §5.2 solo prohíbe las FK *entre* apps de dominio). El gasto cuenta solo si el movimiento sale de la billetera del usuario y el crédito no va a otra cuenta del propio usuario ni a la cuenta `system`; el **desembolso** de un préstamo no cuenta (el dinero se convierte en un activo) y el **pago de una cuota** cuenta solo por el **interés** (el capital es amortización). Un presupuesto es único por `(usuario, categoría, período, moneda)` y el gasto se filtra por la moneda: nunca se suman ARS y USD. El `alert_threshold` es un porcentaje entre 0 y 100, con `CheckConstraint` en la base. Cobertura mínima del 90% en `budgets/services.py`. |
+| 2026-10-21 | **Modo demo (`DEMO_MODE`).** Con `DEMO_MODE=true` la aplicación corre como demostración: el dinero simulado queda permitido (el system check `ledger.E001` no lo bloquea) y el backend de email pasa a la **consola** (los avisos salen en los logs del worker). El modo demo **nunca** habilita `LEDGER_SIMULATED_DEPOSITS_ENABLED` por sí solo: las dos variables se controlan por separado y `production.py` sigue exigiendo que el dinero simulado esté apagado salvo que `DEMO_MODE` esté activo. El endpoint `GET /api/v1/meta/` informa el modo y si el dinero es simulado, y `GET /health/` es público. |
+| 2026-10-21 | **Auditoría final del backend — correcciones registradas.** (a) **Validadores de contraseña de Django activos** (§9.5): los cuatro validadores están en `AUTH_PASSWORD_VALIDATORS`, el service `identity.register_user` valida la contraseña y la vista responde `400` con el formato de error de §8; el `min_length` del serializer queda en 8, alineado con el validador de Django. (b) **HSTS en producción** (§9.4): `SECURE_HSTS_SECONDS` (un año) y `SECURE_HSTS_INCLUDE_SUBDOMAINS` en `production.py`; el **preload queda apagado** porque es irreversible. (c) `update_offer` y `expire_offer` corren dentro de `transaction.atomic()` y leen la oferta con `select_for_update()` (AGENTS §6 regla 6): sin el bloqueo, dos escrituras simultáneas se pisan. (d) **Los contenedores de la aplicación no corren como root**: la imagen crea el usuario `presto` (uid 1000) y los servicios `web`, `worker` y `beat` lo usan. (e) El **health check de producción** manda un `Host` permitido: Django responde `400` cuando el `Host` no está en `ALLOWED_HOSTS` y el chequeo interno usa `127.0.0.1`. (f) `apps/`, `apps/core/` y `apps/identity/` tienen su `__init__.py` (§4). (g) `.env.example` documenta `DEMO_MODE` y `LEDGER_SIMULATED_DEPOSITS_ENABLED`, y `.env.prod.example` documenta `SECURE_HSTS_SECONDS`. |
+| 2026-10-21 | **Documentación del proyecto.** `docs/architecture.md` describe la arquitectura real (apps, capas, invariantes del dinero, recorrido de un movimiento) y los ADR 0005 (saldo desnormalizado), 0006 (doble entrada con constraint trigger diferido) y 0007 (orden de las apps) documentan las decisiones que faltaban. El `README.md` lista la estructura real, los endpoints, las tareas de beat y el modo demo. |
+| 2026-10-22 | **O1 (payments) — app creada y verificada.** La app `payments` es la puerta de entrada del dinero: el `Payment` es la **intención** de mover dinero y **el saldo lo mueve el ledger** (§6 regla 1 y ADR 0008). Modelos: `Payment` (`direction` `deposit` \| `withdrawal` \| `transfer`, `status` `pending` \| `confirmed` \| `failed` \| `reversed`, `provider`, `provider_reference` único, `idempotency_key` única por `(user_id, idempotency_key)` con `request_hash`, `ledger_transaction_id`, `destination_user_id`, `payload`, `error`) y `WebhookEvent` (único por `(provider, external_id)`). El backend habla con el proveedor a través de la interfaz `PaymentProvider`: `SimulatedProvider` (demo y tests, no llama a nadie) y `MercadoPagoProvider` (firma HMAC-SHA256 del webhook sobre el manifest `id;request-id;ts` más el cuerpo crudo, con antigüedad máxima y timeout configurables). El saldo se mueve cuando el proveedor confirma: de inmediato en el modo simulado y en las transferencias internas (los dos usuarios están dentro de la plataforma), y con el **webhook firmado** cuando el proveedor es real; con la firma inválida el webhook responde `401` y **no se toca el ledger**. Los pagos exigen **KYC aprobado** (§6 regla 8) y el header `Idempotency-Key` es obligatorio. Endpoints: `GET/POST /api/v1/payments/`, `GET /api/v1/payments/{id}/` y `POST /api/v1/payments/webhooks/{provider}/` (sin autenticación: se autentica con la firma, con su propio límite de tasa). Contratos `import-linter`: `payments` solo usa `services` y `selectors` de `ledger` e `identity`; `ledger` no importa `payments` (**30 contratos**). La **transferencia entre dos usuarios de la plataforma** no cruza la frontera del proveedor: se resuelve con el service interno del ledger y se confirma de inmediato. |
+| 2026-10-22 | **O2, O3, O5 y O6 — decisiones de producto y de riesgo registradas (ADR 0009 a 0012).** (a) **O2 (cuenta segregada, Presto no es custodio):** los fondos del usuario están en una cuenta segregada del proveedor y Presto solo intermedia; por eso **no hay garantía de capital** y por eso el saldo en la plataforma es una **deuda de Presto**. (b) **O3 (plazos fijos sin garantía de capital):** el plazo fijo es un **préstamo** del usuario a la plataforma, sin garantía y con riesgo de pérdida del capital; el texto al usuario tiene que decirlo. (c) **O5 (PLA/FT mínimo viable):** umbrales configurables, reporte de operaciones sospechosas en 24 horas y **sin bloqueo automático**; la implementación fina queda **[a validar]** con un profesional. (d) **O6 (TEA y costo total):** la **TEA** (tasa efectiva anual) se calcula con `core.money.effective_annual_rate` (un solo redondeo) y se expone en `matching` y `loans` junto al interés total y el costo total; **el CFT no se implementa todavía** porque no hay comunicación con el proveedor que cobre comisiones: si el contrato comercial las tiene, el CFT pasa a ser obligatorio (ADR 0012). |
+| 2026-10-22 | **D-6 (reintentos de los avisos por email, ADR 0013).** El aviso lleva `attempts` (`PositiveSmallIntegerField`, 0 por defecto) y cada envío suma un intento. Con **3 intentos totales** y backoff exponencial (base `NOTIFICATIONS_RETRY_BASE_SECONDS`, 60 s por defecto): el primer reintento espera la base y el siguiente el doble. Mientras quedan intentos, el aviso sigue `pending` y la tarea de Celery se **re-encola** (`self.retry`); cuando se agotan, el aviso queda `failed` con el motivo. Un aviso ya enviado no se vuelve a mandar. |
+| 2026-10-22 | **D-10 (el refresh token en cookie httpOnly, ADR 0014).** El `POST /api/v1/auth/login/` **no** devuelve el refresh en el cuerpo: lo deja en la cookie `presto_refresh` (`httpOnly`, `SameSite=Lax`, path `/api/v1/auth/`, `Secure` en producción). El `POST /api/v1/auth/token/refresh/` acepta el token de la cookie (o el del cuerpo, por compatibilidad) y **rota** el refresh: deja la cookie nueva y devuelve solo el access token. Se agrega el `POST /api/v1/auth/logout/` (revoca el refresh, borra la cookie y responde `204`). El access token sigue yendo en el cuerpo, para que el front lo guarde en memoria. |
+| 2026-10-22 | **D-9 (las imágenes de producción, fijadas a digest, ADR 0015).** `docker-compose.prod.yml` deja de usar tags móviles: PostgreSQL, Redis y Caddy quedan fijados a su **digest** (`sha256`). Queda pendiente fijar la imagen base del `Dockerfile` (`python:3.12-slim`), que hoy sigue con tag. |
+| 2026-10-22 | **Documentación y verificación.** `docs/regulatorio-bcra.md` resume el marco aplicable (BCRA Com. "A" 8407, Ley 24.240 art. 36, Res. 12/2024 SIC, UIF Res. 56/2024 y 43/2024, plataformas electrónicas de ARCA) y marca como **[a validar]** lo que depende de un profesional. Se actualizan `docs/architecture.md` (mapa de apps, la sección de pagos y los ADR 0008 a 0015) y el `README.md` (los endpoints de `payments` y el de `logout`). El **admin** de `offers`, `loans` y `notifications` es de solo lectura y `budgets` registra `Expense`. |
+| 2026-10-22 | **App `demo` (siembra de la demo) y recordatorio de revisión legal.** (a) `apps/demo/` **no tiene modelos**: es el comando `manage.py seed_demo`, que siembra tres personas con KYC aprobado, un depósito, una oferta aceptada con su primera cuota pagada, un plazo fijo, un presupuesto con la alerta disparada y dos pagos (un depósito del proveedor y una transferencia interna). Todas las escrituras usan **claves de idempotencia fijas**, así que volver a sembrar no duplica movimientos ni un centavo; la app usa solo los `services` y los `selectors` de las demás apps y resuelve los dos modelos que necesita con `django.apps.apps.get_model()`. (b) **Recordatorio de revisión legal**: `GET /api/v1/meta/` expone `compliance` con los puntos pendientes (PLA/FT, encuadre de custodia, copy del plazo fijo, CFT y registro en la CNV), el system check `legal.W001` avisa mientras la revisión no esté confirmada, y el flag `LEGAL_REVIEW_ACKNOWLEDGED` (apagado por defecto) apaga el aviso cuando la revisión queda hecha. |

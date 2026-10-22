@@ -1,0 +1,118 @@
+"""Selectores de lectura de la app matching (interfaz pública).
+
+`matching` es **solo lectura**: no escribe estado y se apoya únicamente en
+`offers.selectors` (nunca en `offers.models`), según AGENTS §Reglas de ofertas 5.
+"""
+
+import uuid
+from decimal import Decimal
+from typing import Any
+
+from apps.core.money import (
+    effective_annual_rate,
+    french_installment,
+    french_total_cost,
+    french_total_interest,
+)
+from apps.matching.exceptions import NotEnoughOffersToCompare, OfferNotFound
+from apps.offers import selectors as offers_selectors
+
+MIN_OFFERS_TO_COMPARE = 2
+
+
+def search_offers(
+    currency: str | None = None,
+    amount_min: Decimal | None = None,
+    amount_max: Decimal | None = None,
+    max_rate: Decimal | None = None,
+    term_months: int | None = None,
+    ordering: str = 'rate',
+) -> list[dict[str, Any]]:
+    """Busca ofertas activas que coincidan con los filtros indicados.
+
+    El préstamo toma el monto completo de la oferta, por eso el rango se
+    filtra con un mínimo y un máximo.
+
+    Args:
+        currency: filtra por moneda.
+        amount_min: monto mínimo de la oferta.
+        amount_max: monto máximo de la oferta.
+        max_rate: TNA anual máxima aceptada.
+        term_months: plazo exacto en meses.
+        ordering: criterio de orden (`rate`, `term` o `amount`).
+
+    Returns:
+        Lista de ofertas con sus datos serializables.
+    """
+    offers = offers_selectors.search_active_offers(
+        currency=currency,
+        amount_min=amount_min,
+        amount_max=amount_max,
+        max_rate=max_rate,
+        term_months=term_months,
+        ordering=ordering,
+    )
+    return [_offer_data(offer) for offer in offers]
+
+
+def compare_offers(offer_ids: list[uuid.UUID]) -> list[dict[str, Any]]:
+    """Compara dos o más ofertas activas.
+
+    Para cada oferta devuelve la cuota mensual, el interés total, el costo
+    total (capital + interés) y la tasa efectiva anual, calculados con las
+    funciones de `core/money.py`.
+
+    El `total_cost` **no** es el costo financiero total (CFT) del producto:
+    hoy Presto no cobra comisiones ni seguros, así que el CFT coincide con el
+    interés total (ADR 0012). Si el producto agrega comisiones, el CFT se
+    agrega aparte.
+
+    Args:
+        offer_ids: identificadores de las ofertas a comparar.
+
+    Returns:
+        Lista con los datos de cada oferta y sus números.
+
+    Raises:
+        NotEnoughOffersToCompare: si se pasan menos de dos ofertas.
+        OfferNotFound: si alguna oferta no existe o no está activa.
+    """
+    if len(offer_ids) < MIN_OFFERS_TO_COMPARE:
+        raise NotEnoughOffersToCompare('Hacen falta al menos dos ofertas para comparar.')
+    compared = []
+    for offer_id in offer_ids:
+        offer = offers_selectors.get_active_offer(offer_id=offer_id)
+        if offer is None:
+            raise OfferNotFound('La oferta no existe o no está activa.')
+        data = _offer_data(offer)
+        data['installment'] = french_installment(
+            principal=data['amount'],
+            annual_tna=data['interest_rate'],
+            months=data['term_months'],
+        )
+        data['total_interest'] = french_total_interest(
+            principal=data['amount'],
+            annual_tna=data['interest_rate'],
+            months=data['term_months'],
+        )
+        data['total_cost'] = french_total_cost(
+            principal=data['amount'],
+            annual_tna=data['interest_rate'],
+            months=data['term_months'],
+        )
+        data['effective_annual_rate'] = effective_annual_rate(data['interest_rate'])
+        compared.append(data)
+    return compared
+
+
+def _offer_data(offer) -> dict[str, Any]:
+    """Arma los datos serializables de una oferta."""
+    return {
+        'id': offer.id,
+        'lender_user_id': offer.lender_user_id,
+        'amount': offer.amount,
+        'currency': offer.currency,
+        'interest_rate': offer.interest_rate,
+        'term_months': offer.term_months,
+        'requirements': offer.requirements,
+    }

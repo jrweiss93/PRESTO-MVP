@@ -1,0 +1,500 @@
+[importlinter]
+root_package = apps
+
+[importlinter:contract:core-isolation]
+name = core-isolation
+type = forbidden
+source_modules =
+    apps.core
+forbidden_modules =
+    apps.identity
+    apps.ledger
+    apps.payments
+    apps.offers
+    apps.matching
+    apps.loans
+    apps.investments
+    apps.budgets
+    apps.reports
+    apps.notifications
+
+[importlinter:contract:ledger-no-identity-models]
+name = ledger-no-identity-models
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.ledger
+forbidden_modules =
+    apps.identity.models
+    apps.identity.views
+    apps.identity.serializers
+    apps.identity.admin
+    apps.identity.urls
+
+[importlinter:contract:identity-no-ledger]
+name = identity-no-ledger
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.identity
+forbidden_modules =
+    apps.ledger
+    apps.payments
+    apps.offers
+    apps.matching
+    apps.loans
+    apps.investments
+    apps.budgets
+    apps.reports
+    apps.notifications
+
+[importlinter:contract:offers-no-identity-models]
+name = offers-no-identity-models
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.offers
+forbidden_modules =
+    apps.identity.models
+    apps.identity.views
+    apps.identity.serializers
+    apps.identity.admin
+    apps.identity.urls
+
+[importlinter:contract:offers-no-matching]
+name = offers-no-matching
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.offers
+forbidden_modules =
+    apps.matching
+
+[importlinter:contract:matching-no-offers-models]
+name = matching-no-offers-models
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.matching
+forbidden_modules =
+    apps.offers.models
+    apps.offers.views
+    apps.offers.serializers
+    apps.offers.admin
+    apps.offers.urls
+    apps.offers.services
+
+[importlinter:contract:loans-only-services-and-selectors]
+name = loans-only-services-and-selectors
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.loans
+forbidden_modules =
+    apps.ledger.models
+    apps.ledger.views
+    apps.ledger.serializers
+    apps.ledger.admin
+    apps.ledger.urls
+    apps.offers.models
+    apps.offers.views
+    apps.offers.serializers
+    apps.offers.admin
+    apps.offers.urls
+    apps.identity.models
+    apps.identity.views
+    apps.identity.serializers
+    apps.identity.admin
+    apps.identity.urls
+
+[importlinter:contract:ledger-no-loans]
+name = ledger-no-loans
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.ledger
+forbidden_modules =
+    apps.loans
+
+[importlinter:contract:offers-no-loans]
+name = offers-no-loans
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.offers
+forbidden_modules =
+    apps.loans
+
+[importlinter:contract:investments-only-services-and-selectors]
+name = investments-only-services-and-selectors
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.investments
+forbidden_modules =
+    apps.ledger.models
+    apps.ledger.views
+    apps.ledger.serializers
+    apps.ledger.admin
+    apps.ledger.urls
+    apps.identity.models
+    apps.identity.views
+    apps.identity.serializers
+    apps.identity.admin
+    apps.identity.urls
+
+[importlinter:contract:ledger-no-investments]
+name = ledger-no-investments
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.ledger
+forbidden_modules =
+    apps.investments
+
+[importlinter:contract:budgets-only-services-and-selectors]
+name = budgets-only-services-and-selectors
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.budgets
+forbidden_modules =
+    apps.ledger.models
+    apps.ledger.views
+    apps.ledger.serializers
+    apps.ledger.admin
+    apps.ledger.urls
+    apps.loans.models
+    apps.loans.views
+    apps.loans.serializers
+    apps.loans.admin
+    apps.loans.urls
+    apps.identity.models
+    apps.identity.views
+    apps.identity.serializers
+    apps.identity.admin
+    apps.identity.urls
+    apps.offers.models
+    apps.offers.views
+    apps.offers.serializers
+    apps.offers.admin
+    apps.offers.urls
+
+[importlinter:contract:ledger-no-budgets]
+name = ledger-no-budgets
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.ledger
+forbidden_modules =
+    apps.budgets
+
+[importlinter:contract:loans-no-budgets]
+name = loans-no-budgets
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.loans
+forbidden_modules =
+    apps.budgets
+
+[importlinter:contract:identity-no-budgets]
+name = identity-no-budgets
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.identity
+forbidden_modules =
+    apps.budgets
+
+[importlinter:contract:offers-no-budgets]
+name = offers-no-budgets
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.offers
+forbidden_modules =
+    apps.budgets
+
+[importlinter:contract:reports-only-services-and-selectors]
+name = reports-only-services-and-selectors
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.reports
+forbidden_modules =
+    apps.ledger.models
+    apps.ledger.views
+    apps.ledger.serializers
+    apps.ledger.admin
+    apps.ledger.urls
+    apps.loans.models
+    apps.loans.views
+    apps.loans.serializers
+    apps.loans.admin
+    apps.loans.urls
+    apps.investments.models
+    apps.investments.views
+    apps.investments.serializers
+    apps.investments.admin
+    apps.investments.urls
+    apps.budgets.models
+    apps.budgets.views
+    apps.budgets.serializers
+    apps.budgets.admin
+    apps.budgets.urls
+    apps.identity.models
+    apps.identity.views
+    apps.identity.serializers
+    apps.identity.admin
+    apps.identity.urls
+
+[importlinter:contract:ledger-no-reports]
+name = ledger-no-reports
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.ledger
+forbidden_modules =
+    apps.reports
+
+[importlinter:contract:loans-no-reports]
+name = loans-no-reports
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.loans
+forbidden_modules =
+    apps.reports
+
+[importlinter:contract:investments-no-reports]
+name = investments-no-reports
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.investments
+forbidden_modules =
+    apps.reports
+
+[importlinter:contract:budgets-no-reports]
+name = budgets-no-reports
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.budgets
+forbidden_modules =
+    apps.reports
+
+[importlinter:contract:identity-no-reports]
+name = identity-no-reports
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.identity
+forbidden_modules =
+    apps.reports
+
+# notifications llega a las otras apps por sus services y selectors. La excepcion
+# documentada de AGENTS 5.3 son las signals: los receptores de notifications conectan
+# las senales que define cada app emisora.
+[importlinter:contract:notifications-only-services-and-selectors]
+name = notifications-only-services-and-selectors
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.notifications
+forbidden_modules =
+    apps.ledger.models
+    apps.ledger.views
+    apps.ledger.serializers
+    apps.ledger.admin
+    apps.ledger.urls
+    apps.loans.models
+    apps.loans.views
+    apps.loans.serializers
+    apps.loans.admin
+    apps.loans.urls
+    apps.investments.models
+    apps.investments.views
+    apps.investments.serializers
+    apps.investments.admin
+    apps.investments.urls
+    apps.budgets.models
+    apps.budgets.views
+    apps.budgets.serializers
+    apps.budgets.admin
+    apps.budgets.urls
+    apps.identity.models
+    apps.identity.views
+    apps.identity.serializers
+    apps.identity.admin
+    apps.identity.urls
+
+[importlinter:contract:ledger-no-notifications]
+name = ledger-no-notifications
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.ledger
+forbidden_modules =
+    apps.notifications
+
+[importlinter:contract:loans-no-notifications]
+name = loans-no-notifications
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.loans
+forbidden_modules =
+    apps.notifications
+
+[importlinter:contract:investments-no-notifications]
+name = investments-no-notifications
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.investments
+forbidden_modules =
+    apps.notifications
+
+[importlinter:contract:budgets-no-notifications]
+name = budgets-no-notifications
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.budgets
+forbidden_modules =
+    apps.notifications
+
+[importlinter:contract:identity-no-notifications]
+name = identity-no-notifications
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.identity
+forbidden_modules =
+    apps.notifications
+
+# payments habla con el ledger y con identity por sus services y selectors, y
+# con el proveedor de pagos por su propio borde HTTP (ADR 0008).
+[importlinter:contract:payments-only-services-and-selectors]
+name = payments-only-services-and-selectors
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.payments
+forbidden_modules =
+    apps.ledger.models
+    apps.ledger.views
+    apps.ledger.serializers
+    apps.ledger.admin
+    apps.ledger.urls
+    apps.identity.models
+    apps.identity.views
+    apps.identity.serializers
+    apps.identity.admin
+    apps.identity.urls
+    apps.investments.models
+    apps.investments.views
+    apps.investments.serializers
+    apps.investments.admin
+    apps.investments.urls
+    apps.budgets.models
+    apps.budgets.views
+    apps.budgets.serializers
+    apps.budgets.admin
+    apps.budgets.urls
+    apps.loans.models
+    apps.loans.views
+    apps.loans.serializers
+    apps.loans.admin
+    apps.loans.urls
+    apps.offers.models
+    apps.offers.views
+    apps.offers.serializers
+    apps.offers.admin
+    apps.offers.urls
+    apps.reports.models
+    apps.reports.views
+    apps.reports.serializers
+    apps.reports.admin
+    apps.reports.urls
+    apps.notifications.models
+    apps.notifications.views
+    apps.notifications.serializers
+    apps.notifications.admin
+    apps.notifications.urls
+
+[importlinter:contract:ledger-no-payments]
+name = ledger-no-payments
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.ledger
+forbidden_modules =
+    apps.payments
+
+# La app `demo` siembra el escenario de demostración. Es una herramienta: usa
+# los `services` y los `selectors` de las demás apps (nunca sus modelos, vistas
+# ni serializers) y no tiene modelos propios. Los dos modelos que necesita
+# (el usuario y el producto de plazo fijo) los resuelve con
+# `django.apps.apps.get_model()` para no romper este contrato. Los tests no
+# están cubiertos: pueden mirar los modelos directamente.
+[importlinter:contract:demo-only-services-and-selectors]
+name = demo-only-services-and-selectors
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    apps.demo.seeds
+    apps.demo.management.commands.seed_demo
+forbidden_modules =
+    apps.identity.models
+    apps.identity.views
+    apps.identity.serializers
+    apps.identity.admin
+    apps.identity.urls
+    apps.ledger.models
+    apps.ledger.views
+    apps.ledger.serializers
+    apps.ledger.admin
+    apps.ledger.urls
+    apps.payments.models
+    apps.payments.views
+    apps.payments.serializers
+    apps.payments.admin
+    apps.payments.urls
+    apps.offers.models
+    apps.offers.views
+    apps.offers.serializers
+    apps.offers.admin
+    apps.offers.urls
+    apps.matching.models
+    apps.matching.views
+    apps.matching.serializers
+    apps.matching.admin
+    apps.matching.urls
+    apps.loans.models
+    apps.loans.views
+    apps.loans.serializers
+    apps.loans.admin
+    apps.loans.urls
+    apps.investments.models
+    apps.investments.views
+    apps.investments.serializers
+    apps.investments.admin
+    apps.investments.urls
+    apps.budgets.models
+    apps.budgets.views
+    apps.budgets.serializers
+    apps.budgets.admin
+    apps.budgets.urls
+    apps.reports.models
+    apps.reports.views
+    apps.reports.serializers
+    apps.reports.admin
+    apps.reports.urls
+    apps.notifications.models
+    apps.notifications.views
+    apps.notifications.serializers
+    apps.notifications.admin
+    apps.notifications.urls

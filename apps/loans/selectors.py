@@ -1,0 +1,183 @@
+"""Selectores de lectura de la app loans (interfaz pública)."""
+
+import uuid
+from datetime import date, timedelta
+from decimal import Decimal
+
+from django.db.models import Q, QuerySet
+
+from apps.loans.models import Installment, Loan
+
+
+def get_loan_for_party(loan_id: uuid.UUID, user_id: uuid.UUID) -> Loan | None:
+    """Devuelve el préstamo solo si el usuario es parte de él.
+
+    Args:
+        loan_id: identificador del préstamo.
+        user_id: identificador del usuario.
+
+    Returns:
+        El Loan si el usuario es prestatario o prestamista, o None.
+    """
+    return Loan.objects.filter(
+        Q(borrower_user_id=user_id) | Q(lender_user_id=user_id),
+        id=loan_id,
+    ).first()
+
+
+def list_loans_for_user(user_id: uuid.UUID) -> QuerySet[Loan]:
+    """Lista los préstamos en los que el usuario es parte.
+
+    Args:
+        user_id: identificador del usuario.
+
+    Returns:
+        QuerySet con los préstamos del usuario.
+    """
+    return (
+        Loan.objects.filter(Q(borrower_user_id=user_id) | Q(lender_user_id=user_id))
+        .prefetch_related('installments', 'terms_snapshot')
+        .order_by('-accepted_at')
+    )
+
+
+def get_installment(installment_id: uuid.UUID) -> Installment | None:
+    """Devuelve una cuota con su préstamo, o None si no existe.
+
+    Args:
+        installment_id: identificador de la cuota.
+
+    Returns:
+        La Installment o None.
+    """
+    return Installment.objects.filter(id=installment_id).select_related('loan').first()
+
+
+def list_installments(loan_id: uuid.UUID) -> QuerySet[Installment]:
+    """Lista las cuotas de un préstamo.
+
+    Args:
+        loan_id: identificador del préstamo.
+
+    Returns:
+        QuerySet con las cuotas ordenadas por número.
+    """
+    return Installment.objects.filter(loan_id=loan_id).order_by('number')
+
+
+def list_installments_for_loans(loan_ids: list[uuid.UUID]) -> QuerySet[Installment]:
+    """Lista las cuotas de varios préstamos en una sola consulta.
+
+    Args:
+        loan_ids: identificadores de los préstamos.
+
+    Returns:
+        QuerySet con las cuotas, ordenadas por préstamo y número.
+    """
+    if not loan_ids:
+        return Installment.objects.none()
+    return (
+        Installment.objects.filter(loan_id__in=loan_ids)
+        .select_related('loan')
+        .order_by('loan_id', 'number')
+    )
+
+
+def list_installments_due_soon(today: date, days: int = 3) -> QuerySet[Installment]:
+    """Lista las cuotas pendientes que vencen dentro de los próximos días.
+
+    Args:
+        today: fecha de referencia.
+        days: ventana de anticipación, en días.
+
+    Returns:
+        QuerySet con las cuotas, de la más próxima a la más lejana.
+    """
+    limit = today + timedelta(days=days)
+    return (
+        Installment.objects.filter(
+            status=Installment.Status.PENDING,
+            due_date__gte=today,
+            due_date__lte=limit,
+        )
+        .select_related('loan')
+        .order_by('due_date', 'number')
+    )
+
+
+def list_overdue_installments(today: date) -> QuerySet[Installment]:
+    """Lista las cuotas vencidas que todavía no se pagaron.
+
+    Incluye las que el proceso diario todavía no marcó como vencidas, para
+    que el aviso no dependa del orden de las tareas.
+
+    Args:
+        today: fecha de referencia.
+
+    Returns:
+        QuerySet con las cuotas vencidas, de la más antigua a la más reciente.
+    """
+    return (
+        Installment.objects.filter(
+            status__in=[Installment.Status.PENDING, Installment.Status.OVERDUE],
+            due_date__lt=today,
+        )
+        .select_related('loan')
+        .order_by('due_date', 'number')
+    )
+
+
+def list_loan_movement_breakdowns(transaction_ids: list[uuid.UUID]) -> dict[uuid.UUID, dict]:
+    """Devuelve el desglose de los movimientos que pertenecen a un préstamo.
+
+    El desglose tiene esta forma::
+
+        {
+            'kind': 'installment_payment' | 'loan_disbursement',
+            'principal': Decimal,
+            'interest': Decimal,
+            'currency': str,
+        }
+
+    Solo devuelve primitivos: quien lo consume es otra app y no puede conocer
+    los modelos de `loans`.
+
+    Args:
+        transaction_ids: identificadores de los movimientos del ledger.
+
+    Returns:
+        Dict con el desglose de cada movimiento que pertenece a un préstamo.
+    """
+    if not transaction_ids:
+        return {}
+    breakdowns: dict[uuid.UUID, dict] = {}
+    installments = Installment.objects.filter(
+        ledger_transaction_id__in=transaction_ids,
+    ).select_related('loan')
+    for installment in installments:
+        breakdowns[installment.ledger_transaction_id] = {
+            'kind': 'installment_payment',
+            'principal': installment.principal_amount,
+            'interest': installment.interest_amount,
+            'currency': installment.loan.currency,
+        }
+    for loan in Loan.objects.filter(ledger_transaction_id__in=transaction_ids):
+        breakdowns[loan.ledger_transaction_id] = {
+            'kind': 'loan_disbursement',
+            'principal': loan.principal,
+            'interest': Decimal('0.00'),
+            'currency': loan.currency,
+        }
+    return breakdowns
+
+
+def get_loan_movement_breakdown(transaction_id: uuid.UUID) -> dict | None:
+    """Devuelve el desglose de un movimiento de préstamo, o None si no lo es.
+
+    Args:
+        transaction_id: identificador del movimiento del ledger.
+
+    Returns:
+        El desglose del movimiento o None.
+    """
+    return list_loan_movement_breakdowns(transaction_ids=[transaction_id]).get(transaction_id)

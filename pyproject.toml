@@ -1,0 +1,60 @@
+[project]
+name = "presto"
+version = "0.1.0"
+description = "Finanzas e inversiones con marketplace de préstamos"
+requires-python = ">=3.12"
+dependencies = [
+    "Django>=5.2,<6",
+    "djangorestframework>=3.14",
+    "drf-spectacular>=0.30",
+    "djangorestframework-simplejwt>=5.3",
+    "pytest>=7.0",
+    "pytest-django>=4.0",
+    "pytest-cov>=5.0",
+    "factory-boy>=3.0",
+    "ruff>=0.1.0",
+    "import-linter>=2.0",
+    "psycopg2-binary>=2.9",
+    "python-dotenv>=1.0",
+    "argon2-cffi>=21.0.0",
+    "gunicorn>=22.0.0",
+    "celery>=5.3.0",
+    "redis>=5.0.0",
+    "dj-database-url>=2.2.0",
+    "django-cors-headers>=4.4",
+    "pip-audit>=2.7",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = [
+    "E501",
+    "F403",
+    "F405",
+    "F401",
+    "B011",
+    "E402",
+]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "config"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["django.db.models.Model.objects.create", "django.db.models.QuerySet.create"]
+
+[tool.ruff.lint.per-file-ignores]
+"config/urls.py" = ["F401"]
