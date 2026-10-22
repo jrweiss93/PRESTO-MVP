@@ -11,6 +11,7 @@ import {
   formatRate,
 } from "@/shared/lib/format";
 import { sumDecimals } from "@/shared/lib/decimal";
+import { ENABLE_ASSISTANT } from "@/shared/lib/features";
 import { useIdempotencyKey } from "@/shared/lib/useIdempotencyKey";
 
 export default function Investments() {
@@ -98,8 +99,14 @@ export default function Investments() {
         <strong>Modo demostración.</strong> Estos productos están sujetos a
         autorización regulatoria (CNV / BCRA) y hoy no constituyen una oferta
         pública de inversión. Ofrecer al público instrumentos para financiar
-        créditos requiere autorización de la CNV o un vehículo autorizado. Más
-        info en <Link to="/asistente">Presti → Marco legal</Link>.
+        créditos requiere autorización de la CNV o un vehículo autorizado.{" "}
+        {ENABLE_ASSISTANT ? (
+          <>
+            Más info en <Link to="/asistente">Presti → Marco legal</Link>.
+          </>
+        ) : (
+          <>Más info en el documento regulatorio del proyecto.</>
+        )}
       </div>
 
       {error && <div className="alert error">{error}</div>}
