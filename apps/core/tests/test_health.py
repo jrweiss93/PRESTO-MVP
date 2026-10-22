@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 import yaml
 from django.db import OperationalError
-from django.test import Client
+from django.test import Client, override_settings
 
 pytestmark = pytest.mark.django_db
 
@@ -28,6 +28,22 @@ def test_health_check_returns_ok_when_the_database_answers(client):
 
 def test_health_check_does_not_require_authentication(client):
     """El chequeo de salud es público: no pide credenciales."""
+    response = client.get('/health/')
+
+    assert response.status_code == 200
+
+
+def test_health_check_ignores_a_disallowed_host(client):
+    """Responde aunque el Host no esté permitido (la IP interna de la plataforma)."""
+    response = client.get('/health/', HTTP_HOST='10.0.0.99')
+
+    assert response.status_code == 200
+    assert response.json() == {'status': 'ok'}
+
+
+@override_settings(SECURE_SSL_REDIRECT=True)
+def test_health_check_does_not_redirect_to_https(client):
+    """El chequeo interno no se come un 301 del redirect a HTTPS."""
     response = client.get('/health/')
 
     assert response.status_code == 200

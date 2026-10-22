@@ -148,6 +148,9 @@ MIDDLEWARE = [
     # El CORS va lo más arriba posible: tiene que responder los preflight
     # OPTIONS antes de que otro middleware genere la respuesta.
     'corsheaders.middleware.CorsMiddleware',
+    # El health check se contesta antes de validar el Host y antes del redirect
+    # a HTTPS: las plataformas lo llaman con la IP interna del servicio.
+    'apps.core.middleware.HealthCheckMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'apps.core.middleware.DemoModeHeaderMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
