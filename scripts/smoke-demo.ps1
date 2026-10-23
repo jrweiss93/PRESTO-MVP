@@ -32,7 +32,7 @@ function Get-StatusAndBody($uri, $method = 'GET', $headers = @{}, $body = $null,
         Method          = $method
         Headers         = $headers
         UseBasicParsing = $true
-        TimeoutSec      = 30
+        TimeoutSec      = 90
     }
     if ($body) { $params['Body'] = $body; $params['ContentType'] = 'application/json' }
     if ($session) { $params['WebSession'] = $session }
@@ -52,6 +52,14 @@ function Get-StatusAndBody($uri, $method = 'GET', $headers = @{}, $body = $null,
 Write-Host "API:   $ApiUrl" -ForegroundColor Cyan
 Write-Host "Front: $FrontUrl" -ForegroundColor Cyan
 Write-Host ''
+
+# El plan free de Render duerme por inactividad: la primera peticion puede
+# tardar un minuto. Se despierta antes de medir para no reportar un falso fallo.
+for ($i = 1; $i -le 3; $i++) {
+    $warm = Get-StatusAndBody "$ApiUrl/health/"
+    if ($warm.Status -eq 200) { break }
+    Write-Host "Despertando la API... (intento $i)" -ForegroundColor DarkYellow
+}
 
 # 1. Salud
 $health = Get-StatusAndBody "$ApiUrl/health/"
