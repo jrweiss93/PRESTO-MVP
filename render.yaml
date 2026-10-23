@@ -31,6 +31,7 @@ services:
       url: ghcr.io/jrweiss93/presto-mvp:latest
     plan: free
     healthCheckPath: /health/
+    initialDeployHook: python manage.py seed_demo
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: config.settings.production

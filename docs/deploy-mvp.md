@@ -32,6 +32,17 @@ python manage.py seed_demo
 python manage.py createsuperuser
 ```
 
+> El plan `free` de Render **no incluye Shell**. Si no querés pasar a `starter`,
+> sembrá la base desde tu máquina con la *External Database URL*:
+>
+> ```powershell
+> .\scripts\seed-remote.ps1
+> ```
+>
+> El script pide la URL (Render → `presto-db` → **Connect** → **External
+> Database URL**) y corre `seed_demo` contra esa base. El `initialDeployHook`
+> del blueprint también siembra en la primera creación de un servicio nuevo.
+
 > El plan `free` duerme el servicio por inactividad: la primera visita puede
 > tardar unos segundos. Para una demo en vivo, considerá `starter`.
 
