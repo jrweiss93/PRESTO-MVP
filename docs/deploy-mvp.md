@@ -42,6 +42,15 @@ python manage.py createsuperuser
 > El script pide la URL (Render → `presto-db` → **Connect** → **External
 > Database URL**) y corre `seed_demo` contra esa base. El `initialDeployHook`
 > del blueprint también siembra en la primera creación de un servicio nuevo.
+>
+> Para el **admin**, con la misma URL:
+>
+> ```powershell
+> .\scripts\create-superuser-remote.ps1
+> ```
+>
+> Pide email y contraseña (mínimo 12 caracteres) y crea o actualiza el
+> superusuario. Queda disponible en `/admin/` de la API.
 
 > El plan `free` duerme el servicio por inactividad: la primera visita puede
 > tardar unos segundos. Para una demo en vivo, considerá `starter`.
