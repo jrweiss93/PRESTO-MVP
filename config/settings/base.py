@@ -157,6 +157,7 @@ MIDDLEWARE = [
     # a HTTPS: las plataformas lo llaman con la IP interna del servicio.
     'apps.core.middleware.HealthCheckMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -324,6 +325,16 @@ CORS_EXPOSE_HEADERS = ['Content-Type']
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = str(BASE_DIR / 'staticfiles')
+
+# WhiteNoise sirve los estáticos del admin desde la propia aplicación: sin un
+# servidor de estáticos aparte, el admin se veía sin estilos en el deploy.
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage'},
+}
+WHITENOISE_MAX_AGE = 3600
+WHITENOISE_USE_FINDERS = DEBUG
+WHITENOISE_AUTOREFRESH = DEBUG
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

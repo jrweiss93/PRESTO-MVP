@@ -109,6 +109,9 @@ python manage.py createsuperuser
 
 `seed_demo` es idempotente: se puede volver a correr sin duplicar datos.
 
+> Los estáticos del admin los sirve **WhiteNoise**; la imagen corre
+> `collectstatic` en el build. No hace falta un servidor de estáticos aparte.
+
 ### Verificar
 
 ```sh

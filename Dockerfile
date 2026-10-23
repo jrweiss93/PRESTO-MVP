@@ -30,11 +30,17 @@ RUN pip install --no-cache-dir --no-compile \
     "celery>=5.3.0" \
     "redis>=5.0.0" \
     "dj-database-url>=2.2.0" \
-    "django-cors-headers>=4.4"
+    "django-cors-headers>=4.4" \
+    "whitenoise>=6.6"
 
 # El código va después de las dependencias: un cambio de código no invalida
 # la capa de pip y los deploys siguientes son mucho más rápidos.
 COPY --chown=presto:presto . .
+
+# Recolecta los estáticos del admin: WhiteNoise los sirve desde STATIC_ROOT.
+RUN DJANGO_SETTINGS_MODULE=config.settings.local \
+    LEGAL_REVIEW_ACKNOWLEDGED=1 \
+    python manage.py collectstatic --noinput
 
 RUN chmod +x /app/deploy/entrypoint.sh \
     && mkdir -p /var/celerybeat \
