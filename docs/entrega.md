@@ -51,6 +51,7 @@ El superusuario del admin **no tiene contraseña por defecto**: se crea con
   - `mvp.md` — arranque local y guion de demo.
   - `deploy-mvp.md` — despliegue, variables, checklist y troubleshooting.
   - `implementacion.md` — detalle técnico del código (modelos, servicios, endpoints, front, infra).
+  - `implementacion.pdf` / `implementacion.docx` — las mismas versiones para compartir.
   - `architecture.md` y `adr/` — decisiones técnicas.
   - `audit-final.md`, `regulatorio-bcra.md`, `pitch-one-pager.md`.
 - **Reglas y estado:** `AGENTS.md` (fuente de verdad) y `HANDOFF.md`.

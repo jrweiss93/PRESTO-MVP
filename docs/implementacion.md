@@ -9,6 +9,8 @@ los complementa con el detalle de la implementación real.
 > **Estado:** demo pública con dinero simulado.
 > **Fecha:** 2026-10-23 · rama `main`.
 > **Base de código:** backend Django en la raíz + front React en `frontend/`.
+>
+> **Versiones para compartir:** [PDF](implementacion.pdf) · [Word](implementacion.docx).
 
 ## 1. Vista general
 
