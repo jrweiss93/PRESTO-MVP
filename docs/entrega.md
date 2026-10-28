@@ -54,6 +54,8 @@ El superusuario del admin **no tiene contraseña por defecto**: se crea con
   - `implementacion.pdf` / `implementacion.docx` — las mismas versiones para compartir.
   - `resumen-ejecutivo.md` / `.pdf` / `.docx` — resumen de 3 páginas para presentar.
   - `guia-para-mostrar.md` / `.pdf` / `.docx` — guion sin tecnicismos para explicar la demo.
+  - `presentacion-presto.pptx` / `.pdf` — presentación de 13 slides con notas del orador.
+  - `documento-presto.md` / `.pdf` / `.docx` — documento de producto: problema, público, operaciones, beneficios y stack.
   - `architecture.md` y `adr/` — decisiones técnicas.
   - `audit-final.md`, `regulatorio-bcra.md`, `pitch-one-pager.md`.
 - **Reglas y estado:** `AGENTS.md` (fuente de verdad) y `HANDOFF.md`.
