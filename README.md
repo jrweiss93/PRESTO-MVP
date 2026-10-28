@@ -16,6 +16,7 @@ del trabajo en [HANDOFF.md](HANDOFF.md).
 > **[docs/mvp.md](docs/mvp.md)**. Para publicarla, **[docs/deploy-mvp.md](docs/deploy-mvp.md)**.
 > Para pasarla a otra persona, **[docs/entrega.md](docs/entrega.md)**.
 > El detalle técnico del código está en **[docs/implementacion.md](docs/implementacion.md)**.
+> Resumen ejecutivo de 3 páginas: **[docs/resumen-ejecutivo.pdf](docs/resumen-ejecutivo.pdf)** (también en Word).
 
 ## Estructura
 
