@@ -17,6 +17,7 @@ del trabajo en [HANDOFF.md](HANDOFF.md).
 > Para pasarla a otra persona, **[docs/entrega.md](docs/entrega.md)**.
 > El detalle técnico del código está en **[docs/implementacion.md](docs/implementacion.md)**.
 > Resumen ejecutivo de 3 páginas: **[docs/resumen-ejecutivo.pdf](docs/resumen-ejecutivo.pdf)** (también en Word).
+> Guía para mostrar sin tecnicismos: **[docs/guia-para-mostrar.pdf](docs/guia-para-mostrar.pdf)**.
 
 ## Estructura
 
