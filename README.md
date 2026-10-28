@@ -18,6 +18,11 @@ del trabajo en [HANDOFF.md](HANDOFF.md).
 > El detalle técnico del código está en **[docs/implementacion.md](docs/implementacion.md)**.
 > Resumen ejecutivo de 3 páginas: **[docs/resumen-ejecutivo.pdf](docs/resumen-ejecutivo.pdf)** (también en Word).
 > Guía para mostrar sin tecnicismos: **[docs/guia-para-mostrar.pdf](docs/guia-para-mostrar.pdf)**.
+>
+> **Demo en un clic (Windows):** doble clic en **`PRESTO-DEMO.cmd`** o en el
+> acceso directo **Presto Demo** del escritorio. Levanta PostgreSQL, Redis, la
+> API y el front, siembra los datos y abre el navegador. Para detenerla,
+> **`PRESTO-DEMO-STOP.cmd`**.
 
 ## Estructura
 

@@ -13,6 +13,22 @@ sueltas que estaban en el escritorio:
 
 ## 1. Arranque rápido (10 minutos)
 
+### Windows: doble clic (lo más simple)
+
+Si ya tenés Python, Node y pnpm, el repo trae un lanzador que hace todo:
+
+1. Doble clic en **`PRESTO-DEMO.cmd`** (o en el acceso directo **Presto Demo**
+   del escritorio).
+2. Levanta PostgreSQL y Redis portables, aplica migraciones, siembra la demo,
+   inicia la API y el front, y abre el navegador.
+3. Para detener todo: **`PRESTO-DEMO-STOP.cmd`** o el acceso directo
+   **Detener Presto Demo**.
+
+La primera vez puede descargar PostgreSQL/Redis y dependencias. Los detalles
+están en [`COMO-USAR-LA-DEMO.txt`](../COMO-USAR-LA-DEMO.txt).
+
+### Con Docker (o manual)
+
 Requisitos: Docker + Docker Compose, Node 20+ y `pnpm`.
 
 ```sh

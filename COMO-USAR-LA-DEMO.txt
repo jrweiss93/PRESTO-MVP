@@ -1,0 +1,13 @@
+PRESTO - DEMO LOCAL
+===================
+
+1. Doble clic en "Presto Demo" (escritorio) o en PRESTO-DEMO.cmd.
+2. Espera a que abra el navegador. La primera vez puede tardar:
+   - descarga PostgreSQL y Redis si no estan;
+   - instala dependencias de Python y del front.
+3. Usuarios: ana@presto.demo / beto@presto.demo / carla@presto.demo
+   Password: Presto123!
+4. Para detener todo: "Detener Presto Demo" o PRESTO-DEMO-STOP.cmd.
+
+Si algo falla, mira las ventanas "Presto API" y "Presto Front".
+La guia completa esta en docs/mvp.md.

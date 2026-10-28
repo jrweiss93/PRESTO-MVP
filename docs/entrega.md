@@ -64,6 +64,11 @@ El superusuario del admin **no tiene contraseña por defecto**: se crea con
 
 ## 4. Levantarlo en local
 
+**La forma más simple (Windows):** doble clic en `PRESTO-DEMO.cmd` o en el
+acceso directo **Presto Demo** del escritorio. El lanzador levanta PostgreSQL,
+Redis, la API y el front, siembra la demo y abre el navegador. Para detenerlo:
+`PRESTO-DEMO-STOP.cmd`.
+
 **Con Docker** (requiere Docker + WSL2 y virtualización):
 
 ```sh
