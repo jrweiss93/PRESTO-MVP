@@ -473,6 +473,30 @@ def add_flow(slide, steps, top=2.3):
             )
 
 
+def add_wordmark(slide, left, top, size=58):
+    box = slide.shapes.add_textbox(Inches(left), Inches(top), Inches(8.5), Inches(1.05))
+    frame = box.text_frame
+    frame.word_wrap = True
+    frame.margin_left = 0
+    frame.margin_right = 0
+    frame.margin_top = 0
+    frame.margin_bottom = 0
+    paragraph = frame.paragraphs[0]
+    paragraph.alignment = PP_ALIGN.LEFT
+    run = paragraph.add_run()
+    run.text = 'Presto'
+    run.font.size = Pt(size)
+    run.font.bold = True
+    run.font.name = 'Segoe UI'
+    run.font.color.rgb = WHITE
+    dot = paragraph.add_run()
+    dot.text = '.'
+    dot.font.size = Pt(size)
+    dot.font.bold = True
+    dot.font.name = 'Segoe UI'
+    dot.font.color.rgb = RGBColor(0x93, 0xC5, 0xFD)
+
+
 def add_cover(prs, data):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     slide.background.fill.solid()
@@ -487,8 +511,8 @@ def add_cover(prs, data):
     run.font.bold = True
     run.font.color.rgb = WHITE
     run.font.name = 'Segoe UI'
-    add_text(slide, 2.05, 1.02, 8, 0.95, data['title'], 58, True, WHITE)
     add_text(slide, 2.1, 2.0, 9.6, 0.8, data['subtitle'], 20, False, SOFT_BLUE, line_spacing=1.2)
+    add_wordmark(slide, 2.05, 1.02, 58)
     tag = add_rect(slide, 0.85, 3.35, 4.65, 0.42, AMBER_BG)
     tag.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
     paragraph = tag.text_frame.paragraphs[0]
@@ -508,7 +532,7 @@ def add_closing(prs, data):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     slide.background.fill.solid()
     slide.background.fill.fore_color.rgb = NAVY
-    add_text(slide, 0.85, 1.2, 11.8, 0.9, data['title'], 56, True, WHITE)
+    add_wordmark(slide, 0.85, 1.2, 56)
     add_text(slide, 0.85, 2.15, 11.8, 0.7, data['subtitle'], 26, False, SOFT_BLUE)
     add_text(slide, 0.85, 3.35, 11.8, 0.35, data['url'], 15, True, WHITE)
     add_text(slide, 0.85, 3.8, 11.8, 0.6, data['meta'], 10.5, False, SOFT_BLUE, line_spacing=1.3)
@@ -516,12 +540,14 @@ def add_closing(prs, data):
     slide.notes_slide.notes_text_frame.text = data['notes']
 
 
-def build_pptx():
+def build_pptx(slides=None, output=None):
+    slides = slides or SLIDES
+    output = Path(output) if output else DOCS / 'presentacion-presto.pptx'
     prs = Presentation()
     prs.slide_width = Inches(13.333)
     prs.slide_height = Inches(7.5)
 
-    for index, data in enumerate(SLIDES, start=1):
+    for index, data in enumerate(slides, start=1):
         kind = data['kind']
         if kind == 'cover':
             add_cover(prs, data)
@@ -579,7 +605,7 @@ def build_pptx():
 
         slide.notes_slide.notes_text_frame.text = data['notes']
 
-    output = DOCS / 'presentacion-presto.pptx'
+    output = Path(output) if output else DOCS / 'presentacion-presto.pptx'
     prs.save(output)
     return output
 
@@ -602,7 +628,7 @@ def html_slide(data, number):
         return f'''
         <section class="slide cover">
           <div class="pmark">P</div>
-          <h1>{escape(data['title'])}</h1>
+          <h1>Presto<span class="dot">.</span></h1>
           <div class="sub">{escape(data['subtitle'])}</div>
           <div class="badge">{escape(data['tag'])}</div>
           <p class="cover-text">Una demo para mostrar el circuito completo, sin dinero real.</p>
@@ -612,7 +638,7 @@ def html_slide(data, number):
     if kind == 'closing':
         return f'''
         <section class="slide closing">
-          <h1>{escape(data['title'])}</h1>
+          <h1>Presto<span class="dot">.</span></h1>
           <div class="sub">{escape(data['subtitle'])}</div>
           <div class="url">{escape(data['url'])}</div>
           <div class="meta">{escape(data['meta'])}</div>
@@ -723,6 +749,7 @@ tr:nth-child(even) td { background: #f8fafc; }
 .slide.cover, .slide.closing { background: var(--navy); color: #fff; }
 .cover .pmark { width: 0.9in; height: 0.9in; border-radius: 0.18in; background: var(--brand); color: #fff; font-size: 38pt; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-bottom: 0.22in; }
 .cover h1 { font-size: 62pt; margin: 0 0 0.05in; color: #fff; }
+.cover .dot, .closing .dot { color: #93c5fd; }
 .cover .sub { font-size: 22pt; color: #dbeafe; max-width: 9.2in; line-height: 1.3; }
 .cover .badge { display: inline-block; background: var(--amber-bg); color: var(--amber); font-size: 10.5pt; font-weight: 700; letter-spacing: 0.06em; padding: 0.08in 0.14in; border-radius: 0.08in; margin-top: 0.35in; }
 .cover-text { color: #c7d2fe; font-size: 15pt; margin-top: 0.2in; }
@@ -736,8 +763,10 @@ tr:nth-child(even) td { background: #f8fafc; }
 '''
 
 
-def build_html():
-    slides = ''.join(html_slide(data, index) for index, data in enumerate(SLIDES, start=1))
+def build_html(slides=None, output=None):
+    slides = slides or SLIDES
+    output = Path(output) if output else DOCS / 'presentacion-presto.html'
+    deck = ''.join(html_slide(data, index) for index, data in enumerate(slides, start=1))
     document = f'''<!doctype html>
 <html lang="es">
 <head>
@@ -745,9 +774,8 @@ def build_html():
   <title>Presto — presentación</title>
   <style>{HTML_CSS}</style>
 </head>
-<body>{slides}</body>
+<body>{deck}</body>
 </html>'''
-    output = DOCS / 'presentacion-presto.html'
     output.write_text(document, encoding='utf-8')
     return output
 

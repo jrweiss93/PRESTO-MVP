@@ -19,6 +19,7 @@ del trabajo en [HANDOFF.md](HANDOFF.md).
 > Resumen ejecutivo de 3 páginas: **[docs/resumen-ejecutivo.pdf](docs/resumen-ejecutivo.pdf)** (también en Word).
 > Guía para mostrar sin tecnicismos: **[docs/guia-para-mostrar.pdf](docs/guia-para-mostrar.pdf)**.
 > Presentación de 13 slides: **[docs/presentacion-presto.pdf](docs/presentacion-presto.pdf)** · **[PowerPoint](docs/presentacion-presto.pptx)**.
+> Versión corta de 8 slides: **[docs/presentacion-corta.pdf](docs/presentacion-corta.pdf)** · **[PowerPoint](docs/presentacion-corta.pptx)**.
 > Documento de la aplicación: **[docs/documento-presto.pdf](docs/documento-presto.pdf)** (también en Word y Markdown).
 >
 > **Demo en un clic (Windows):** doble clic en **`PRESTO-DEMO.cmd`** o en el
