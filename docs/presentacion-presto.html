@@ -60,7 +60,9 @@ tr:nth-child(even) td { background: #f8fafc; }
 .flow .step p { margin: 0; font-size: 10.5pt; color: #4b5563; line-height: 1.3; }
 .footer { position: absolute; bottom: 0.25in; left: 0.6in; right: 0.6in; display: flex; justify-content: space-between; font-size: 9pt; color: var(--gray); }
 .slide.cover, .slide.closing { background: var(--navy); color: #fff; }
-.cover .pmark { width: 0.9in; height: 0.9in; border-radius: 0.18in; background: var(--brand); color: #fff; font-size: 38pt; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-bottom: 0.22in; }
+.logo-lg { width: 1.05in; height: 1.05in; display: block; margin-bottom: 0.2in; }
+.logo-sm { width: 0.3in; height: 0.3in; vertical-align: middle; margin-right: 0.08in; }
+.closing .logo-lg { width: 1.25in; height: 1.25in; }
 .cover h1 { font-size: 62pt; margin: 0 0 0.05in; color: #fff; }
 .cover .dot, .closing .dot { color: #93c5fd; }
 .cover .sub { font-size: 22pt; color: #dbeafe; max-width: 9.2in; line-height: 1.3; }
@@ -77,7 +79,7 @@ tr:nth-child(even) td { background: #f8fafc; }
 </head>
 <body>
         <section class="slide cover">
-          <div class="pmark">P</div>
+          <img class="logo-lg" src="assets/presto-logo.png" alt="Logo de Presto">
           <h1>Presto<span class="dot">.</span></h1>
           <div class="sub">Finanzas e inversiones entre personas, en pesos y dólares.</div>
           <div class="badge">DEMO PÚBLICA · DINERO SIMULADO</div>
@@ -85,83 +87,84 @@ tr:nth-child(even) td { background: #f8fafc; }
           <div class="meta"><div class="url">https://presto-mvp-alpha.vercel.app</div><div>Octubre 2026</div></div>
         </section>
     <section class="slide">
-      <div class="brand">Presto.</div><div class="kicker">01 · CONTEXTO</div>
+      <div class="brand"><img class="logo-sm" src="assets/presto-logo.png" alt="">Presto.</div><div class="kicker">01 · CONTEXTO</div>
       <h1 class="title">El problema</h1>
       <div class="rule"></div>
       <div class="content"><ul class="bullets"><li>Pedir un préstamo suele ser lento, con requisitos poco claros y costos que aparecen al final.</li><li>Ahorrar en pesos es difícil y la inversión parece reservada a especialistas.</li><li>Las herramientas están separadas: banco, billetera, planilla y app de inversión.</li><li>Quien tiene dinero para prestar no encuentra un lugar simple con reglas claras.</li></ul><div class="note">La claridad también es parte del producto.</div></div>
       <div class="footer"><span>Presto · demo pública · 2026</span><span>2</span></div>
     </section>
     <section class="slide">
-      <div class="brand">Presto.</div><div class="kicker">02 · PROPUESTA</div>
+      <div class="brand"><img class="logo-sm" src="assets/presto-logo.png" alt="">Presto.</div><div class="kicker">02 · PROPUESTA</div>
       <h1 class="title">La solución</h1>
       <div class="rule"></div>
       <div class="content"><p class="intro">Una sola aplicación para mover, prestar, invertir y ordenar.</p><div class="cards cols2"><div class="card"><h3>Billetera en dos monedas</h3><p>Saldo en ARS y USD, depósitos, retiros y transferencias.</p></div><div class="card"><h3>Préstamos entre personas</h3><p>Publicá una oferta o elegí la que mejor se adapta a vos.</p></div><div class="card"><h3>Inversiones simples</h3><p>Plazos fijos con tasa, interés y vencimiento claros.</p></div><div class="card"><h3>Orden financiero</h3><p>Presupuestos por categoría y control de gastos.</p></div></div><div class="note">Presti: un asistente que explica el mercado, tus cuotas y el marco legal sin tecnicismos.</div></div>
       <div class="footer"><span>Presto · demo pública · 2026</span><span>3</span></div>
     </section>
     <section class="slide">
-      <div class="brand">Presto.</div><div class="kicker">03 · PÚBLICO</div>
+      <div class="brand"><img class="logo-sm" src="assets/presto-logo.png" alt="">Presto.</div><div class="kicker">03 · PÚBLICO</div>
       <h1 class="title">¿A quién está dirigida?</h1>
       <div class="rule"></div>
       <div class="content"><div class="cards cols3"><div class="card"><h3>Ana, 29</h3><p>Prestataria<br>Necesita financiarse para un proyecto y quiere saber exactamente cuánto va a pagar por mes.</p></div><div class="card"><h3>Beto, 45</h3><p>Prestamista<br>Tiene saldo y quiere prestarlo con reglas claras, sin perder el control de su dinero.</p></div><div class="card"><h3>Carla, 35</h3><p>Inversora<br>Quiere que su saldo rinda sin volverse experta en mercados ni en jerga financiera.</p></div></div><div class="note">Personas sin experiencia financiera que valoran claridad, orden y una interfaz simple.</div></div>
       <div class="footer"><span>Presto · demo pública · 2026</span><span>4</span></div>
     </section>
     <section class="slide">
-      <div class="brand">Presto.</div><div class="kicker">04 · PRODUCTO</div>
+      <div class="brand"><img class="logo-sm" src="assets/presto-logo.png" alt="">Presto.</div><div class="kicker">04 · PRODUCTO</div>
       <h1 class="title">¿Qué operaciones permite?</h1>
       <div class="rule"></div>
       <div class="content"><div class="cards cols3"><div class="card"><h3>Identidad</h3><p>Verificación de identidad antes de operar con dinero.</p></div><div class="card"><h3>Billetera</h3><p>Depositar, retirar y transferir en ARS o USD.</p></div><div class="card"><h3>Ofertas</h3><p>Publicar, buscar y comparar ofertas de préstamo.</p></div><div class="card"><h3>Préstamos</h3><p>Aceptar una oferta, recibir el dinero y pagar cuotas.</p></div><div class="card"><h3>Inversiones</h3><p>Abrir un plazo fijo y cobrar el interés al vencimiento.</p></div><div class="card"><h3>Control</h3><p>Presupuestos por categoría y seguimiento de gastos.</p></div></div><div class="note">Cada operación queda registrada y se puede seguir desde el panel.</div></div>
       <div class="footer"><span>Presto · demo pública · 2026</span><span>5</span></div>
     </section>
     <section class="slide">
-      <div class="brand">Presto.</div><div class="kicker">05 · CÓMO FUNCIONA</div>
+      <div class="brand"><img class="logo-sm" src="assets/presto-logo.png" alt="">Presto.</div><div class="kicker">05 · CÓMO FUNCIONA</div>
       <h1 class="title">El circuito completo</h1>
       <div class="rule"></div>
       <div class="content"><div class="flow"><div class="step"><div class="n">1</div><h3>Verificás tu identidad</h3><p>KYC una vez y ya podés operar.</p></div><div class="step"><div class="n">2</div><h3>Cargás saldo</h3><p>Depósito simulado en la demo.</p></div><div class="step"><div class="n">3</div><h3>Publicás o elegís</h3><p>Oferta propia o una del marketplace.</p></div><div class="step"><div class="n">4</div><h3>Pagás en cuotas</h3><p>Cronograma claro, mes a mes.</p></div><div class="step"><div class="n">5</div><h3>Invertís</h3><p>Plazo fijo con vencimiento e interés.</p></div></div><div class="note">El circuito completo se puede mostrar en cinco minutos.</div></div>
       <div class="footer"><span>Presto · demo pública · 2026</span><span>6</span></div>
     </section>
     <section class="slide">
-      <div class="brand">Presto.</div><div class="kicker">06 · BENEFICIOS</div>
+      <div class="brand"><img class="logo-sm" src="assets/presto-logo.png" alt="">Presto.</div><div class="kicker">06 · BENEFICIOS</div>
       <h1 class="title">Qué cambia con Presto</h1>
       <div class="rule"></div>
       <div class="content"><table><thead><tr><th>Lo habitual</th><th>En Presto</th></tr></thead><tbody><tr><td>Una app para la cuenta, otra para invertir, una planilla para los gastos</td><td>Todo el circuito en una sola aplicación</td></tr><tr><td>Costos que aparecen al final</td><td>Cuota, interés y costo total antes de aceptar</td></tr><tr><td>Inversión con jerga y requisitos altos</td><td>Tasas, plazos y vencimientos explicados en simple</td></tr><tr><td>Una sola moneda o conversión automática</td><td>ARS y USD separados, sin conversión implícita</td></tr><tr><td>Sin asistencia para entender</td><td>Presti explica el mercado y el marco legal</td></tr></tbody></table><div class="note">Comparación de enfoque y experiencia de uso. No compara precios ni condiciones de competidores.</div></div>
       <div class="footer"><span>Presto · demo pública · 2026</span><span>7</span></div>
     </section>
     <section class="slide">
-      <div class="brand">Presto.</div><div class="kicker">07 · ASISTENTE</div>
+      <div class="brand"><img class="logo-sm" src="assets/presto-logo.png" alt="">Presto.</div><div class="kicker">07 · ASISTENTE</div>
       <h1 class="title">Presti, el asistente</h1>
       <div class="rule"></div>
       <div class="content"><div class="cards cols2"><div class="card"><h3>Tu cuenta</h3><p>Saldo, cuotas y próximos vencimientos.</p></div><div class="card"><h3>Mercado</h3><p>Dólar y cripto con datos reales.</p></div><div class="card"><h3>Marco legal</h3><p>Fichas simples con normas y enlaces.</p></div><div class="card"><h3>Sin inventos</h3><p>Reglas y contenido curado; no IA generativa.</p></div></div><div class="note">Si no entiende una pregunta, propone opciones. No promete asesoramiento ni inventa datos.</div></div>
       <div class="footer"><span>Presto · demo pública · 2026</span><span>8</span></div>
     </section>
     <section class="slide">
-      <div class="brand">Presto.</div><div class="kicker">08 · SEGURIDAD</div>
+      <div class="brand"><img class="logo-sm" src="assets/presto-logo.png" alt="">Presto.</div><div class="kicker">08 · SEGURIDAD</div>
       <h1 class="title">Confianza en cada movimiento</h1>
       <div class="rule"></div>
       <div class="content"><div class="cards cols2"><div class="card"><h3>Identidad verificada</h3><p>KYC antes de operar con dinero.</p></div><div class="card"><h3>Cada movimiento, dos veces</h3><p>Libro contable de doble entrada.</p></div><div class="card"><h3>Sin cobros duplicados</h3><p>Cada operación tiene una clave única.</p></div><div class="card"><h3>Monedas separadas</h3><p>ARS y USD nunca se mezclan.</p></div></div></div>
       <div class="footer"><span>Presto · demo pública · 2026</span><span>9</span></div>
     </section>
     <section class="slide">
-      <div class="brand">Presto.</div><div class="kicker">09 · TECNOLOGÍA</div>
+      <div class="brand"><img class="logo-sm" src="assets/presto-logo.png" alt="">Presto.</div><div class="kicker">09 · TECNOLOGÍA</div>
       <h1 class="title">¿Por qué estas herramientas?</h1>
       <div class="rule"></div>
       <div class="content"><div class="cards cols3"><div class="card"><h3>Python + Django</h3><p>Orden, seguridad y velocidad para reglas de dinero.</p></div><div class="card"><h3>PostgreSQL</h3><p>Consistencia y transacciones para datos financieros.</p></div><div class="card"><h3>Redis + Celery</h3><p>Tareas diarias sin bloquear la aplicación.</p></div><div class="card"><h3>React + Vite</h3><p>Interfaz rápida y pensada primero para celular.</p></div><div class="card"><h3>Docker + Render + Vercel</h3><p>Despliegue reproducible y demo accesible.</p></div></div><div class="note">Se eligieron herramientas probadas y mantenibles, no las de moda.</div></div>
       <div class="footer"><span>Presto · demo pública · 2026</span><span>10</span></div>
     </section>
     <section class="slide">
-      <div class="brand">Presto.</div><div class="kicker">10 · HOY</div>
+      <div class="brand"><img class="logo-sm" src="assets/presto-logo.png" alt="">Presto.</div><div class="kicker">10 · HOY</div>
       <h1 class="title">Estado actual</h1>
       <div class="rule"></div>
       <div class="content"><div class="stats"><div class="stat"><div class="num">13</div><div class="lbl">módulos</div></div><div class="stat"><div class="num">800</div><div class="lbl">pruebas automáticas</div></div><div class="stat"><div class="num">5</div><div class="lbl">controles en cada cambio</div></div><div class="stat"><div class="num">1</div><div class="lbl">demo pública</div></div></div><ul class="bullets small"><li>Login, KYC, billetera, préstamos, inversiones, presupuestos, Presti y admin.</li><li>Demo pública con dinero simulado y datos de ejemplo.</li><li>Cada cambio pasa por calidad, migraciones, tests, front e imagen Docker.</li></ul><div class="note">Demo pública: https://presto-mvp-alpha.vercel.app</div></div>
       <div class="footer"><span>Presto · demo pública · 2026</span><span>11</span></div>
     </section>
     <section class="slide">
-      <div class="brand">Presto.</div><div class="kicker">11 · ROADMAP</div>
+      <div class="brand"><img class="logo-sm" src="assets/presto-logo.png" alt="">Presto.</div><div class="kicker">11 · ROADMAP</div>
       <h1 class="title">Próximos pasos</h1>
       <div class="rule"></div>
       <div class="content"><div class="flow"><div class="step"><div class="n">1</div><h3>Pagos reales</h3><p>Mercado Pago sandbox y luego producción.</p></div><div class="step"><div class="n">2</div><h3>KYC con documentos</h3><p>Subida y validación de identidad.</p></div><div class="step"><div class="n">3</div><h3>Legal</h3><p>TyC, privacidad y encuadre regulatorio.</p></div><div class="step"><div class="n">4</div><h3>Operación</h3><p>Sentry, backups y dominio propio.</p></div></div><div class="note">La demo está lista; esto falta para usuarios reales.</div></div>
       <div class="footer"><span>Presto · demo pública · 2026</span><span>12</span></div>
     </section>
         <section class="slide closing">
+          <img class="logo-lg" src="assets/presto-logo.png" alt="Logo de Presto">
           <h1>Presto<span class="dot">.</span></h1>
           <div class="sub">Menos fricción, más claridad.</div>
           <div class="url">https://presto-mvp-alpha.vercel.app</div>
