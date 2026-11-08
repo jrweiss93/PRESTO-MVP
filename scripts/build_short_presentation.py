@@ -152,5 +152,5 @@ SHORT_SLIDES = [
 
 
 if __name__ == '__main__':
-    print(f"PPTX: {build_pptx(SHORT_SLIDES, DOCS / 'presentacion-corta.pptx')}")
-    print(f"HTML: {build_html(SHORT_SLIDES, DOCS / 'presentacion-corta.html')}")
+    print(f'PPTX: {build_pptx(SHORT_SLIDES, DOCS / "presentacion-corta.pptx")}')
+    print(f'HTML: {build_html(SHORT_SLIDES, DOCS / "presentacion-corta.html")}')

@@ -73,8 +73,14 @@ SLIDES = [
         'kicker': '02 · PROPUESTA',
         'intro': 'Una sola aplicación para mover, prestar, invertir y ordenar.',
         'cards': [
-            ('Billetera en dos monedas', 'Saldo en ARS y USD, depósitos, retiros y transferencias.'),
-            ('Préstamos entre personas', 'Publicá una oferta o elegí la que mejor se adapta a vos.'),
+            (
+                'Billetera en dos monedas',
+                'Saldo en ARS y USD, depósitos, retiros y transferencias.',
+            ),
+            (
+                'Préstamos entre personas',
+                'Publicá una oferta o elegí la que mejor se adapta a vos.',
+            ),
             ('Inversiones simples', 'Plazos fijos con tasa, interés y vencimiento claros.'),
             ('Orden financiero', 'Presupuestos por categoría y control de gastos.'),
         ],
@@ -90,9 +96,18 @@ SLIDES = [
         'title': '¿A quién está dirigida?',
         'kicker': '03 · PÚBLICO',
         'cards': [
-            ('Ana, 29', 'Prestataria\nNecesita financiarse para un proyecto y quiere saber exactamente cuánto va a pagar por mes.'),
-            ('Beto, 45', 'Prestamista\nTiene saldo y quiere prestarlo con reglas claras, sin perder el control de su dinero.'),
-            ('Carla, 35', 'Inversora\nQuiere que su saldo rinda sin volverse experta en mercados ni en jerga financiera.'),
+            (
+                'Ana, 29',
+                'Prestataria\nNecesita financiarse para un proyecto y quiere saber exactamente cuánto va a pagar por mes.',
+            ),
+            (
+                'Beto, 45',
+                'Prestamista\nTiene saldo y quiere prestarlo con reglas claras, sin perder el control de su dinero.',
+            ),
+            (
+                'Carla, 35',
+                'Inversora\nQuiere que su saldo rinda sin volverse experta en mercados ni en jerga financiera.',
+            ),
         ],
         'note': 'Personas sin experiencia financiera que valoran claridad, orden y una interfaz simple.',
         'cols': 3,
@@ -143,10 +158,19 @@ SLIDES = [
         'kicker': '06 · BENEFICIOS',
         'headers': ['Lo habitual', 'En Presto'],
         'rows': [
-            ('Una app para la cuenta, otra para invertir, una planilla para los gastos', 'Todo el circuito en una sola aplicación'),
+            (
+                'Una app para la cuenta, otra para invertir, una planilla para los gastos',
+                'Todo el circuito en una sola aplicación',
+            ),
             ('Costos que aparecen al final', 'Cuota, interés y costo total antes de aceptar'),
-            ('Inversión con jerga y requisitos altos', 'Tasas, plazos y vencimientos explicados en simple'),
-            ('Una sola moneda o conversión automática', 'ARS y USD separados, sin conversión implícita'),
+            (
+                'Inversión con jerga y requisitos altos',
+                'Tasas, plazos y vencimientos explicados en simple',
+            ),
+            (
+                'Una sola moneda o conversión automática',
+                'ARS y USD separados, sin conversión implícita',
+            ),
             ('Sin asistencia para entender', 'Presti explica el mercado y el marco legal'),
         ],
         'note': 'Comparación de enfoque y experiencia de uso. No compara precios ni condiciones de competidores.',
@@ -389,7 +413,12 @@ def add_note(slide, text, top=5.55):
 
 def add_table(slide, headers, rows, top=1.9):
     shape = slide.shapes.add_table(
-        len(rows) + 1, len(headers), Inches(0.55), Inches(top), Inches(12.2), Inches(0.5 * (len(rows) + 1))
+        len(rows) + 1,
+        len(headers),
+        Inches(0.55),
+        Inches(top),
+        Inches(12.2),
+        Inches(0.5 * (len(rows) + 1)),
     )
     table = shape.table
     table.columns[0].width = Inches(6.2)
@@ -519,7 +548,17 @@ def add_cover(prs, data):
     run.font.bold = True
     run.font.color.rgb = AMBER
     run.font.name = 'Segoe UI'
-    add_text(slide, 0.85, 4.0, 10.8, 0.5, 'Una demo para mostrar el circuito completo, sin dinero real.', 15, False, SOFT_BLUE)
+    add_text(
+        slide,
+        0.85,
+        4.0,
+        10.8,
+        0.5,
+        'Una demo para mostrar el circuito completo, sin dinero real.',
+        15,
+        False,
+        SOFT_BLUE,
+    )
     add_text(slide, 0.85, 6.15, 10, 0.3, data['url'], 13, True, WHITE)
     add_text(slide, 0.85, 6.5, 10, 0.3, data['date'], 10, False, SOFT_BLUE)
     slide.notes_slide.notes_text_frame.text = data['notes']
@@ -556,7 +595,18 @@ def build_pptx(slides=None, output=None):
 
         slide = add_base(prs, data['title'], index, data.get('kicker'))
         if kind == 'bullets':
-            add_text(slide, 0.7, 1.9, 11.9, 4.8, '\n'.join(f'•  {item}' for item in data['bullets']), 17, False, DARK, line_spacing=1.35)
+            add_text(
+                slide,
+                0.7,
+                1.9,
+                11.9,
+                4.8,
+                '\n'.join(f'•  {item}' for item in data['bullets']),
+                17,
+                False,
+                DARK,
+                line_spacing=1.35,
+            )
             if data.get('note'):
                 add_note(slide, data['note'], top=5.95)
         elif kind in {'cards', 'personas'}:
@@ -597,7 +647,18 @@ def build_pptx(slides=None, output=None):
                 run.font.size = Pt(10.5)
                 run.font.color.rgb = GRAY
                 run.font.name = 'Segoe UI'
-            add_text(slide, 0.7, 4.0, 11.9, 2.5, '\n'.join(f'•  {item}' for item in data['bullets']), 15, False, DARK, line_spacing=1.35)
+            add_text(
+                slide,
+                0.7,
+                4.0,
+                11.9,
+                2.5,
+                '\n'.join(f'•  {item}' for item in data['bullets']),
+                15,
+                False,
+                DARK,
+                line_spacing=1.35,
+            )
             if data.get('note'):
                 add_note(slide, data['note'], top=6.3)
 
@@ -620,10 +681,12 @@ def html_card(title, body):
 
 def html_slide(data, number):
     kind = data['kind']
-    footer = f'<div class="footer"><span>Presto · demo pública · 2026</span><span>{number}</span></div>'
+    footer = (
+        f'<div class="footer"><span>Presto · demo pública · 2026</span><span>{number}</span></div>'
+    )
 
     if kind == 'cover':
-        return f'''
+        return f"""
         <section class="slide cover">
           <img class="logo-lg" src="assets/presto-logo.png" alt="Logo de Presto">
           <h1>Presto<span class="dot">.</span></h1>
@@ -631,10 +694,10 @@ def html_slide(data, number):
           <div class="badge">{escape(data['tag'])}</div>
           <p class="cover-text">Una demo para mostrar el circuito completo, sin dinero real.</p>
           <div class="meta"><div class="url">{escape(data['url'])}</div><div>{escape(data['date'])}</div></div>
-        </section>'''
+        </section>"""
 
     if kind == 'closing':
-        return f'''
+        return f"""
         <section class="slide closing">
           <img class="logo-lg" src="assets/presto-logo.png" alt="Logo de Presto">
           <h1>Presto<span class="dot">.</span></h1>
@@ -642,12 +705,16 @@ def html_slide(data, number):
           <div class="url">{escape(data['url'])}</div>
           <div class="meta">{escape(data['meta'])}</div>
           <div class="thanks">Gracias.</div>
-        </section>'''
+        </section>"""
 
     kicker = f'<div class="kicker">{escape(data["kicker"])}</div>' if data.get('kicker') else ''
     content = ''
     if kind == 'bullets':
-        content = '<ul class="bullets">' + ''.join(f'<li>{escape(item)}</li>' for item in data['bullets']) + '</ul>'
+        content = (
+            '<ul class="bullets">'
+            + ''.join(f'<li>{escape(item)}</li>' for item in data['bullets'])
+            + '</ul>'
+        )
         if data.get('note'):
             content += f'<div class="note">{escape(data["note"])}</div>'
     elif kind in {'cards', 'personas'}:
@@ -675,21 +742,25 @@ def html_slide(data, number):
             f'<div class="stat"><div class="num">{escape(number)}</div><div class="lbl">{escape(label)}</div></div>'
             for number, label in data['stats']
         )
-        bullets = '<ul class="bullets small">' + ''.join(f'<li>{escape(item)}</li>' for item in data['bullets']) + '</ul>'
+        bullets = (
+            '<ul class="bullets small">'
+            + ''.join(f'<li>{escape(item)}</li>' for item in data['bullets'])
+            + '</ul>'
+        )
         note = f'<div class="note">{escape(data["note"])}</div>' if data.get('note') else ''
         content = f'<div class="stats">{stats}</div>{bullets}{note}'
 
-    return f'''
+    return f"""
     <section class="slide">
       <div class="brand"><img class="logo-sm" src="assets/presto-logo.png" alt="">Presto.</div>{kicker}
       <h1 class="title">{escape(data['title'])}</h1>
       <div class="rule"></div>
       <div class="content">{content}</div>
       {footer}
-    </section>'''
+    </section>"""
 
 
-HTML_CSS = '''
+HTML_CSS = """
 :root {
   --navy: #1e3a8a;
   --brand: #465fff;
@@ -761,14 +832,14 @@ tr:nth-child(even) td { background: #f8fafc; }
 .closing .url { color: #fff; font-size: 15pt; margin-top: 0.45in; }
 .closing .meta { color: #c7d2fe; font-size: 10.5pt; margin-top: 0.15in; line-height: 1.4; }
 .closing .thanks { color: #fff; font-size: 16pt; font-weight: 600; margin-top: 0.55in; }
-'''
+"""
 
 
 def build_html(slides=None, output=None):
     slides = slides or SLIDES
     output = Path(output) if output else DOCS / 'presentacion-presto.html'
     deck = ''.join(html_slide(data, index) for index, data in enumerate(slides, start=1))
-    document = f'''<!doctype html>
+    document = f"""<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -776,7 +847,7 @@ def build_html(slides=None, output=None):
   <style>{HTML_CSS}</style>
 </head>
 <body>{deck}</body>
-</html>'''
+</html>"""
     output.write_text(document, encoding='utf-8')
     return output
 
