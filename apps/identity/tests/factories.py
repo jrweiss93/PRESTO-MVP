@@ -1,7 +1,7 @@
 import factory
 from django.contrib.auth import get_user_model
 
-from apps.identity.models import KYCVerification, Profile
+from apps.identity.models import KYCVerification, PrestoProfile, Profile
 
 User = get_user_model()
 
@@ -43,3 +43,14 @@ class KYCVerificationFactory(factory.django.DjangoModelFactory):
     user = factory.SubFactory(UserFactory)
     status = KYCVerification.Status.PENDING
     documents = factory.LazyAttribute(lambda _: {})
+
+
+class PrestoProfileFactory(factory.django.DjangoModelFactory):
+    """Factory de PrestoProfile."""
+
+    class Meta:
+        model = PrestoProfile
+
+    user = factory.SubFactory(UserFactory)
+    kind = PrestoProfile.Kind.BORROWER
+    is_active = False

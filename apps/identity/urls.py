@@ -26,6 +26,11 @@ urlpatterns = [
         name='auth-email-resend',
     ),
     path('auth/me/', views.MeView.as_view(), name='auth-me'),
+    path(
+        'auth/me/activate-profile/',
+        views.ActivateProfileView.as_view(),
+        name='auth-me-activate-profile',
+    ),
     path('kyc/', views.KycView.as_view(), name='kyc'),
     path('kyc/<uuid:verification_id>/', views.KycDetailView.as_view(), name='kyc-detail'),
 ]

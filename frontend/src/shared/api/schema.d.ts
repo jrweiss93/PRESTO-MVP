@@ -208,6 +208,26 @@ export interface paths {
         patch: operations["auth_me_partial_update"];
         trace?: never;
     };
+    "/api/v1/auth/me/activate-profile/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activar un perfil de Presto
+         * @description Activa el perfil indicado (prestatario, prestamista o inversor) y devuelve el usuario con el perfil activo actualizado.
+         */
+        post: operations["auth_me_activate_profile_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/password-reset/": {
         parameters: {
             query?: never;
@@ -1001,6 +1021,10 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /** @description Tipo de perfil a activar. */
+        ActivateProfile: {
+            kind: components["schemas"]["PrestoProfileKindEnum"];
+        };
         /** @description Saldo de una cuenta. */
         Balance: {
             /** Format: uuid */
@@ -1732,6 +1756,27 @@ export interface components {
          * @enum {string}
          */
         PositionStatusEnum: "active" | "matured";
+        /** @description Perfil de Presto que el usuario puede activar. */
+        PrestoProfile: {
+            readonly kind: components["schemas"]["PrestoProfileKindEnum"];
+            readonly is_active: boolean;
+        };
+        /**
+         * @description * `borrower` - Prestatario
+         *     * `lender` - Prestamista
+         *     * `investor` - Inversor
+         * @enum {string}
+         */
+        PrestoProfileKindEnum: "borrower" | "lender" | "investor";
+        /** @description Datos del perfil de un usuario. */
+        Profile: {
+            /** Format: uuid */
+            readonly id: string;
+            phone_number?: string;
+            /** Format: date */
+            date_of_birth?: string | null;
+            country?: string;
+        };
         /**
          * @description * `simulated` - Simulado
          *     * `mercadopago` - Mercado Pago
@@ -1808,7 +1853,7 @@ export interface components {
          * @enum {string}
          */
         UpdateOfferStatusEnum: "expired";
-        /** @description Datos públicos de un usuario. */
+        /** @description Datos públicos de un usuario, con sus perfiles de Presto. */
         User: {
             /** Format: uuid */
             readonly id: string;
@@ -1817,6 +1862,9 @@ export interface components {
             first_name?: string;
             last_name?: string;
             readonly email_verified: boolean;
+            readonly profile: components["schemas"]["Profile"] | null;
+            readonly profiles: components["schemas"]["PrestoProfile"][];
+            readonly active_profile: string | null;
         };
         /** @description Respuesta del endpoint de webhook. */
         WebhookEvent: {
@@ -2065,6 +2113,31 @@ export interface operations {
                 "application/json": components["schemas"]["PatchedMeUpdate"];
                 "application/x-www-form-urlencoded": components["schemas"]["PatchedMeUpdate"];
                 "multipart/form-data": components["schemas"]["PatchedMeUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+        };
+    };
+    auth_me_activate_profile_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivateProfile"];
+                "application/x-www-form-urlencoded": components["schemas"]["ActivateProfile"];
+                "multipart/form-data": components["schemas"]["ActivateProfile"];
             };
         };
         responses: {

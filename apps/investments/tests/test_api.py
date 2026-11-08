@@ -290,3 +290,25 @@ def test_list_positions_without_kyc_is_allowed(client):
     response = client.get('/api/v1/investments/positions/')
 
     assert response.status_code == 200
+
+
+def test_open_position_with_wrong_active_profile_returns_403(client):
+    """Con KYC pero sin el perfil Inversor activo, invertir devuelve 403."""
+    from apps.identity.services import activate_profile
+
+    user = create_approved_user(email='perfil-inversor@example.com')
+    activate_profile(user=user, kind='borrower')
+    product = InvestmentProductFactory(min_amount=Decimal('1000.00'))
+    fund_user(user.id, amount='10000.00', key='api-perfil-dep')
+    authenticate(client, user)
+
+    response = client.post(
+        '/api/v1/investments/positions/',
+        {'product_id': str(product.id), 'amount': '5000.00'},
+        format='json',
+        HTTP_IDEMPOTENCY_KEY='api-perfil-open',
+    )
+
+    assert response.status_code == 403
+    assert response.data['error']['code'] == 'permission_denied'
+    assert 'Inversor' in response.data['error']['message']

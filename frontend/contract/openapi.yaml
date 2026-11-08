@@ -259,6 +259,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
           description: ''
+  /api/v1/auth/me/activate-profile/:
+    post:
+      operationId: auth_me_activate_profile_create
+      description: Activa el perfil indicado (prestatario, prestamista o inversor)
+        y devuelve el usuario con el perfil activo actualizado.
+      summary: Activar un perfil de Presto
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivateProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ActivateProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ActivateProfile'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
   /api/v1/auth/password-reset/:
     post:
       operationId: auth_password_reset_request
@@ -1408,6 +1437,14 @@ components:
       - id
       - kind
       - user_id
+    ActivateProfile:
+      type: object
+      description: Tipo de perfil a activar.
+      properties:
+        kind:
+          $ref: '#/components/schemas/PrestoProfileKindEnum'
+      required:
+      - kind
     Balance:
       type: object
       description: Saldo de una cuenta.
@@ -3054,6 +3091,54 @@ components:
       description: |-
         * `active` - Activa
         * `matured` - Vencida
+    PrestoProfile:
+      type: object
+      description: Perfil de Presto que el usuario puede activar.
+      properties:
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/PrestoProfileKindEnum'
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+      - is_active
+      - kind
+    PrestoProfileKindEnum:
+      enum:
+      - borrower
+      - lender
+      - investor
+      type: string
+      description: |-
+        * `borrower` - Prestatario
+        * `lender` - Prestamista
+        * `investor` - Inversor
+    Profile:
+      type: object
+      description: Datos del perfil de un usuario.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        phone_number:
+          type: string
+          maxLength: 32
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        country:
+          oneOf:
+          - type: string
+            pattern: ^[A-Z]{2}$
+            maxLength: 2
+          - type: string
+            maxLength: 0
+      required:
+      - id
     ProviderEnum:
       enum:
       - simulated
@@ -3232,7 +3317,7 @@ components:
       description: '* `expired` - expired'
     User:
       type: object
-      description: Datos públicos de un usuario.
+      description: Datos públicos de un usuario, con sus perfiles de Presto.
       properties:
         id:
           type: string
@@ -3251,10 +3336,27 @@ components:
         email_verified:
           type: boolean
           readOnly: true
+        profile:
+          allOf:
+          - $ref: '#/components/schemas/Profile'
+          nullable: true
+          readOnly: true
+        profiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrestoProfile'
+          readOnly: true
+        active_profile:
+          type: string
+          nullable: true
+          readOnly: true
       required:
+      - active_profile
       - email
       - email_verified
       - id
+      - profile
+      - profiles
     WebhookEvent:
       type: object
       description: Respuesta del endpoint de webhook.

@@ -1,6 +1,8 @@
 import { useSidebar } from "@/app/providers/SidebarContext";
+import { useAuth } from "@/features/auth/AuthContext";
 import { cn } from "@/shared/lib";
 import { ENABLE_ASSISTANT } from "@/shared/lib/features";
+import type { ProfileKind } from "@/shared/api/types";
 import { NavLink } from "react-router-dom";
 import {
   CartIcon,
@@ -20,6 +22,8 @@ type NavItem = {
   name: string;
   icon: (active: boolean) => React.ReactNode;
   path: string;
+  /** Perfiles que ven el ítem. Si falta, lo ven todos los perfiles. */
+  profiles?: ProfileKind[];
 };
 
 const navItems: NavItem[] = [
@@ -77,6 +81,7 @@ const navItems: NavItem[] = [
       />
     ),
     path: "/marketplace",
+    profiles: ["borrower"],
   },
   {
     name: "Mis ofertas",
@@ -88,6 +93,7 @@ const navItems: NavItem[] = [
       />
     ),
     path: "/ofertas",
+    profiles: ["lender"],
   },
   {
     name: "Préstamos",
@@ -99,6 +105,7 @@ const navItems: NavItem[] = [
       />
     ),
     path: "/prestamos",
+    profiles: ["borrower", "lender"],
   },
   {
     name: "Inversiones",
@@ -110,6 +117,7 @@ const navItems: NavItem[] = [
       />
     ),
     path: "/inversiones",
+    profiles: ["investor"],
   },
   {
     name: "Presti",
@@ -135,15 +143,22 @@ const navItems: NavItem[] = [
   },
 ];
 
-// El asistente solo existe contra el mock: se oculta si el backend es real.
-const visibleNavItems: NavItem[] = ENABLE_ASSISTANT
-  ? navItems
-  : navItems.filter((nav) => nav.path !== "/asistente");
+function navVisibleForProfile(item: NavItem, activeProfile: ProfileKind | null) {
+  if (item.profiles == null) return true;
+  return activeProfile != null && item.profiles.includes(activeProfile);
+}
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { activeProfile } = useAuth();
 
   const showLabels = isExpanded || isHovered || isMobileOpen;
+
+  const visibleNavItems = navItems.filter((nav) => {
+    // El asistente solo existe contra el mock: se oculta si el backend es real.
+    if (nav.path === "/asistente" && !ENABLE_ASSISTANT) return false;
+    return navVisibleForProfile(nav, activeProfile);
+  });
 
   return (
     <aside

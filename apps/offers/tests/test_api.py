@@ -309,3 +309,27 @@ def test_list_offers_without_kyc_is_allowed(client):
     response = client.get('/api/v1/offers/')
 
     assert response.status_code == 200
+
+
+def test_create_offer_with_wrong_active_profile_returns_403(client):
+    """Con KYC pero sin el perfil Prestamista activo, publicar devuelve 403."""
+    from apps.identity.services import activate_profile
+
+    user = create_approved_user(email='perfil-oferta@example.com')
+    activate_profile(user=user, kind='borrower')
+    authenticate(client, user)
+
+    response = client.post(
+        '/api/v1/offers/',
+        {
+            'amount': '10000.00',
+            'currency': 'ARS',
+            'interest_rate': '24.00',
+            'term_months': 12,
+        },
+        format='json',
+    )
+
+    assert response.status_code == 403
+    assert response.data['error']['code'] == 'permission_denied'
+    assert 'Prestamista' in response.data['error']['message']

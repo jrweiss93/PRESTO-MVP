@@ -3,7 +3,7 @@
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 from rest_framework.throttling import ScopedRateThrottle
 
-from apps.identity.selectors import is_kyc_approved
+from apps.identity.selectors import get_active_profile, is_kyc_approved
 
 
 class LoginThrottle(ScopedRateThrottle):
@@ -59,4 +59,58 @@ class KycApprovedForUnsafeMethods:
         permissions = list(super().get_permissions())
         if self.request.method not in SAFE_METHODS:
             permissions.append(IsKycApproved())
+        return permissions
+
+
+class IsActiveProfile(BasePermission):
+    """Permite operar solo con un perfil de Presto concreto activo.
+
+    El chequeo de KYC corre antes (ver `ActiveProfileForUnsafeMethods`): si el
+    usuario no tiene KYC aprobada, recibe el `403` de KYC; recién con KYC se
+    valida que el perfil activo sea el adecuado para la operación.
+    """
+
+    messages = {
+        'borrower': 'Para pedir préstamos necesitás activar el perfil Prestatario.',
+        'lender': 'Para prestar necesitás activar el perfil Prestamista.',
+        'investor': 'Para invertir necesitás activar el perfil Inversor.',
+    }
+
+    def __init__(self, profile_kind: str):
+        """Guarda el tipo de perfil que exige la operación.
+
+        Args:
+            profile_kind: tipo de perfil (`borrower`, `lender` o `investor`).
+        """
+        self.profile_kind = profile_kind
+        self.message = self.messages.get(
+            profile_kind, 'El perfil activo no permite realizar esta operación.'
+        )
+
+    def has_permission(self, request, view) -> bool:
+        """Devuelve True solo si el perfil activo es el que exige la operación."""
+        user = request.user
+        if not (user and user.is_authenticated):
+            return False
+        active = get_active_profile(user_id=user.id)
+        return active is not None and active.kind == self.profile_kind
+
+
+class ActiveProfileForUnsafeMethods(KycApprovedForUnsafeMethods):
+    """Exige KYC y un perfil activo concreto en las operaciones que mueven dinero.
+
+    Hereda de `KycApprovedForUnsafeMethods` para conservar el orden: primero
+    `IsAuthenticated`, después `IsKycApproved` y recién al final el perfil. Así
+    el mensaje de KYC (AGENTS §9.9) sigue teniendo prioridad sobre el de perfil.
+
+    La subclase define `profile_kind` con el perfil que necesita la operación.
+    """
+
+    profile_kind: str | None = None
+
+    def get_permissions(self):
+        """Agrega `IsActiveProfile` después del chequeo de KYC en no-lectura."""
+        permissions = list(super().get_permissions())
+        if self.request.method not in SAFE_METHODS and self.profile_kind:
+            permissions.append(IsActiveProfile(self.profile_kind))
         return permissions

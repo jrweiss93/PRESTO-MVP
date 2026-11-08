@@ -3,7 +3,7 @@
 from django.contrib import admin
 
 from apps.identity.exceptions import InvalidKYCResolution, KYCAlreadyResolved
-from apps.identity.models import KYCVerification, Profile, User
+from apps.identity.models import KYCVerification, PrestoProfile, Profile, User
 from apps.identity.services import resolve_kyc
 
 
@@ -22,6 +22,16 @@ class ProfileAdmin(admin.ModelAdmin):
     """Listado de perfiles de usuario."""
 
     list_display = ['id', 'user', 'phone_number', 'country']
+    search_fields = ['user__email']
+    readonly_fields = ['id']
+
+
+@admin.register(PrestoProfile)
+class PrestoProfileAdmin(admin.ModelAdmin):
+    """Perfiles de Presto de cada usuario (prestatario, prestamista e inversor)."""
+
+    list_display = ['id', 'user', 'kind', 'is_active']
+    list_filter = ['kind', 'is_active']
     search_fields = ['user__email']
     readonly_fields = ['id']
 

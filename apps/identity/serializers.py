@@ -1,8 +1,10 @@
 """Serializers de la app identity: solo validan entrada y dan formato a la salida."""
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.identity.models import KYCVerification, Profile, User
+from apps.identity.models import KYCVerification, PrestoProfile, Profile, User
+from apps.identity.selectors import get_active_profile, get_profile, list_profiles_for_user
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -23,15 +25,13 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, style={'input_type': 'password'})
 
 
-class UserSerializer(serializers.ModelSerializer):
-    """Datos públicos de un usuario."""
-
-    email_verified = serializers.BooleanField(read_only=True)
+class PrestoProfileSerializer(serializers.ModelSerializer):
+    """Perfil de Presto que el usuario puede activar."""
 
     class Meta:
-        model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'email_verified']
-        read_only_fields = ['id', 'email', 'email_verified']
+        model = PrestoProfile
+        fields = ['kind', 'is_active']
+        read_only_fields = fields
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -41,6 +41,52 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = ['id', 'phone_number', 'date_of_birth', 'country']
         read_only_fields = ['id']
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """Datos públicos de un usuario, con sus perfiles de Presto."""
+
+    email_verified = serializers.BooleanField(read_only=True)
+    profile = serializers.SerializerMethodField()
+    profiles = serializers.SerializerMethodField()
+    active_profile = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'email',
+            'first_name',
+            'last_name',
+            'email_verified',
+            'profile',
+            'profiles',
+            'active_profile',
+        ]
+        read_only_fields = ['id', 'email', 'email_verified']
+
+    @extend_schema_field(ProfileSerializer(allow_null=True))
+    def get_profile(self, obj):
+        """Devuelve el perfil de identidad del usuario, o null si no tiene."""
+        profile = get_profile(obj.id)
+        return ProfileSerializer(profile).data if profile else None
+
+    @extend_schema_field(PrestoProfileSerializer(many=True))
+    def get_profiles(self, obj):
+        """Devuelve los perfiles de Presto del usuario (con cuál está activo)."""
+        return PrestoProfileSerializer(list_profiles_for_user(obj.id), many=True).data
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_active_profile(self, obj):
+        """Devuelve el tipo del perfil activo, o null si no hay ninguno."""
+        active = get_active_profile(obj.id)
+        return active.kind if active else None
+
+
+class ActivateProfileSerializer(serializers.Serializer):
+    """Tipo de perfil a activar."""
+
+    kind = serializers.ChoiceField(choices=PrestoProfile.Kind.choices)
 
 
 class MeUpdateSerializer(serializers.Serializer):

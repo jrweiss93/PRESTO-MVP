@@ -25,8 +25,9 @@ from apps.identity.permissions import (
     PasswordResetThrottle,
     RegisterThrottle,
 )
-from apps.identity.selectors import get_kyc_by_id, get_kyc_for_user, get_profile
+from apps.identity.selectors import get_kyc_by_id, get_kyc_for_user
 from apps.identity.serializers import (
+    ActivateProfileSerializer,
     DetailMessageSerializer,
     EmailVerificationResponseSerializer,
     EmailVerificationSerializer,
@@ -37,12 +38,12 @@ from apps.identity.serializers import (
     MeUpdateSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
-    ProfileSerializer,
     RegisterSerializer,
     TokenRefreshResponseSerializer,
     UserSerializer,
 )
 from apps.identity.services import (
+    activate_profile,
     clear_refresh_cookie,
     confirm_email_verification,
     confirm_password_reset,
@@ -60,10 +61,7 @@ logger = logging.getLogger(__name__)
 
 def build_me_payload(user) -> dict:
     """Arma la respuesta del perfil propio con los datos del usuario y su perfil."""
-    payload = UserSerializer(user).data
-    profile = get_profile(user_id=user.id)
-    payload['profile'] = ProfileSerializer(profile).data if profile else None
-    return payload
+    return UserSerializer(user).data
 
 
 class RegisterView(APIView):
@@ -212,6 +210,28 @@ class MeView(APIView):
         serializer = MeUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         update_profile(user=request.user, changes=serializer.validated_data)
+        return Response(build_me_payload(request.user))
+
+
+class ActivateProfileView(APIView):
+    """Activación del perfil de Presto del usuario autenticado."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=ActivateProfileSerializer,
+        responses={200: UserSerializer},
+        summary='Activar un perfil de Presto',
+        description=(
+            'Activa el perfil indicado (prestatario, prestamista o inversor) y '
+            'devuelve el usuario con el perfil activo actualizado.'
+        ),
+    )
+    def post(self, request):
+        """Activa un perfil y devuelve el usuario con su perfil activo."""
+        serializer = ActivateProfileSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        activate_profile(user=request.user, kind=serializer.validated_data['kind'])
         return Response(build_me_payload(request.user))
 
 

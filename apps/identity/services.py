@@ -17,12 +17,13 @@ from apps.identity.exceptions import (
     InvalidDocuments,
     InvalidKYCResolution,
     InvalidProfileField,
+    InvalidProfileKind,
     InvalidToken,
     KYCAlreadyResolved,
     PendingKYCExists,
     WeakPassword,
 )
-from apps.identity.models import KYCVerification, Profile, User
+from apps.identity.models import KYCVerification, PrestoProfile, Profile, User
 from apps.identity.tokens import decode_uid, email_verification_token, encode_uid
 
 logger = logging.getLogger(__name__)
@@ -109,9 +110,52 @@ def register_user(email: str, password: str) -> User:
     with transaction.atomic():
         user = User.objects.create_user(email=email, password=password)
         Profile.objects.create(user=user)
+        create_default_profiles(user)
     logger.info('Usuario registrado: user_id=%s', user.id)
     send_email_verification(user)
     return user
+
+
+def create_default_profiles(user: User) -> None:
+    """Crea los tres perfiles de Presto del usuario, con el prestatario activo.
+
+    El prestatario es el punto de partida menos privilegiado: el usuario puede
+    activar otro perfil en cualquier momento desde el selector.
+
+    Args:
+        user: usuario dueño de los perfiles.
+
+    Returns:
+        None.
+    """
+    for kind in PrestoProfile.Kind.values:
+        PrestoProfile.objects.create(
+            user=user, kind=kind, is_active=(kind == PrestoProfile.Kind.BORROWER)
+        )
+
+
+def activate_profile(user: User, kind: str) -> PrestoProfile:
+    """Activa el perfil de Presto indicado y desactiva los demás.
+
+    Args:
+        user: usuario dueño de los perfiles.
+        kind: tipo de perfil a activar (`borrower`, `lender` o `investor`).
+
+    Returns:
+        El PrestoProfile activado.
+
+    Raises:
+        InvalidProfileKind: si el tipo no es un perfil válido.
+    """
+    if kind not in PrestoProfile.Kind.values:
+        raise InvalidProfileKind('El perfil indicado no existe.')
+    with transaction.atomic():
+        PrestoProfile.objects.filter(user=user).update(is_active=False)
+        profile, _ = PrestoProfile.objects.get_or_create(user=user, kind=kind)
+        profile.is_active = True
+        profile.save(update_fields=['is_active'])
+    logger.info('Perfil activado: user_id=%s kind=%s', user.id, kind)
+    return profile
 
 
 def submit_kyc(user: User, documents: dict[str, Any]) -> KYCVerification:

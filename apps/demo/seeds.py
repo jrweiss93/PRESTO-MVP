@@ -379,6 +379,12 @@ def seed_demo(currency: str = 'ARS', password: str = DEMO_PASSWORD) -> DemoSumma
     investor, _ = _ensure_user(DEMO_INVESTOR, password)
     summary.users = [borrower.email, lender.email, investor.email]
 
+    # Cada persona entra con su perfil activo: la demo muestra los tres menús
+    # distintos de Presto. El usuario puede alternar el perfil desde la app.
+    identity_services.activate_profile(user=borrower, kind='borrower')
+    identity_services.activate_profile(user=lender, kind='lender')
+    identity_services.activate_profile(user=investor, kind='investor')
+
     for user in (borrower, lender, investor):
         _ensure_kyc(user)
         # Las cuentas de la demo ya vienen con el email confirmado: no tiene

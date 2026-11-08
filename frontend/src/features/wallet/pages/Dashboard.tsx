@@ -14,11 +14,12 @@ import {
   LOAN_STATUS_LABELS,
   formatMoney,
 } from "@/shared/lib/format";
+import { PROFILE_LABELS } from "@/shared/lib/profiles";
 import { sumDecimals, compareDecimals } from "@/shared/lib/decimal";
 import { DollarLineIcon, PieChartIcon, UserMoneyIcon } from "@/shared/ui/icons";
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, activeProfile } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -67,7 +68,10 @@ export default function Dashboard() {
   return (
     <>
       <h1>Hola, {user?.first_name || user?.email}</h1>
-      <p className="page-subtitle">Tu resumen financiero en Presto.</p>
+      <p className="page-subtitle">
+        Tu resumen financiero en Presto
+        {activeProfile && ` · Perfil ${PROFILE_LABELS[activeProfile]}`}.
+      </p>
 
       {error && <div className="alert error">{error}</div>}
 
@@ -154,12 +158,21 @@ export default function Dashboard() {
           <h2 className="mt-0 mb-0">Accesos rápidos</h2>
         </div>
         <div className="btn-row">
-          <Link className="btn" to="/marketplace">
-            Buscar ofertas
-          </Link>
-          <Link className="btn secondary" to="/ofertas">
-            Publicar oferta
-          </Link>
+          {activeProfile === "borrower" && (
+            <Link className="btn" to="/marketplace">
+              Buscar ofertas
+            </Link>
+          )}
+          {activeProfile === "lender" && (
+            <Link className="btn" to="/ofertas">
+              Publicar oferta
+            </Link>
+          )}
+          {activeProfile === "investor" && (
+            <Link className="btn" to="/inversiones">
+              Invertir
+            </Link>
+          )}
           <Link className="btn secondary" to="/billetera">
             Depositar fondos
           </Link>

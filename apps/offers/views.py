@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 
 from apps.core.exceptions import InvalidAmount, KYCNotCompleted
 from apps.core.pagination import StandardPagination
-from apps.identity.permissions import KycApprovedForUnsafeMethods
+from apps.identity.permissions import ActiveProfileForUnsafeMethods
 from apps.offers.exceptions import OfferNotEditable, OfferNotFound
 from apps.offers.models import Offer
 from apps.offers.permissions import HasApprovedKyc
@@ -22,9 +22,10 @@ from apps.offers.serializers import (
 from apps.offers.services import create_offer, expire_offer, update_offer
 
 
-class OfferListCreateView(KycApprovedForUnsafeMethods, APIView):
+class OfferListCreateView(ActiveProfileForUnsafeMethods, APIView):
     """Ofertas publicadas por el prestamista autenticado."""
 
+    profile_kind = 'lender'
     permission_classes = [IsAuthenticated]
     pagination_class = StandardPagination
 
@@ -66,9 +67,10 @@ class OfferListCreateView(KycApprovedForUnsafeMethods, APIView):
         return Response(OfferSerializer(offer).data, status=status.HTTP_201_CREATED)
 
 
-class OfferDetailView(APIView):
+class OfferDetailView(ActiveProfileForUnsafeMethods, APIView):
     """Detalle y edición de una oferta propia."""
 
+    profile_kind = 'lender'
     permission_classes = [IsAuthenticated]
 
     @extend_schema(

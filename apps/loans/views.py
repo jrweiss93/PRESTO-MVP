@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 
 from apps.core.exceptions import InsufficientFunds, KYCNotCompleted
 from apps.core.pagination import StandardPagination
-from apps.identity.permissions import KycApprovedForUnsafeMethods
+from apps.identity.permissions import ActiveProfileForUnsafeMethods
 from apps.ledger.exceptions import IdempotencyConflict, IdempotencyKeyConflict
 from apps.loans.exceptions import (
     InstallmentAlreadyPaid,
@@ -32,9 +32,10 @@ from apps.offers.exceptions import (
 )
 
 
-class LoanListCreateView(KycApprovedForUnsafeMethods, APIView):
+class LoanListCreateView(ActiveProfileForUnsafeMethods, APIView):
     """Préstamos en los que el usuario autenticado es parte."""
 
+    profile_kind = 'borrower'
     permission_classes = [IsAuthenticated]
     pagination_class = StandardPagination
 
@@ -99,9 +100,10 @@ class LoanDetailView(APIView):
         return Response(LoanDetailSerializer(loan).data, status=status.HTTP_200_OK)
 
 
-class InstallmentPayView(KycApprovedForUnsafeMethods, APIView):
+class InstallmentPayView(ActiveProfileForUnsafeMethods, APIView):
     """Pago de una cuota del préstamo."""
 
+    profile_kind = 'borrower'
     permission_classes = [IsAuthenticated]
     serializer_class = InstallmentSerializer
 

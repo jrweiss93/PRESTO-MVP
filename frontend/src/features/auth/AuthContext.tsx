@@ -9,15 +9,18 @@ import {
 } from "react";
 import { getAccessToken, setAccessToken } from "@/shared/api/client";
 import * as api from "@/shared/api/endpoints";
-import type { LoginResponse, User } from "@/shared/api/types";
+import type { LoginResponse, ProfileKind, User } from "@/shared/api/types";
+import { isProfileKind } from "@/shared/lib/profiles";
 
 interface AuthContextValue {
   user: User | null;
+  activeProfile: ProfileKind | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  switchProfile: (kind: ProfileKind) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -94,9 +97,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(await api.me());
   }, []);
 
+  const switchProfile = useCallback(async (kind: ProfileKind) => {
+    setUser(await api.activateProfile(kind));
+  }, []);
+
+  const activeProfile = useMemo(
+    () => (user && isProfileKind(user.active_profile) ? user.active_profile : null),
+    [user],
+  );
+
   const value = useMemo(
-    () => ({ user, loading, login, register, logout, refreshUser }),
-    [user, loading, login, register, logout, refreshUser],
+    () => ({
+      user,
+      activeProfile,
+      loading,
+      login,
+      register,
+      logout,
+      refreshUser,
+      switchProfile,
+    }),
+    [user, activeProfile, loading, login, register, logout, refreshUser, switchProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

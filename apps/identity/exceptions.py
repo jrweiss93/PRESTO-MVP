@@ -31,6 +31,10 @@ class InvalidProfileField(IdentityError):
     """Se intentó modificar un campo que no pertenece al perfil."""
 
 
+class InvalidProfileKind(IdentityError):
+    """El perfil de Presto indicado no existe o no le pertenece al usuario."""
+
+
 class WeakPassword(IdentityError):
     """La contraseña no pasa los validadores de Django."""
 

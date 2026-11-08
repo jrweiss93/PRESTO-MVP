@@ -452,3 +452,26 @@ def test_list_loans_without_kyc_is_allowed(client):
     response = client.get('/api/v1/loans/')
 
     assert response.status_code == 200
+
+
+def test_accept_offer_with_wrong_active_profile_returns_403(client):
+    """Con KYC pero sin el perfil Prestatario activo, aceptar devuelve 403."""
+    from apps.identity.services import activate_profile
+
+    lender = create_approved_user(email='perfil-prestamista@example.com')
+    borrower = create_approved_user(email='perfil-prestatario@example.com')
+    activate_profile(user=borrower, kind='lender')
+    offer = make_offer(lender.id)
+    fund_user(lender.id, key='fund-perfil')
+    authenticate(client, borrower)
+
+    response = client.post(
+        '/api/v1/loans/',
+        {'offer_id': str(offer.id)},
+        format='json',
+        HTTP_IDEMPOTENCY_KEY='perfil-accept',
+    )
+
+    assert response.status_code == 403
+    assert response.data['error']['code'] == 'permission_denied'
+    assert 'Prestatario' in response.data['error']['message']

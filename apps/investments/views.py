@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 
 from apps.core.exceptions import InsufficientFunds, KYCNotCompleted
 from apps.core.pagination import StandardPagination
-from apps.identity.permissions import KycApprovedForUnsafeMethods
+from apps.identity.permissions import ActiveProfileForUnsafeMethods
 from apps.investments.exceptions import (
     InsufficientInvestmentAmount,
     ProductNotActive,
@@ -48,9 +48,10 @@ class InvestmentProductListView(APIView):
         return paginator.get_paginated_response(InvestmentProductSerializer(page, many=True).data)
 
 
-class PositionListCreateView(KycApprovedForUnsafeMethods, APIView):
+class PositionListCreateView(ActiveProfileForUnsafeMethods, APIView):
     """Posiciones de inversión del usuario autenticado."""
 
+    profile_kind = 'investor'
     permission_classes = [IsAuthenticated]
     pagination_class = StandardPagination
 

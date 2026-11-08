@@ -145,6 +145,8 @@ SPECTACULAR_SETTINGS = {
     'ENUM_NAME_OVERRIDES': {
         'LoanStatusEnum': 'apps.loans.models.Loan.Status',
         'PositionStatusEnum': 'apps.investments.models.Position.Status',
+        'KindEnum': 'apps.ledger.models.Account.Kind',
+        'PrestoProfileKindEnum': 'apps.identity.models.PrestoProfile.Kind',
     },
 }
 

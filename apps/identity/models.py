@@ -91,6 +91,42 @@ class Profile(BaseModel):
         return f'Profile<{self.user_id}>'
 
 
+class PrestoProfile(BaseModel):
+    """Perfil de Presto que un usuario puede activar.
+
+    Un usuario puede tener los tres perfiles (prestatario, prestamista e
+    inversor) y alternar cuál está activo. El perfil activo define qué ve en el
+    menú y qué operaciones puede hacer: es la identidad con la que opera en
+    cada momento, no un dato estático de la cuenta.
+    """
+
+    class Kind(models.TextChoices):
+        BORROWER = 'borrower', 'Prestatario'
+        LENDER = 'lender', 'Prestamista'
+        INVESTOR = 'investor', 'Inversor'
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='presto_profiles')
+    kind = models.CharField(max_length=16, choices=Kind.choices)
+    is_active = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'kind'],
+                name='identity_prestoprofile_unique_kind_per_user',
+            ),
+            models.UniqueConstraint(
+                fields=['user'],
+                condition=models.Q(is_active=True),
+                name='identity_prestoprofile_one_active_per_user',
+            ),
+        ]
+        ordering = ['kind']
+
+    def __str__(self):
+        return f'PrestoProfile<{self.user_id}:{self.kind}:{self.is_active}>'
+
+
 class KYCVerification(BaseModel):
     """Solicitud de verificación KYC de un usuario. Se conserva el historial."""
 

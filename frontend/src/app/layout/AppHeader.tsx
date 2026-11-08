@@ -1,4 +1,5 @@
 import { useSidebar } from "@/app/providers/SidebarContext";
+import ProfileSwitcher from "@/app/layout/ProfileSwitcher";
 import { useAuth } from "@/features/auth/AuthContext";
 import { cn } from "@/shared/lib";
 import { useEffect, useRef, useState } from "react";
@@ -74,6 +75,8 @@ export default function AppHeader() {
           </Link>
 
           <div className="hidden xl:block" />
+
+          <ProfileSwitcher />
 
           <div className="relative" ref={dropdownRef}>
             <button

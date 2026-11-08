@@ -2,7 +2,7 @@
 
 import uuid
 
-from apps.identity.models import KYCVerification, Profile, User
+from apps.identity.models import KYCVerification, PrestoProfile, Profile, User
 
 
 def get_profile(user_id: uuid.UUID) -> Profile | None:
@@ -53,6 +53,43 @@ def is_kyc_approved(user_id: uuid.UUID) -> bool:
     """
     verification = get_kyc_for_user(user_id=user_id)
     return verification is not None and verification.status == KYCVerification.Status.APPROVED
+
+
+def list_profiles_for_user(user_id: uuid.UUID) -> list[PrestoProfile]:
+    """Lista los perfiles de Presto del usuario.
+
+    Args:
+        user_id: identificador del usuario.
+
+    Returns:
+        Los perfiles del usuario (prestatario, prestamista e inversor).
+    """
+    return list(PrestoProfile.objects.filter(user_id=user_id).order_by('kind'))
+
+
+def get_active_profile(user_id: uuid.UUID) -> PrestoProfile | None:
+    """Devuelve el perfil de Presto activo del usuario, o None si no tiene.
+
+    Args:
+        user_id: identificador del usuario.
+
+    Returns:
+        El PrestoProfile activo o None.
+    """
+    return PrestoProfile.objects.filter(user_id=user_id, is_active=True).first()
+
+
+def get_profile_for_kind(user_id: uuid.UUID, kind: str) -> PrestoProfile | None:
+    """Devuelve el perfil del usuario para el tipo indicado, o None.
+
+    Args:
+        user_id: identificador del usuario.
+        kind: tipo de perfil (`borrower`, `lender` o `investor`).
+
+    Returns:
+        El PrestoProfile del tipo pedido o None.
+    """
+    return PrestoProfile.objects.filter(user_id=user_id, kind=kind).first()
 
 
 def get_user_email(user_id: uuid.UUID) -> str | None:

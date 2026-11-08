@@ -24,6 +24,9 @@ export type PaymentProvider = Schema<"ProviderEnum">;
 export type BudgetPeriod = Schema<"PeriodEnum">;
 
 export type User = Schema<"User">;
+export type PrestoProfile = Schema<"PrestoProfile">;
+/** Perfil de Presto activo: prestatario, prestamista o inversor. */
+export type ProfileKind = Schema<"PrestoProfileKindEnum">;
 export type Login = Schema<"Login">;
 export type Register = Schema<"Register">;
 export type LoginResponse = Schema<"LoginResponse">;
