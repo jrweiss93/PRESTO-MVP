@@ -21,6 +21,10 @@ class RegisterSerializer(serializers.Serializer):
         min_length=8,
         style={'input_type': 'password'},
     )
+    profile_kind = serializers.ChoiceField(
+        choices=PrestoProfile.Kind.choices,
+        required=False,
+    )
 
 
 class LoginSerializer(serializers.Serializer):
@@ -86,12 +90,6 @@ class UserSerializer(serializers.ModelSerializer):
         """Devuelve el tipo del perfil activo, o null si no hay ninguno."""
         active = get_active_profile(obj.id)
         return active.kind if active else None
-
-
-class ActivateProfileSerializer(serializers.Serializer):
-    """Tipo de perfil a activar."""
-
-    kind = serializers.ChoiceField(choices=PrestoProfile.Kind.choices)
 
 
 class MeUpdateSerializer(serializers.Serializer):

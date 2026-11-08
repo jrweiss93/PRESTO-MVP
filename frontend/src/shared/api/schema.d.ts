@@ -208,26 +208,6 @@ export interface paths {
         patch: operations["auth_me_partial_update"];
         trace?: never;
     };
-    "/api/v1/auth/me/activate-profile/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Activar un perfil de Presto
-         * @description Activa el perfil indicado (prestatario, prestamista o inversor) y devuelve el usuario con el perfil activo actualizado.
-         */
-        post: operations["auth_me_activate_profile_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/auth/password-reset/": {
         parameters: {
             query?: never;
@@ -1045,10 +1025,6 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
-        /** @description Tipo de perfil a activar. */
-        ActivateProfile: {
-            kind: components["schemas"]["PrestoProfileKindEnum"];
-        };
         /** @description Saldo de una cuenta. */
         Balance: {
             /** Format: uuid */
@@ -1843,6 +1819,7 @@ export interface components {
             /** Format: email */
             email: string;
             password: string;
+            profile_kind?: components["schemas"]["PrestoProfileKindEnum"];
         };
         /** @description Ficha del marco regulatorio. */
         RegulationCard: {
@@ -2168,31 +2145,6 @@ export interface operations {
                 "application/json": components["schemas"]["PatchedMeUpdate"];
                 "application/x-www-form-urlencoded": components["schemas"]["PatchedMeUpdate"];
                 "multipart/form-data": components["schemas"]["PatchedMeUpdate"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["User"];
-                };
-            };
-        };
-    };
-    auth_me_activate_profile_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ActivateProfile"];
-                "application/x-www-form-urlencoded": components["schemas"]["ActivateProfile"];
-                "multipart/form-data": components["schemas"]["ActivateProfile"];
             };
         };
         responses: {

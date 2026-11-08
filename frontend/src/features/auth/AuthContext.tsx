@@ -20,7 +20,6 @@ interface AuthContextValue {
   register: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
-  switchProfile: (kind: ProfileKind) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -97,10 +96,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(await api.me());
   }, []);
 
-  const switchProfile = useCallback(async (kind: ProfileKind) => {
-    setUser(await api.activateProfile(kind));
-  }, []);
-
   const activeProfile = useMemo(
     () => (user && isProfileKind(user.active_profile) ? user.active_profile : null),
     [user],
@@ -115,9 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register,
       logout,
       refreshUser,
-      switchProfile,
     }),
-    [user, activeProfile, loading, login, register, logout, refreshUser, switchProfile],
+    [user, activeProfile, loading, login, register, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

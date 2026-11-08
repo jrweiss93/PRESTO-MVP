@@ -101,12 +101,13 @@ def get_refresh_token(request) -> str | None:
     return token or None
 
 
-def register_user(email: str, password: str) -> User:
-    """Registra un usuario y le crea su perfil vacío.
+def register_user(email: str, password: str, profile_kind: str = 'borrower') -> User:
+    """Registra un usuario con un único perfil de Presto fijo.
 
     Args:
         email: email único del usuario.
         password: contraseña en texto plano; se hashea antes de guardar.
+        profile_kind: perfil fijo del usuario (`borrower`, `lender` o `investor`).
 
     Returns:
         El usuario creado, con su perfil asociado.
@@ -114,7 +115,10 @@ def register_user(email: str, password: str) -> User:
     Raises:
         EmailAlreadyRegistered: si ya existe un usuario con ese email.
         WeakPassword: si la contraseña no pasa los validadores de Django.
+        InvalidProfileKind: si el perfil indicado no es válido.
     """
+    if profile_kind not in PrestoProfile.Kind.values:
+        raise InvalidProfileKind('El perfil indicado no existe.')
     if User.objects.filter(email__iexact=email).exists():
         raise EmailAlreadyRegistered('Ya existe un usuario registrado con ese email.')
     try:
@@ -124,39 +128,25 @@ def register_user(email: str, password: str) -> User:
     with transaction.atomic():
         user = User.objects.create_user(email=email, password=password)
         Profile.objects.create(user=user)
-        create_default_profiles(user)
-    logger.info('Usuario registrado: user_id=%s', user.id)
+        PrestoProfile.objects.create(user=user, kind=profile_kind, is_active=True)
+    logger.info('Usuario registrado: user_id=%s profile=%s', user.id, profile_kind)
     send_email_verification(user)
     return user
 
 
-def create_default_profiles(user: User) -> None:
-    """Crea los tres perfiles de Presto del usuario, con el prestatario activo.
+def set_profile(user: User, kind: str) -> PrestoProfile:
+    """Deja al usuario con un único perfil de Presto fijo.
 
-    El prestatario es el punto de partida menos privilegiado: el usuario puede
-    activar otro perfil en cualquier momento desde el selector.
-
-    Args:
-        user: usuario dueño de los perfiles.
-
-    Returns:
-        None.
-    """
-    for kind in PrestoProfile.Kind.values:
-        PrestoProfile.objects.create(
-            user=user, kind=kind, is_active=(kind == PrestoProfile.Kind.BORROWER)
-        )
-
-
-def activate_profile(user: User, kind: str) -> PrestoProfile:
-    """Activa el perfil de Presto indicado y desactiva los demás.
+    Se usa para fijar el perfil de las personas de la demo (y para corregir
+    usuarios creados antes de que los perfiles fueran fijos): borra cualquier
+    otro perfil y deja activo solo el indicado.
 
     Args:
-        user: usuario dueño de los perfiles.
-        kind: tipo de perfil a activar (`borrower`, `lender` o `investor`).
+        user: usuario dueño del perfil.
+        kind: perfil fijo a asignar (`borrower`, `lender` o `investor`).
 
     Returns:
-        El PrestoProfile activado.
+        El PrestoProfile único del usuario.
 
     Raises:
         InvalidProfileKind: si el tipo no es un perfil válido.
@@ -164,11 +154,11 @@ def activate_profile(user: User, kind: str) -> PrestoProfile:
     if kind not in PrestoProfile.Kind.values:
         raise InvalidProfileKind('El perfil indicado no existe.')
     with transaction.atomic():
-        PrestoProfile.objects.filter(user=user).update(is_active=False)
-        profile, _ = PrestoProfile.objects.get_or_create(user=user, kind=kind)
-        profile.is_active = True
-        profile.save(update_fields=['is_active'])
-    logger.info('Perfil activado: user_id=%s kind=%s', user.id, kind)
+        PrestoProfile.objects.filter(user=user).exclude(kind=kind).delete()
+        profile, _ = PrestoProfile.objects.update_or_create(
+            user=user, kind=kind, defaults={'is_active': True}
+        )
+    logger.info('Perfil fijado: user_id=%s kind=%s', user.id, kind)
     return profile
 
 

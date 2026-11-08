@@ -53,7 +53,6 @@ import type {
   Payment,
   Position,
   PositionDetail,
-  ProfileKind,
   RegulationCard,
   RegulationsResponse,
   Register,
@@ -75,11 +74,6 @@ export function register(payload: Register): Promise<User> {
 
 export function me(): Promise<User> {
   return apiGet<User>("/auth/me/");
-}
-
-/** Activa un perfil de Presto y devuelve el usuario actualizado. */
-export function activateProfile(kind: ProfileKind): Promise<User> {
-  return apiPost<User>("/auth/me/activate-profile/", { kind });
 }
 
 export function updateMe(payload: PatchedMeUpdate): Promise<User> {

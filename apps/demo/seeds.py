@@ -52,6 +52,10 @@ DEMO_BORROWER = 'ana@presto.demo'
 DEMO_LENDER = 'beto@presto.demo'
 DEMO_INVESTOR = 'carla@presto.demo'
 
+#: Regalo de bienvenida para la persona prestataria (una sola vez).
+WELCOME_BONUS_AMOUNT = Decimal('100000.00')
+WELCOME_BONUS_CURRENCY = 'ARS'
+
 #: Importe del depósito del prestamista.
 LENDER_DEPOSIT = Decimal('250000.00')
 
@@ -120,20 +124,46 @@ def _product_model():
     return django_apps.get_model('investments', 'InvestmentProduct')
 
 
-def _ensure_user(email: str, password: str):
-    """Devuelve el usuario del email, creándolo si no existe.
+def _ensure_user(email: str, password: str, profile_kind: str):
+    """Devuelve el usuario del email, creándolo o fijando su perfil.
 
     Args:
         email: email de la persona.
         password: contraseña de la persona.
+        profile_kind: perfil fijo de la persona (`borrower`, `lender` o `investor`).
 
     Returns:
         La tupla `(user, created)`.
     """
     existing = _user_model().objects.filter(email=email).first()
     if existing is not None:
+        identity_services.set_profile(user=existing, kind=profile_kind)
         return existing, False
-    return identity_services.register_user(email=email, password=password), True
+    return identity_services.register_user(
+        email=email, password=password, profile_kind=profile_kind
+    ), True
+
+
+def _ensure_welcome_bonus(user) -> None:
+    """Acredita el regalo de bienvenida de la persona (una sola vez).
+
+    Es un depósito simulado real: el dinero queda disponible en la billetera
+    para operar. La clave de idempotencia es fija, así que volver a sembrar
+    no acredita el regalo dos veces.
+
+    Args:
+        user: la persona prestataria.
+
+    Returns:
+        None.
+    """
+    ledger_services.deposit(
+        user_id=user.id,
+        currency=WELCOME_BONUS_CURRENCY,
+        amount=WELCOME_BONUS_AMOUNT,
+        idempotency_key=f'welcome-bonus-{user.id}',
+        description='Regalo de bienvenida',
+    )
 
 
 def _ensure_kyc(user) -> None:
@@ -395,16 +425,10 @@ def seed_demo(currency: str = 'ARS', password: str = DEMO_PASSWORD) -> DemoSumma
     """
     summary = DemoSummary()
 
-    borrower, _ = _ensure_user(DEMO_BORROWER, password)
-    lender, _ = _ensure_user(DEMO_LENDER, password)
-    investor, _ = _ensure_user(DEMO_INVESTOR, password)
+    borrower, _ = _ensure_user(DEMO_BORROWER, password, profile_kind='borrower')
+    lender, _ = _ensure_user(DEMO_LENDER, password, profile_kind='lender')
+    investor, _ = _ensure_user(DEMO_INVESTOR, password, profile_kind='investor')
     summary.users = [borrower.email, lender.email, investor.email]
-
-    # Cada persona entra con su perfil activo: la demo muestra los tres menús
-    # distintos de Presto. El usuario puede alternar el perfil desde la app.
-    identity_services.activate_profile(user=borrower, kind='borrower')
-    identity_services.activate_profile(user=lender, kind='lender')
-    identity_services.activate_profile(user=investor, kind='investor')
 
     for user in (borrower, lender, investor):
         _ensure_kyc(user)
@@ -414,6 +438,10 @@ def seed_demo(currency: str = 'ARS', password: str = DEMO_PASSWORD) -> DemoSumma
         if user.email_verified_at is None:
             user.email_verified_at = timezone.now()
             user.save(update_fields=['email_verified_at'])
+
+    # Regalo de bienvenida: solo la prestataria, una sola vez, con dinero real
+    # (simulado) que queda disponible para operar y repercutir en el prestamista.
+    _ensure_welcome_bonus(borrower)
 
     _ensure_deposit(
         lender,

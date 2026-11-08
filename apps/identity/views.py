@@ -16,10 +16,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from apps.identity.exceptions import (
     EmailAlreadyRegistered,
     InvalidBiometricSample,
+    InvalidProfileKind,
     InvalidToken,
     PendingKYCExists,
     WeakPassword,
 )
+from apps.identity.models import PrestoProfile
 from apps.identity.permissions import (
     EmailVerificationThrottle,
     LoginThrottle,
@@ -28,7 +30,6 @@ from apps.identity.permissions import (
 )
 from apps.identity.selectors import get_kyc_by_id, get_kyc_for_user, list_biometric_checks
 from apps.identity.serializers import (
-    ActivateProfileSerializer,
     BiometricCheckRequestSerializer,
     BiometricCheckSerializer,
     DetailMessageSerializer,
@@ -46,7 +47,6 @@ from apps.identity.serializers import (
     UserSerializer,
 )
 from apps.identity.services import (
-    activate_profile,
     clear_refresh_cookie,
     confirm_email_verification,
     confirm_password_reset,
@@ -88,11 +88,16 @@ class RegisterView(APIView):
             user = register_user(
                 email=serializer.validated_data['email'],
                 password=serializer.validated_data['password'],
+                profile_kind=serializer.validated_data.get(
+                    'profile_kind', PrestoProfile.Kind.BORROWER
+                ),
             )
         except EmailAlreadyRegistered as exc:
             raise ValidationError({'email': [str(exc)]}) from exc
         except WeakPassword as exc:
             raise ValidationError({'password': [str(exc)]}) from exc
+        except InvalidProfileKind as exc:
+            raise ValidationError({'profile_kind': [str(exc)]}) from exc
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
@@ -214,28 +219,6 @@ class MeView(APIView):
         serializer = MeUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         update_profile(user=request.user, changes=serializer.validated_data)
-        return Response(build_me_payload(request.user))
-
-
-class ActivateProfileView(APIView):
-    """Activación del perfil de Presto del usuario autenticado."""
-
-    permission_classes = [IsAuthenticated]
-
-    @extend_schema(
-        request=ActivateProfileSerializer,
-        responses={200: UserSerializer},
-        summary='Activar un perfil de Presto',
-        description=(
-            'Activa el perfil indicado (prestatario, prestamista o inversor) y '
-            'devuelve el usuario con el perfil activo actualizado.'
-        ),
-    )
-    def post(self, request):
-        """Activa un perfil y devuelve el usuario con su perfil activo."""
-        serializer = ActivateProfileSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        activate_profile(user=request.user, kind=serializer.validated_data['kind'])
         return Response(build_me_payload(request.user))
 
 
