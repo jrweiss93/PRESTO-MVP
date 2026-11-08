@@ -742,6 +742,65 @@ paths:
               schema:
                 $ref: '#/components/schemas/KYCVerification'
           description: ''
+  /api/v1/kyc/{verification_id}/biometric/:
+    get:
+      operationId: kyc_biometric_retrieve
+      description: Lista las validaciones biométricas de la verificación KYC propia.
+      summary: Ver las validaciones biométricas de una verificación
+      parameters:
+      - in: path
+        name: verification_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - kyc
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BiometricCheck'
+          description: ''
+    post:
+      operationId: kyc_biometric_create
+      description: Simula una prueba de vida y la comparación del rostro contra el
+        documento. Devuelve el resultado (aprobado o rechazado) con los puntajes simulados.
+        No se procesan datos biométricos reales.
+      summary: Ejecutar la validación biométrica simulada
+      parameters:
+      - in: path
+        name: verification_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - kyc
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BiometricCheckRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BiometricCheckRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BiometricCheckRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BiometricCheck'
+          description: ''
   /api/v1/ledger/accounts/:
     get:
       operationId: ledger_accounts_retrieve
@@ -1462,6 +1521,66 @@ components:
       - account_id
       - balance
       - currency
+    BiometricCheck:
+      type: object
+      description: Resultado de una validación biométrica simulada.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/BiometricCheckStatusEnum'
+          readOnly: true
+        liveness_score:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,4})?$
+          readOnly: true
+          nullable: true
+          description: Puntaje de prueba de vida (0 a 1).
+        match_score:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,4})?$
+          readOnly: true
+          nullable: true
+          description: Puntaje de coincidencia del rostro contra el documento (0 a
+            1).
+        provider:
+          type: string
+          readOnly: true
+        checked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        result_details:
+          readOnly: true
+      required:
+      - checked_at
+      - id
+      - liveness_score
+      - match_score
+      - provider
+      - result_details
+      - status
+    BiometricCheckRequest:
+      type: object
+      description: Muestra biométrica simulada (no se procesan datos reales).
+      properties:
+        sample: {}
+      required:
+      - sample
+    BiometricCheckStatusEnum:
+      enum:
+      - passed
+      - failed
+      type: string
+      description: |-
+        * `passed` - Aprobado
+        * `failed` - Rechazado
     Budget:
       type: object
       description: Presupuesto mensual de una categoría.
@@ -2053,7 +2172,8 @@ components:
       - documents
     KYCVerification:
       type: object
-      description: Estado de una verificación KYC.
+      description: Estado de una verificación KYC, con su validación biométrica más
+        reciente.
       properties:
         id:
           type: string
@@ -2079,7 +2199,13 @@ components:
           nullable: true
         documents:
           readOnly: true
+        biometric:
+          allOf:
+          - $ref: '#/components/schemas/BiometricCheck'
+          nullable: true
+          readOnly: true
       required:
+      - biometric
       - documents
       - id
       - requested_at

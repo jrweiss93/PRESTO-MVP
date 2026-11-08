@@ -154,3 +154,65 @@ class KYCVerification(BaseModel):
 
     def __str__(self):
         return f'KYCVerification<{self.user_id}:{self.status}>'
+
+
+class BiometricCheck(BaseModel):
+    """Resultado de una validación biométrica simulada.
+
+    Modela el flujo real de una verificación de identidad biométrica (selfie en
+    vivo + comparación contra el documento) pero **sin procesar datos
+    biométricos reales**: los puntajes de vida y de coincidencia son simulados y
+    deterministas, y solo se guarda una referencia (`sample_hash`), nunca la
+    muestra ni imágenes.
+
+    El resultado queda como evidencia del KYC; la aprobación final de la
+    identidad sigue siendo una decisión del staff (igual que el resto del KYC).
+    """
+
+    class Status(models.TextChoices):
+        PASSED = 'passed', 'Aprobado'
+        FAILED = 'failed', 'Rechazado'
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='biometric_checks')
+    kyc_verification = models.ForeignKey(
+        KYCVerification,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='biometric_checks',
+    )
+    status = models.CharField(max_length=16, choices=Status.choices)
+    liveness_score = models.DecimalField(
+        max_digits=5,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text='Puntaje de prueba de vida (0 a 1).',
+    )
+    match_score = models.DecimalField(
+        max_digits=5,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text='Puntaje de coincidencia del rostro contra el documento (0 a 1).',
+    )
+    provider = models.CharField(max_length=32, default='simulated')
+    sample_hash = models.CharField(max_length=64, blank=True)
+    result_details = models.JSONField(default=dict, blank=True)
+    checked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(liveness_score__gte=0, liveness_score__lte=1),
+                name='identity_biometriccheck_liveness_range',
+            ),
+            models.CheckConstraint(
+                condition=models.Q(match_score__gte=0, match_score__lte=1),
+                name='identity_biometriccheck_match_range',
+            ),
+        ]
+
+    def __str__(self):
+        return f'BiometricCheck<{self.user_id}:{self.status}>'

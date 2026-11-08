@@ -155,6 +155,27 @@ def _ensure_kyc(user) -> None:
     )
 
 
+def _ensure_biometric(user) -> None:
+    """Registra una validación biométrica simulada aprobada para la persona.
+
+    Args:
+        user: el usuario.
+
+    Returns:
+        None.
+    """
+    verification = identity_selectors.get_kyc_for_user(user.id)
+    if verification is None:
+        return
+    if identity_selectors.get_latest_biometric_check(user.id, verification.id) is not None:
+        return
+    identity_services.run_biometric_check(
+        user=user,
+        kyc_verification=verification,
+        sample={'gesture': 'blink', 'provider': 'simulated'},
+    )
+
+
 def _ensure_deposit(user, currency: str, amount: Decimal, key: str, description: str) -> None:
     """Deposita fondos simulados una sola vez.
 
@@ -387,6 +408,7 @@ def seed_demo(currency: str = 'ARS', password: str = DEMO_PASSWORD) -> DemoSumma
 
     for user in (borrower, lender, investor):
         _ensure_kyc(user)
+        _ensure_biometric(user)
         # Las cuentas de la demo ya vienen con el email confirmado: no tiene
         # sentido mostrar el aviso de "verificá tu correo" en la demo.
         if user.email_verified_at is None:

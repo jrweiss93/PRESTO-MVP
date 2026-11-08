@@ -551,6 +551,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/kyc/{verification_id}/biometric/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver las validaciones biométricas de una verificación
+         * @description Lista las validaciones biométricas de la verificación KYC propia.
+         */
+        get: operations["kyc_biometric_retrieve"];
+        put?: never;
+        /**
+         * Ejecutar la validación biométrica simulada
+         * @description Simula una prueba de vida y la comparación del rostro contra el documento. Devuelve el resultado (aprobado o rechazado) con los puntajes simulados. No se procesan datos biométricos reales.
+         */
+        post: operations["kyc_biometric_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ledger/accounts/": {
         parameters: {
             query?: never;
@@ -1033,6 +1057,36 @@ export interface components {
             /** Format: decimal */
             balance: string;
         };
+        /** @description Resultado de una validación biométrica simulada. */
+        BiometricCheck: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly status: components["schemas"]["BiometricCheckStatusEnum"];
+            /**
+             * Format: decimal
+             * @description Puntaje de prueba de vida (0 a 1).
+             */
+            readonly liveness_score: string | null;
+            /**
+             * Format: decimal
+             * @description Puntaje de coincidencia del rostro contra el documento (0 a 1).
+             */
+            readonly match_score: string | null;
+            readonly provider: string;
+            /** Format: date-time */
+            readonly checked_at: string | null;
+            readonly result_details: unknown;
+        };
+        /** @description Muestra biométrica simulada (no se procesan datos reales). */
+        BiometricCheckRequest: {
+            sample: unknown;
+        };
+        /**
+         * @description * `passed` - Aprobado
+         *     * `failed` - Rechazado
+         * @enum {string}
+         */
+        BiometricCheckStatusEnum: "passed" | "failed";
         /** @description Presupuesto mensual de una categoría. */
         Budget: {
             /** Format: uuid */
@@ -1299,7 +1353,7 @@ export interface components {
         KYCRequest: {
             documents: unknown;
         };
-        /** @description Estado de una verificación KYC. */
+        /** @description Estado de una verificación KYC, con su validación biométrica más reciente. */
         KYCVerification: {
             /** Format: uuid */
             readonly id: string;
@@ -1311,6 +1365,7 @@ export interface components {
             /** Format: uuid */
             readonly resolved_by_user_id: string | null;
             readonly documents: unknown;
+            readonly biometric: components["schemas"]["BiometricCheck"] | null;
         };
         /**
          * @description * `pending` - Pendiente
@@ -2585,6 +2640,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KYCVerification"];
+                };
+            };
+        };
+    };
+    kyc_biometric_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                verification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BiometricCheck"];
+                };
+            };
+        };
+    };
+    kyc_biometric_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                verification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BiometricCheckRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["BiometricCheckRequest"];
+                "multipart/form-data": components["schemas"]["BiometricCheckRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BiometricCheck"];
                 };
             };
         };

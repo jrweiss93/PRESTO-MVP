@@ -64,6 +64,7 @@ export type OpenPosition = Schema<"OpenPosition">;
 
 export type KYCVerification = Schema<"KYCVerification">;
 export type KYCRequest = Schema<"KYCRequest">;
+export type BiometricCheck = Schema<"BiometricCheck">;
 
 export type Payment = Schema<"Payment">;
 export type CreatePayment = Schema<"CreatePayment">;

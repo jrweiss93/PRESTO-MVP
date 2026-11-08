@@ -2,7 +2,7 @@
 
 import uuid
 
-from apps.identity.models import KYCVerification, PrestoProfile, Profile, User
+from apps.identity.models import BiometricCheck, KYCVerification, PrestoProfile, Profile, User
 
 
 def get_profile(user_id: uuid.UUID) -> Profile | None:
@@ -90,6 +90,45 @@ def get_profile_for_kind(user_id: uuid.UUID, kind: str) -> PrestoProfile | None:
         El PrestoProfile del tipo pedido o None.
     """
     return PrestoProfile.objects.filter(user_id=user_id, kind=kind).first()
+
+
+def get_latest_biometric_check(
+    user_id: uuid.UUID,
+    verification_id: uuid.UUID | None = None,
+) -> BiometricCheck | None:
+    """Devuelve la validación biométrica más reciente del usuario.
+
+    Args:
+        user_id: identificador del usuario.
+        verification_id: filtra por una verificación KYC concreta (opcional).
+
+    Returns:
+        El BiometricCheck más reciente o None.
+    """
+    queryset = BiometricCheck.objects.filter(user_id=user_id)
+    if verification_id is not None:
+        queryset = queryset.filter(kyc_verification_id=verification_id)
+    return queryset.order_by('-created_at').first()
+
+
+def list_biometric_checks(
+    user_id: uuid.UUID,
+    verification_id: uuid.UUID,
+) -> list[BiometricCheck]:
+    """Lista las validaciones biométricas de una verificación KYC del usuario.
+
+    Args:
+        user_id: identificador del usuario.
+        verification_id: verificación KYC dueña de los checks.
+
+    Returns:
+        Los BiometricCheck de la verificación, del más reciente al más antiguo.
+    """
+    return list(
+        BiometricCheck.objects.filter(
+            user_id=user_id, kyc_verification_id=verification_id
+        ).order_by('-created_at')
+    )
 
 
 def get_user_email(user_id: uuid.UUID) -> str | None:

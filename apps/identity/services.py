@@ -1,7 +1,10 @@
 """Servicios de escritura de la app identity (interfaz pública)."""
 
+import hashlib
+import json
 import logging
 import uuid
+from decimal import Decimal
 from typing import Any
 
 from django.conf import settings
@@ -14,6 +17,7 @@ from django.utils import timezone
 from apps.identity.emails import send_email_verification_email, send_password_reset_email
 from apps.identity.exceptions import (
     EmailAlreadyRegistered,
+    InvalidBiometricSample,
     InvalidDocuments,
     InvalidKYCResolution,
     InvalidProfileField,
@@ -23,13 +27,23 @@ from apps.identity.exceptions import (
     PendingKYCExists,
     WeakPassword,
 )
-from apps.identity.models import KYCVerification, PrestoProfile, Profile, User
+from apps.identity.models import BiometricCheck, KYCVerification, PrestoProfile, Profile, User
 from apps.identity.tokens import decode_uid, email_verification_token, encode_uid
 
 logger = logging.getLogger(__name__)
 
 RESOLVABLE_STATUSES = (KYCVerification.Status.APPROVED, KYCVerification.Status.REJECTED)
 PROFILE_FIELDS = ('phone_number', 'date_of_birth', 'country')
+
+# Validación biométrica simulada. Los umbrales y puntajes son fijos y
+# deterministas: no hay proveedor real ni se procesan datos biométricos.
+BIOMETRIC_PROVIDER = 'simulated'
+LIVENESS_THRESHOLD = Decimal('0.80')
+MATCH_THRESHOLD = Decimal('0.80')
+PASS_LIVENESS = Decimal('0.98')
+FAIL_LIVENESS = Decimal('0.15')
+PASS_MATCH = Decimal('0.96')
+FAIL_MATCH = Decimal('0.12')
 
 
 def set_refresh_cookie(response, refresh_token: str) -> None:
@@ -224,6 +238,70 @@ def resolve_kyc(
         resolved_by_user_id,
     )
     return verification
+
+
+def run_biometric_check(
+    user: User, kyc_verification: KYCVerification, sample: dict[str, Any]
+) -> BiometricCheck:
+    """Ejecuta la validación biométrica simulada para una verificación KYC.
+
+    Modela el flujo real (prueba de vida + comparación del rostro contra el
+    documento) con puntajes deterministas: si la muestra trae un gesto (`gesture`)
+    se simula una prueba de vida exitosa, y el flag `mismatch` simula un rostro
+    que no coincide con el documento. **No se procesa ni guarda ninguna muestra
+    real**: solo se persiste un hash de referencia y los puntajes simulados.
+
+    Args:
+        user: usuario que realiza la validación.
+        kyc_verification: verificación KYC dueña del paso biométrico.
+        sample: metadata simulada de la muestra (gesto, mismatch, etc.).
+
+    Returns:
+        El BiometricCheck creado, en estado passed o failed.
+
+    Raises:
+        InvalidBiometricSample: si sample no es un objeto JSON.
+    """
+    if not isinstance(sample, dict):
+        raise InvalidBiometricSample('La muestra biométrica debe enviarse como objeto JSON.')
+
+    has_liveness = bool(sample.get('gesture'))
+    liveness_score = PASS_LIVENESS if has_liveness else FAIL_LIVENESS
+    match_score = FAIL_MATCH if sample.get('mismatch') is True else PASS_MATCH
+    liveness_ok = liveness_score >= LIVENESS_THRESHOLD
+    match_ok = match_score >= MATCH_THRESHOLD
+    status = (
+        BiometricCheck.Status.PASSED if (liveness_ok and match_ok) else BiometricCheck.Status.FAILED
+    )
+
+    sample_hash = hashlib.sha256(
+        json.dumps(sample, sort_keys=True, default=str).encode('utf-8')
+    ).hexdigest()
+
+    check = BiometricCheck.objects.create(
+        user=user,
+        kyc_verification=kyc_verification,
+        status=status,
+        liveness_score=liveness_score,
+        match_score=match_score,
+        provider=BIOMETRIC_PROVIDER,
+        sample_hash=sample_hash,
+        result_details={
+            'liveness_check': 'passed' if liveness_ok else 'failed',
+            'face_match': 'matched' if match_ok else 'not_matched',
+            'note': 'Simulación: no se procesaron datos biométricos reales.',
+        },
+        checked_at=timezone.now(),
+    )
+    logger.info(
+        'Validación biométrica: user_id=%s kyc_id=%s status=%s liveness=%s match=%s',
+        user.id,
+        kyc_verification.id,
+        status,
+        liveness_score,
+        match_score,
+    )
+    return check
 
 
 def update_profile(user: User, changes: dict[str, Any]) -> Profile:

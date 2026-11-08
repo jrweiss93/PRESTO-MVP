@@ -15,6 +15,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.identity.exceptions import (
     EmailAlreadyRegistered,
+    InvalidBiometricSample,
     InvalidToken,
     PendingKYCExists,
     WeakPassword,
@@ -25,9 +26,11 @@ from apps.identity.permissions import (
     PasswordResetThrottle,
     RegisterThrottle,
 )
-from apps.identity.selectors import get_kyc_by_id, get_kyc_for_user
+from apps.identity.selectors import get_kyc_by_id, get_kyc_for_user, list_biometric_checks
 from apps.identity.serializers import (
     ActivateProfileSerializer,
+    BiometricCheckRequestSerializer,
+    BiometricCheckSerializer,
     DetailMessageSerializer,
     EmailVerificationResponseSerializer,
     EmailVerificationSerializer,
@@ -50,6 +53,7 @@ from apps.identity.services import (
     get_refresh_token,
     register_user,
     request_password_reset,
+    run_biometric_check,
     send_email_verification,
     set_refresh_cookie,
     submit_kyc,
@@ -290,6 +294,51 @@ class KycDetailView(APIView):
         if verification is None:
             raise NotFound('La verificación KYC no existe.')
         return Response(KYCVerificationSerializer(verification).data, status=status.HTTP_200_OK)
+
+
+class KycBiometricView(APIView):
+    """Validación biométrica simulada de una verificación KYC propia."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: BiometricCheckSerializer},
+        summary='Ver las validaciones biométricas de una verificación',
+    )
+    def get(self, request, verification_id):
+        """Lista las validaciones biométricas de la verificación KYC propia."""
+        verification = get_kyc_by_id(verification_id=verification_id, user_id=request.user.id)
+        if verification is None:
+            raise NotFound('La verificación KYC no existe.')
+        checks = list_biometric_checks(user_id=request.user.id, verification_id=verification.id)
+        return Response(BiometricCheckSerializer(checks, many=True).data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        request=BiometricCheckRequestSerializer,
+        responses={201: BiometricCheckSerializer},
+        summary='Ejecutar la validación biométrica simulada',
+        description=(
+            'Simula una prueba de vida y la comparación del rostro contra el '
+            'documento. Devuelve el resultado (aprobado o rechazado) con los '
+            'puntajes simulados. No se procesan datos biométricos reales.'
+        ),
+    )
+    def post(self, request, verification_id):
+        """Ejecuta la validación biométrica simulada y devuelve el resultado."""
+        verification = get_kyc_by_id(verification_id=verification_id, user_id=request.user.id)
+        if verification is None:
+            raise NotFound('La verificación KYC no existe.')
+        serializer = BiometricCheckRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            check = run_biometric_check(
+                user=request.user,
+                kyc_verification=verification,
+                sample=serializer.validated_data['sample'],
+            )
+        except InvalidBiometricSample as exc:
+            raise ValidationError({'sample': [str(exc)]}) from exc
+        return Response(BiometricCheckSerializer(check).data, status=status.HTTP_201_CREATED)
 
 
 class PasswordResetRequestView(APIView):

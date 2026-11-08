@@ -30,6 +30,9 @@ export default function Profile() {
   const [requestingKyc, setRequestingKyc] = useState(false);
   const [resending, setResending] = useState(false);
 
+  const [simulateMismatch, setSimulateMismatch] = useState(false);
+  const [runningBiometric, setRunningBiometric] = useState(false);
+
   useEffect(() => {
     (async () => {
       try {
@@ -110,6 +113,33 @@ export default function Profile() {
       );
     } finally {
       setResending(false);
+    }
+  }
+
+  async function handleBiometric() {
+    if (!kyc) return;
+    setRunningBiometric(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const check = await api.runBiometricCheck(kyc.id, {
+        gesture: "blink",
+        ...(simulateMismatch ? { mismatch: true } : {}),
+      });
+      setKyc(await api.getKyc());
+      setNotice(
+        check.status === "passed"
+          ? "Validación biométrica aprobada (simulación)."
+          : "Validación biométrica rechazada (simulación de no coincidencia).",
+      );
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo ejecutar la validación biométrica.",
+      );
+    } finally {
+      setRunningBiometric(false);
     }
   }
 
@@ -267,6 +297,66 @@ export default function Profile() {
           </form>
         )}
       </div>
+
+      {kyc && (
+        <div className="card">
+          <h2>Validación biométrica</h2>
+          <p className="small text-muted">
+            Simula una prueba de vida (selfie en vivo) y la comparación del
+            rostro contra tu documento. <strong>No se procesan datos
+            biométricos reales</strong>: los puntajes son simulados.
+          </p>
+          {kyc.biometric ? (
+            <p className="mb-0">
+              Última validación:{" "}
+              <span
+                className={`badge ${
+                  kyc.biometric.status === "passed" ? "success" : "danger"
+                }`}
+              >
+                {kyc.biometric.status === "passed" ? "Aprobada" : "Rechazada"}
+              </span>
+              <br />
+              <span className="small text-muted">
+                Prueba de vida{" "}
+                {kyc.biometric.liveness_score != null
+                  ? `${(Number(kyc.biometric.liveness_score) * 100).toFixed(0)}%`
+                  : "—"}{" "}
+                · Coincidencia{" "}
+                {kyc.biometric.match_score != null
+                  ? `${(Number(kyc.biometric.match_score) * 100).toFixed(0)}%`
+                  : "—"}
+              </span>
+            </p>
+          ) : (
+            <p className="small text-muted">
+              Todavía no se realizó la validación biométrica.
+            </p>
+          )}
+          <label className="field">
+            <span className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={simulateMismatch}
+                onChange={(e) => setSimulateMismatch(e.target.checked)}
+              />
+              Simular que el rostro no coincide (para ver el rechazo)
+            </span>
+          </label>
+          <div className="btn-row" style={{ marginTop: "0.6rem" }}>
+            <button
+              className="btn"
+              type="button"
+              onClick={handleBiometric}
+              disabled={runningBiometric}
+            >
+              {runningBiometric
+                ? "Validando…"
+                : "Simular validación biométrica"}
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

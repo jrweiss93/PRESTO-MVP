@@ -1,7 +1,9 @@
+from decimal import Decimal
+
 import factory
 from django.contrib.auth import get_user_model
 
-from apps.identity.models import KYCVerification, PrestoProfile, Profile
+from apps.identity.models import BiometricCheck, KYCVerification, PrestoProfile, Profile
 
 User = get_user_model()
 
@@ -54,3 +56,18 @@ class PrestoProfileFactory(factory.django.DjangoModelFactory):
     user = factory.SubFactory(UserFactory)
     kind = PrestoProfile.Kind.BORROWER
     is_active = False
+
+
+class BiometricCheckFactory(factory.django.DjangoModelFactory):
+    """Factory de BiometricCheck."""
+
+    class Meta:
+        model = BiometricCheck
+
+    user = factory.SubFactory(UserFactory)
+    kyc_verification = factory.SubFactory(KYCVerificationFactory)
+    status = BiometricCheck.Status.PASSED
+    liveness_score = Decimal('0.98')
+    match_score = Decimal('0.96')
+    provider = 'simulated'
+    sample_hash = factory.Sequence(lambda n: f'biometric-hash-{n}')

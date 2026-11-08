@@ -3,7 +3,7 @@
 from django.contrib import admin
 
 from apps.identity.exceptions import InvalidKYCResolution, KYCAlreadyResolved
-from apps.identity.models import KYCVerification, PrestoProfile, Profile, User
+from apps.identity.models import BiometricCheck, KYCVerification, PrestoProfile, Profile, User
 from apps.identity.services import resolve_kyc
 
 
@@ -34,6 +34,39 @@ class PrestoProfileAdmin(admin.ModelAdmin):
     list_filter = ['kind', 'is_active']
     search_fields = ['user__email']
     readonly_fields = ['id']
+
+
+@admin.register(BiometricCheck)
+class BiometricCheckAdmin(admin.ModelAdmin):
+    """Validaciones biométricas simuladas: evidencia del KYC, de solo lectura."""
+
+    list_display = [
+        'id',
+        'user',
+        'kyc_verification',
+        'status',
+        'liveness_score',
+        'match_score',
+        'checked_at',
+    ]
+    list_filter = ['status', 'provider']
+    search_fields = ['user__email']
+    readonly_fields = [
+        'id',
+        'user',
+        'kyc_verification',
+        'status',
+        'liveness_score',
+        'match_score',
+        'provider',
+        'sample_hash',
+        'result_details',
+        'checked_at',
+    ]
+
+    def has_add_permission(self, request):
+        """Las validaciones se crean solo por API/servicio, no a mano."""
+        return False
 
 
 @admin.register(KYCVerification)

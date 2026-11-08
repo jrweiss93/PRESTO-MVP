@@ -9,6 +9,7 @@ import type {
   Account,
   AcceptOffer,
   Balance,
+  BiometricCheck,
   Budget,
   BudgetStatus,
   Category,
@@ -298,6 +299,25 @@ export function requestKyc(payload: KYCRequest): Promise<KYCVerification> {
 
 export function getKycById(verificationId: string): Promise<KYCVerification> {
   return apiGet<KYCVerification>(`/kyc/${verificationId}/`);
+}
+
+/** Ejecuta la validación biométrica simulada de una verificación KYC. */
+export function runBiometricCheck(
+  verificationId: string,
+  sample: Record<string, unknown>,
+): Promise<BiometricCheck> {
+  return apiPost<BiometricCheck>(`/kyc/${verificationId}/biometric/`, { sample });
+}
+
+/** Lista las validaciones biométricas de una verificación KYC. */
+export async function listBiometricChecks(
+  verificationId: string,
+): Promise<BiometricCheck[]> {
+  return asArray(
+    await apiGet<BiometricCheck | BiometricCheck[]>(
+      `/kyc/${verificationId}/biometric/`,
+    ),
+  );
 }
 
 // ---- pagos ----

@@ -3,8 +3,13 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.identity.models import KYCVerification, PrestoProfile, Profile, User
-from apps.identity.selectors import get_active_profile, get_profile, list_profiles_for_user
+from apps.identity.models import BiometricCheck, KYCVerification, PrestoProfile, Profile, User
+from apps.identity.selectors import (
+    get_active_profile,
+    get_latest_biometric_check,
+    get_profile,
+    list_profiles_for_user,
+)
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -112,8 +117,27 @@ class KYCRequestSerializer(serializers.Serializer):
     documents = serializers.JSONField()
 
 
+class BiometricCheckSerializer(serializers.ModelSerializer):
+    """Resultado de una validación biométrica simulada."""
+
+    class Meta:
+        model = BiometricCheck
+        fields = [
+            'id',
+            'status',
+            'liveness_score',
+            'match_score',
+            'provider',
+            'checked_at',
+            'result_details',
+        ]
+        read_only_fields = fields
+
+
 class KYCVerificationSerializer(serializers.ModelSerializer):
-    """Estado de una verificación KYC."""
+    """Estado de una verificación KYC, con su validación biométrica más reciente."""
+
+    biometric = serializers.SerializerMethodField()
 
     class Meta:
         model = KYCVerification
@@ -124,8 +148,21 @@ class KYCVerificationSerializer(serializers.ModelSerializer):
             'resolved_at',
             'resolved_by_user_id',
             'documents',
+            'biometric',
         ]
         read_only_fields = fields
+
+    @extend_schema_field(BiometricCheckSerializer(allow_null=True))
+    def get_biometric(self, obj):
+        """Devuelve la validación biométrica más reciente de la verificación."""
+        check = get_latest_biometric_check(user_id=obj.user_id, verification_id=obj.id)
+        return BiometricCheckSerializer(check).data if check else None
+
+
+class BiometricCheckRequestSerializer(serializers.Serializer):
+    """Muestra biométrica simulada (no se procesan datos reales)."""
+
+    sample = serializers.JSONField()
 
 
 class LoginResponseSerializer(serializers.Serializer):

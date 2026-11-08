@@ -33,4 +33,9 @@ urlpatterns = [
     ),
     path('kyc/', views.KycView.as_view(), name='kyc'),
     path('kyc/<uuid:verification_id>/', views.KycDetailView.as_view(), name='kyc-detail'),
+    path(
+        'kyc/<uuid:verification_id>/biometric/',
+        views.KycBiometricView.as_view(),
+        name='kyc-biometric',
+    ),
 ]

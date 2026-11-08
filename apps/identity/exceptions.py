@@ -35,6 +35,10 @@ class InvalidProfileKind(IdentityError):
     """El perfil de Presto indicado no existe o no le pertenece al usuario."""
 
 
+class InvalidBiometricSample(IdentityError):
+    """La muestra biométrica enviada no es válida (no es un objeto JSON)."""
+
+
 class WeakPassword(IdentityError):
     """La contraseña no pasa los validadores de Django."""
 
