@@ -244,3 +244,54 @@ def test_kyc_list_includes_biometric(client):
     assert response.status_code == 200
     assert response.data['id'] == str(verification.id)
     assert response.data['biometric'] is None
+
+
+# ---- auto-aprobación en demo ----
+
+
+def test_passing_biometric_auto_approves_kyc_in_demo(settings):
+    """En modo demo, una biometría aprobada resuelve el KYC automáticamente."""
+    from apps.identity.selectors import get_kyc_for_user
+
+    settings.DEMO_AUTO_APPROVE_KYC = True
+    settings.LEDGER_SIMULATED_DEPOSITS_ENABLED = True
+    user, verification = make_user_with_kyc(email='auto-demo@example.com')
+
+    check = run_biometric_check(
+        user=user, kyc_verification=verification, sample={'gesture': 'blink'}
+    )
+
+    assert check.status == BiometricCheck.Status.PASSED
+    kyc = get_kyc_for_user(user_id=user.id)
+    assert kyc.status == 'approved'
+    assert kyc.resolved_by_user_id is None
+
+
+def test_failed_biometric_does_not_auto_approve_kyc(settings):
+    """Una biometría rechazada no aprueba el KYC, ni en demo."""
+    from apps.identity.selectors import get_kyc_for_user
+
+    settings.DEMO_AUTO_APPROVE_KYC = True
+    user, verification = make_user_with_kyc(email='auto-falla@example.com')
+
+    run_biometric_check(
+        user=user,
+        kyc_verification=verification,
+        sample={'gesture': 'blink', 'mismatch': True},
+    )
+
+    kyc = get_kyc_for_user(user_id=user.id)
+    assert kyc.status == 'pending'
+
+
+def test_passing_biometric_does_not_auto_approve_without_flag(settings):
+    """Sin el flag de auto-aprobación, el KYC sigue pendiente (flujo manual)."""
+    from apps.identity.selectors import get_kyc_for_user
+
+    settings.DEMO_AUTO_APPROVE_KYC = False
+    user, verification = make_user_with_kyc(email='manual@example.com')
+
+    run_biometric_check(user=user, kyc_verification=verification, sample={'gesture': 'blink'})
+
+    kyc = get_kyc_for_user(user_id=user.id)
+    assert kyc.status == 'pending'

@@ -197,14 +197,15 @@ def submit_kyc(user: User, documents: dict[str, Any]) -> KYCVerification:
 def resolve_kyc(
     verification_id: uuid.UUID,
     status: str,
-    resolved_by_user_id: uuid.UUID,
+    resolved_by_user_id: uuid.UUID | None = None,
 ) -> KYCVerification:
     """Resuelve una verificación KYC aprobándola o rechazándola.
 
     Args:
         verification_id: identificador de la verificación a resolver.
         status: `approved` o `rejected`.
-        resolved_by_user_id: identificador del usuario que decide.
+        resolved_by_user_id: identificador del usuario que decide (None cuando
+            la aprobación es automática en modo demo).
 
     Returns:
         La verificación resuelta.
@@ -298,6 +299,28 @@ def run_biometric_check(
         liveness_score,
         match_score,
     )
+    if (
+        status == BiometricCheck.Status.PASSED
+        and kyc_verification.status == KYCVerification.Status.PENDING
+        and getattr(settings, 'DEMO_AUTO_APPROVE_KYC', False)
+    ):
+        try:
+            resolve_kyc(
+                verification_id=kyc_verification.id,
+                status=KYCVerification.Status.APPROVED,
+                resolved_by_user_id=None,
+            )
+            logger.info(
+                'KYC aprobado automáticamente (demo, biometría): user_id=%s kyc_id=%s',
+                user.id,
+                kyc_verification.id,
+            )
+        except KYCAlreadyResolved:
+            logger.info(
+                'Auto-aprobación omitida: el KYC ya estaba resuelto. user_id=%s kyc_id=%s',
+                user.id,
+                kyc_verification.id,
+            )
     return check
 
 

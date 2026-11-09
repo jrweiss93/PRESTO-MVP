@@ -286,6 +286,13 @@ LEDGER_SIMULATED_DEPOSITS_ENABLED = DEMO_MODE or (
     os.getenv('LEDGER_SIMULATED_DEPOSITS_ENABLED', 'False').strip().lower() == 'true'
 )
 
+# En modo demo, si la validación biométrica simulada aprueba, el KYC se aprueba
+# automáticamente (sin intervención del staff). Esto habilita el flujo completo
+# para usuarios nuevos y dispara el bono de bienvenida vía la señal kyc_approved.
+DEMO_AUTO_APPROVE_KYC = DEMO_MODE or (
+    os.getenv('DEMO_AUTO_APPROVE_KYC', 'False').strip().lower() == 'true'
+)
+
 # Revisión legal y de PLA/FT: recordatorio (ver `apps/core/compliance.py`).
 # Mientras esté en False, el endpoint `/api/v1/meta/` informa que la revisión
 # sigue pendiente y el system check `legal.W001` avisa. Se pone en True cuando
