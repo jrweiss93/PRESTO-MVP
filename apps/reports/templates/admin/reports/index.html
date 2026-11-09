@@ -1,0 +1,18 @@
+{% extends "admin/index.html" %}
+
+{% block content %}
+<div id="content-main">
+  <div class="module" style="margin-bottom:16px">
+    <table style="width:100%">
+      <caption>
+        <a href="{% url 'admin:reports-metrics' %}" class="section" title="Ver métricas">Métricas de la demo</a>
+      </caption>
+      <tr>
+        <th scope="row"><a href="{% url 'admin:reports-metrics' %}">Dashboard de métricas</a></th>
+        <td>Usuarios, KYC, préstamos, mora, inversiones, pagos, notificaciones y ledger.</td>
+      </tr>
+    </table>
+  </div>
+  {{ block.super }}
+</div>
+{% endblock %}

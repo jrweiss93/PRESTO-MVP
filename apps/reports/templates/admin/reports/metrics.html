@@ -1,0 +1,117 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<style>
+  .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 16px; }
+  .metrics-card { background: var(--body-bg, #fff); border: 1px solid var(--hairline-color, #ddd); border-radius: 6px; padding: 14px 16px; }
+  .metrics-card h2 { margin: 0 0 10px; font-size: 14px; text-transform: uppercase; letter-spacing: .03em; color: var(--body-quiet-color, #666); }
+  .metrics-card table { width: 100%; border-collapse: collapse; }
+  .metrics-card td { padding: 4px 0; font-size: 13px; }
+  .metrics-card td:last-child { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .metrics-note { color: var(--body-quiet-color, #666); font-size: 12px; margin: 4px 0 16px; }
+  .metrics-ok { color: #1a7f37; }
+  .metrics-warn { color: #9a6700; }
+</style>
+
+<p class="metrics-note">Generado: {{ metrics.generated_at|date:"Y-m-d H:i:s" }} (UTC). Datos de solo lectura.</p>
+
+<div class="metrics-grid">
+  <div class="metrics-card">
+    <h2>Usuarios</h2>
+    <table>
+      <tr><td>Total</td><td>{{ metrics.users.total }}</td></tr>
+      <tr><td>Email verificado</td><td>{{ metrics.users.verified }}</td></tr>
+      <tr><td>Prestatarios activos</td><td>{{ metrics.users.borrowers }}</td></tr>
+      <tr><td>Prestamistas activos</td><td>{{ metrics.users.lenders }}</td></tr>
+      <tr><td>Inversores activos</td><td>{{ metrics.users.investors }}</td></tr>
+    </table>
+  </div>
+
+  <div class="metrics-card">
+    <h2>KYC / Identidad</h2>
+    <table>
+      <tr><td>Pendientes</td><td>{{ metrics.kyc.pending }}</td></tr>
+      <tr><td>Aprobadas</td><td>{{ metrics.kyc.approved }}</td></tr>
+      <tr><td>Rechazadas</td><td>{{ metrics.kyc.rejected }}</td></tr>
+      <tr><td>Biometría aprobada</td><td>{{ metrics.kyc.biometric_passed }}</td></tr>
+    </table>
+  </div>
+
+  <div class="metrics-card">
+    <h2>Préstamos</h2>
+    <table>
+      <tr><td>Activos</td><td>{{ metrics.loans.active }}</td></tr>
+      <tr><td>Completados</td><td>{{ metrics.loans.completed }}</td></tr>
+      <tr><td>En mora (defaulted)</td><td class="{% if metrics.loans.defaulted %}metrics-warn{% endif %}">{{ metrics.loans.defaulted }}</td></tr>
+      <tr><td>Capital activo (ARS)</td><td>$ {{ metrics.loans.active_principal_ars }}</td></tr>
+      <tr><td>Cuotas vencidas (overdue)</td><td class="{% if metrics.loans.overdue_installments %}metrics-warn{% endif %}">{{ metrics.loans.overdue_installments }}</td></tr>
+      <tr><td>Cuotas pendientes pasadas</td><td class="{% if metrics.loans.pending_past_due %}metrics-warn{% endif %}">{{ metrics.loans.pending_past_due }}</td></tr>
+    </table>
+  </div>
+
+  <div class="metrics-card">
+    <h2>Ofertas</h2>
+    <table>
+      <tr><td>Activas</td><td>{{ metrics.offers.active }}</td></tr>
+      <tr><td>Tomadas (matched)</td><td>{{ metrics.offers.matched }}</td></tr>
+      <tr><td>Canceladas</td><td>{{ metrics.offers.cancelled }}</td></tr>
+    </table>
+  </div>
+
+  <div class="metrics-card">
+    <h2>Inversiones</h2>
+    <table>
+      <tr><td>Posiciones activas</td><td>{{ metrics.investments.active }}</td></tr>
+      <tr><td>Liquidadas</td><td>{{ metrics.investments.settled }}</td></tr>
+      <tr><td>Invertido activo (ARS)</td><td>$ {{ metrics.investments.invested_ars }}</td></tr>
+    </table>
+  </div>
+
+  <div class="metrics-card">
+    <h2>Pagos</h2>
+    <table>
+      {% for status, total in metrics.payments.items %}
+      <tr><td>{{ status }}</td><td>{{ total }}</td></tr>
+      {% empty %}
+      <tr><td colspan="2" class="metrics-note">Sin pagos.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="metrics-card">
+    <h2>Notificaciones</h2>
+    <table>
+      {% for status, total in metrics.notifications.items %}
+      <tr><td>{{ status }}</td><td>{{ total }}</td></tr>
+      {% empty %}
+      <tr><td colspan="2" class="metrics-note">Sin notificaciones.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="metrics-card">
+    <h2>Ledger (ARS)</h2>
+    {% if metrics.ledger_ars %}
+    <table>
+      <tr><td>Billeteras usuario</td><td>$ {{ metrics.ledger_ars.user_wallet }}</td></tr>
+      <tr><td>Custodia</td><td>$ {{ metrics.ledger_ars.custody }}</td></tr>
+      <tr><td>Sistema</td><td>$ {{ metrics.ledger_ars.system }}</td></tr>
+      <tr><td>Total (debe ser 0)</td><td class="{% if metrics.ledger_ars.total == 0 %}metrics-ok{% else %}metrics-warn{% endif %}">$ {{ metrics.ledger_ars.total }}</td></tr>
+    </table>
+    {% else %}<p class="metrics-note">No disponible.</p>{% endif %}
+  </div>
+
+  <div class="metrics-card">
+    <h2>Ledger (USD)</h2>
+    {% if metrics.ledger_usd %}
+    <table>
+      <tr><td>Billeteras usuario</td><td>US$ {{ metrics.ledger_usd.user_wallet }}</td></tr>
+      <tr><td>Custodia</td><td>US$ {{ metrics.ledger_usd.custody }}</td></tr>
+      <tr><td>Sistema</td><td>US$ {{ metrics.ledger_usd.system }}</td></tr>
+      <tr><td>Total (debe ser 0)</td><td class="{% if metrics.ledger_usd.total == 0 %}metrics-ok{% else %}metrics-warn{% endif %}">US$ {{ metrics.ledger_usd.total }}</td></tr>
+    </table>
+    {% else %}<p class="metrics-note">No disponible.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

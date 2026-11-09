@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     # Django core apps
     'django.contrib.contenttypes',
     'django.contrib.auth',
-    'django.contrib.admin',
+    'config.admin.PrestoAdminConfig',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
