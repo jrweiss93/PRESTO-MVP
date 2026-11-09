@@ -25,8 +25,10 @@ def grant_welcome_bonus(user_id) -> bool:
     """Acredita el regalo de bienvenida a una persona prestataria, una sola vez.
 
     Es **idempotente**: usa una clave fija (`welcome-bonus-{user_id}`), así que
-    volver a llamarlo no duplica el crédito. Solo se acredita con los depósitos
-    simulados habilitados (modo demo) y solo al perfil prestatario.
+    volver a llamarlo no duplica el crédito. Solo se acredita en **modo demo**
+    (con depósitos simulados habilitados) y solo al perfil prestatario. Nunca
+    propaga errores: un fallo acá no debe romper la aprobación de KYC ni los
+    tests.
 
     Args:
         user_id: identificador de la persona.
@@ -34,12 +36,14 @@ def grant_welcome_bonus(user_id) -> bool:
     Returns:
         True si se acreditó (o ya estaba acreditado); False si no corresponde.
     """
+    if not getattr(settings, 'DEMO_MODE', False):
+        return False
     if not settings.LEDGER_SIMULATED_DEPOSITS_ENABLED:
         return False
-    active = identity_selectors.get_active_profile(user_id)
-    if active is None or active.kind != 'borrower':
-        return False
     try:
+        active = identity_selectors.get_active_profile(user_id)
+        if active is None or active.kind != 'borrower':
+            return False
         ledger_services.deposit(
             user_id=user_id,
             currency=WELCOME_BONUS_CURRENCY,
@@ -49,5 +53,7 @@ def grant_welcome_bonus(user_id) -> bool:
         )
         return True
     except Exception:
-        logger.exception('No se pudo acreditar el regalo de bienvenida: user_id=%s', user_id)
+        logger.warning(
+            'No se pudo acreditar el regalo de bienvenida: user_id=%s', user_id, exc_info=True
+        )
         return False
