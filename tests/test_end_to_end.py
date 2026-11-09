@@ -13,12 +13,31 @@ import uuid
 from decimal import Decimal
 
 import pytest
+from django.conf import settings
 from django.db.models import Sum
+from django.test import override_settings
 from rest_framework.test import APIClient
 
 pytestmark = pytest.mark.django_db
 
 PASSWORD = 'PrestoTest123!'
+
+
+@pytest.fixture(autouse=True)
+def _disable_auth_throttles():
+    """Evita que el throttle de registro/login corte el flujo end-to-end."""
+    from django.core.cache import cache
+
+    rates = {
+        **settings.REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'],
+        'register': '1000/min',
+        'login': '1000/min',
+    }
+    rest_framework = {**settings.REST_FRAMEWORK, 'DEFAULT_THROTTLE_RATES': rates}
+    cache.clear()
+    with override_settings(REST_FRAMEWORK=rest_framework):
+        yield
+    cache.clear()
 
 
 def register(client, email, profile_kind='borrower'):
