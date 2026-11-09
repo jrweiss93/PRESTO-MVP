@@ -28,14 +28,24 @@ def _disable_auth_throttles():
     """Evita que el throttle de registro/login corte el flujo end-to-end."""
     from django.core.cache import cache
 
-    rates = {
-        **settings.REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'],
-        'register': '1000/min',
-        'login': '1000/min',
-    }
-    rest_framework = {**settings.REST_FRAMEWORK, 'DEFAULT_THROTTLE_RATES': rates}
+    from apps.identity.views import LoginView, RegisterView
+
     cache.clear()
-    with override_settings(REST_FRAMEWORK=rest_framework):
+    with (
+        override_settings(
+            REST_FRAMEWORK={
+                **settings.REST_FRAMEWORK,
+                'DEFAULT_THROTTLE_RATES': {
+                    **settings.REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'],
+                    'register': '1000/min',
+                    'login': '1000/min',
+                },
+            }
+        ),
+        # Deshabilitación directa: evita depender del reload de api_settings/caché.
+        __import__('unittest.mock').mock.patch.object(RegisterView, 'throttle_classes', []),
+        __import__('unittest.mock').mock.patch.object(LoginView, 'throttle_classes', []),
+    ):
         yield
     cache.clear()
 
