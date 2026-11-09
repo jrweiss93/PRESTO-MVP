@@ -1,18 +1,21 @@
 # Blueprint de Render para la demo de Presto.
 #
 # Crear en Render: New → Blueprint → elegir este repo. Render crea la base, el
-# Redis, el web, el worker y el beat. El web/worker/beat NO construyen la imagen:
-# usan la que publica GitHub Actions en GHCR (ghcr.io/jrweiss93/presto-mvp:latest).
+# Redis y el web. El web NO construye la imagen: usa la que publica GitHub
+# Actions en GHCR (ghcr.io/jrweiss93/presto-mvp:latest).
 #
 #   1. Hacé público el paquete en GitHub (Packages → presto-mvp → settings).
 #   2. Completar CORS_ALLOWED_ORIGINS y FRONTEND_URL con la URL de Vercel
-#      (ej. https://tu-app.vercel.app) en web, worker y beat.
+#      (ej. https://tu-app.vercel.app) en el web.
 #   3. Completar las variables de email (EMAIL_HOST, EMAIL_PORT, etc.) con el
-#      proveedor SMTP en web y worker; sin ellas los avisos salen por consola.
-#   4. En la Shell del servicio web: python manage.py createsuperuser.
+#      proveedor SMTP en el web; sin ellas los avisos salen por consola.
+#   4. Worker y beat necesitan un plan pago (ver nota al final del archivo).
+#   5. Superusuario: el plan free no tiene Shell. Usá
+#      scripts/create-superuser-remote.ps1 con la External Database URL.
 #
 # Los planes `free` alcanzan para una demo (los servicios se duermen por
 # inactividad). Si querés que no se duerman, cambiá el plan a `starter`.
+# Ojo: la Postgres free de Render expira a los 30 días de crearla.
 
 databases:
   - name: presto-db
@@ -86,102 +89,11 @@ services:
       - key: DEFAULT_FROM_EMAIL
         sync: false
 
-  - type: worker
-    name: presto-worker
-    runtime: image
-    image:
-      url: ghcr.io/jrweiss93/presto-mvp:latest
-    plan: free
-    # El entrypoint de la imagen hace `exec "$@"`: arranca el worker de Celery,
-    # que envía los emails y corre las tareas encoladas.
-    dockerCommand: celery -A config worker -l info --concurrency 2
-    envVars:
-      - key: DJANGO_SETTINGS_MODULE
-        value: config.settings.production
-      - key: DJANGO_DEBUG
-        value: "False"
-      - key: DJANGO_SECRET_KEY
-        fromService:
-          type: web
-          name: presto-api
-          envVarKey: DJANGO_SECRET_KEY
-      - key: DJANGO_ALLOWED_HOSTS
-        fromService:
-          type: web
-          name: presto-api
-          envVarKey: RENDER_EXTERNAL_HOSTNAME
-      - key: DATABASE_URL
-        fromDatabase:
-          name: presto-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: presto-redis
-          property: connectionString
-      - key: DEMO_MODE
-        value: "true"
-      - key: LEDGER_SIMULATED_DEPOSITS_ENABLED
-        value: "true"
-      - key: ASSISTANT_MARKET_ENABLED
-        value: "true"
-      - key: ASSISTANT_NEWS_FEED_URL
-        value: https://www.ambito.com/rss/pages/economia.xml
-      - key: CORS_ALLOWED_ORIGINS
-        sync: false
-      - key: FRONTEND_URL
-        sync: false
-      - key: EMAIL_HOST
-        sync: false
-      - key: EMAIL_PORT
-        sync: false
-      - key: EMAIL_HOST_USER
-        sync: false
-      - key: EMAIL_HOST_PASSWORD
-        sync: false
-      - key: EMAIL_USE_TLS
-        sync: false
-      - key: DEFAULT_FROM_EMAIL
-        sync: false
+  # Worker y beat (Celery) requieren un plan pago: Render no ofrece instancia
+  # free para background workers. Sin ellos no corren las tareas programadas
+  # (marcar vencimientos y liquidar plazos fijos) ni el envío de emails.
+  # Para habilitarlos, agregá dos servicios `type: worker` con esta misma
+  # imagen, plan `0.5c-512mb` (aprox. US$7/mes cada uno) y:
+  #   worker: dockerCommand: celery -A config worker -l info --concurrency 2
+  #   beat:   dockerCommand: celery -A config beat -l info --schedule /var/celerybeat/celerybeat-schedule
 
-  - type: worker
-    name: presto-beat
-    runtime: image
-    image:
-      url: ghcr.io/jrweiss93/presto-mvp:latest
-    plan: free
-    # Beat dispara las tareas diarias: marcar cuotas vencidas y liquidar plazos
-    # fijos. Sin este servicio las liquidaciones y vencimientos no son automáticos.
-    dockerCommand: celery -A config beat -l info --schedule /var/celerybeat/celerybeat-schedule
-    envVars:
-      - key: DJANGO_SETTINGS_MODULE
-        value: config.settings.production
-      - key: DJANGO_DEBUG
-        value: "False"
-      - key: DJANGO_SECRET_KEY
-        fromService:
-          type: web
-          name: presto-api
-          envVarKey: DJANGO_SECRET_KEY
-      - key: DJANGO_ALLOWED_HOSTS
-        fromService:
-          type: web
-          name: presto-api
-          envVarKey: RENDER_EXTERNAL_HOSTNAME
-      - key: DATABASE_URL
-        fromDatabase:
-          name: presto-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: presto-redis
-          property: connectionString
-      - key: DEMO_MODE
-        value: "true"
-      - key: LEDGER_SIMULATED_DEPOSITS_ENABLED
-        value: "true"
-      - key: ASSISTANT_MARKET_ENABLED
-        value: "true"
-      - key: ASSISTANT_NEWS_FEED_URL
-        value: https://www.ambito.com/rss/pages/economia.xml
