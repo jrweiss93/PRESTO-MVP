@@ -251,6 +251,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/password/change/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cambiar la contraseña (usuario autenticado)
+         * @description Cambia la contraseña validando la actual y cierra las sesiones abiertas.
+         */
+        post: operations["auth_password_change"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/register/": {
         parameters: {
             query?: never;
@@ -1754,6 +1774,11 @@ export interface components {
             amount: string;
             currency?: string;
         };
+        /** @description Cambio de contraseña para un usuario autenticado. */
+        PasswordChange: {
+            current_password: string;
+            new_password: string;
+        };
         /** @description Datos del enlace de reseteo y la contraseña nueva. */
         PasswordResetConfirm: {
             uid: string;
@@ -2274,6 +2299,31 @@ export interface operations {
                 "application/json": components["schemas"]["PasswordResetConfirm"];
                 "application/x-www-form-urlencoded": components["schemas"]["PasswordResetConfirm"];
                 "multipart/form-data": components["schemas"]["PasswordResetConfirm"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailMessage"];
+                };
+            };
+        };
+    };
+    auth_password_change: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChange"];
+                "application/x-www-form-urlencoded": components["schemas"]["PasswordChange"];
+                "multipart/form-data": components["schemas"]["PasswordChange"];
             };
         };
         responses: {

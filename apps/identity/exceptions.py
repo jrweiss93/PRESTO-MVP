@@ -45,3 +45,7 @@ class WeakPassword(IdentityError):
 
 class InvalidToken(IdentityError):
     """El token de un enlace no es válido o venció."""
+
+
+class InvalidCurrentPassword(IdentityError):
+    """La contraseña actual no coincide."""

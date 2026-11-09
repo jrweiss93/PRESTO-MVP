@@ -206,6 +206,17 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     )
 
 
+class PasswordChangeSerializer(serializers.Serializer):
+    """Cambio de contraseña para un usuario autenticado."""
+
+    current_password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+    new_password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+        style={'input_type': 'password'},
+    )
+
+
 class EmailVerificationSerializer(serializers.Serializer):
     """Datos del enlace de verificación de email."""
 

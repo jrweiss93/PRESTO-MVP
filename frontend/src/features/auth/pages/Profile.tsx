@@ -12,7 +12,7 @@ const KYC_BADGE: Record<string, string> = {
 };
 
 export default function Profile() {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
   const [kyc, setKyc] = useState<KYCVerification | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +32,11 @@ export default function Profile() {
 
   const [simulateMismatch, setSimulateMismatch] = useState(false);
   const [runningBiometric, setRunningBiometric] = useState(false);
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -127,9 +132,10 @@ export default function Profile() {
         ...(simulateMismatch ? { mismatch: true } : {}),
       });
       setKyc(await api.getKyc());
+      await refreshUser().catch(() => undefined);
       setNotice(
         check.status === "passed"
-          ? "Validación biométrica aprobada (simulación)."
+          ? "Validación biométrica aprobada (simulación). En la demo, tu identidad se verifica automáticamente."
           : "Validación biométrica rechazada (simulación de no coincidencia).",
       );
     } catch (err) {
@@ -140,6 +146,36 @@ export default function Profile() {
       );
     } finally {
       setRunningBiometric(false);
+    }
+  }
+
+  async function handleChangePassword(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setNotice(null);
+    if (newPassword !== confirmPassword) {
+      setError("La contraseña nueva y la confirmación no coinciden.");
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      const res = await api.changePassword({
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setNotice(`${res.detail} Vas a tener que volver a iniciar sesión.`);
+      await logout();
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo cambiar la contraseña.",
+      );
+    } finally {
+      setChangingPassword(false);
     }
   }
 
@@ -357,6 +393,54 @@ export default function Profile() {
           </div>
         </div>
       )}
+
+      <div className="card">
+        <h2>Seguridad</h2>
+        <p className="small text-muted">
+          Cambiá tu contraseña. Al hacerlo se cierran las otras sesiones.
+        </p>
+        <form onSubmit={handleChangePassword}>
+          <div className="form-grid">
+            <label className="field">
+              Contraseña actual
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+              />
+            </label>
+            <label className="field">
+              Contraseña nueva
+              <input
+                type="password"
+                autoComplete="new-password"
+                minLength={8}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                placeholder="Mínimo 8 caracteres"
+              />
+            </label>
+            <label className="field">
+              Repetir contraseña nueva
+              <input
+                type="password"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </label>
+          </div>
+          <div className="btn-row" style={{ marginTop: "0.9rem" }}>
+            <button className="btn" type="submit" disabled={changingPassword}>
+              {changingPassword ? "Guardando…" : "Cambiar contraseña"}
+            </button>
+          </div>
+        </form>
+      </div>
     </>
   );
 }

@@ -19,6 +19,7 @@ from apps.identity.emails import send_email_verification_email, send_password_re
 from apps.identity.exceptions import (
     EmailAlreadyRegistered,
     InvalidBiometricSample,
+    InvalidCurrentPassword,
     InvalidDocuments,
     InvalidKYCResolution,
     InvalidProfileField,
@@ -467,6 +468,38 @@ def _get_user_from_uid(uid: str) -> User | None:
         return User.objects.filter(pk=user_id, is_active=True).first()
     except (DjangoValidationError, ValueError):
         return None
+
+
+def change_password(user: User, current_password: str, new_password: str) -> User:
+    """Cambia la contraseña del usuario autenticado.
+
+    Valida la contraseña actual, aplica los validadores de Django a la nueva y
+    cierra las sesiones abiertas (blacklist de refresh tokens).
+
+    Args:
+        user: usuario autenticado.
+        current_password: contraseña actual en texto plano.
+        new_password: contraseña nueva en texto plano.
+
+    Returns:
+        El usuario con la contraseña actualizada.
+
+    Raises:
+        InvalidCurrentPassword: si la contraseña actual no coincide.
+        WeakPassword: si la contraseña nueva no pasa los validadores.
+    """
+    if not user.check_password(current_password):
+        raise InvalidCurrentPassword('La contraseña actual no es correcta.')
+    try:
+        validate_password(new_password, user=user)
+    except DjangoValidationError as exc:
+        raise WeakPassword('; '.join(exc.messages)) from exc
+    with transaction.atomic():
+        user.set_password(new_password)
+        user.save(update_fields=['password'])
+        _blacklist_refresh_tokens(user)
+    logger.info('Contraseña cambiada (sesión autenticada): user_id=%s', user.id)
+    return user
 
 
 def _blacklist_refresh_tokens(user: User) -> int:

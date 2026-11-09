@@ -16,6 +16,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from apps.identity.exceptions import (
     EmailAlreadyRegistered,
     InvalidBiometricSample,
+    InvalidCurrentPassword,
     InvalidProfileKind,
     InvalidToken,
     PendingKYCExists,
@@ -40,6 +41,7 @@ from apps.identity.serializers import (
     LoginResponseSerializer,
     LoginSerializer,
     MeUpdateSerializer,
+    PasswordChangeSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     RegisterSerializer,
@@ -47,6 +49,7 @@ from apps.identity.serializers import (
     UserSerializer,
 )
 from apps.identity.services import (
+    change_password,
     clear_refresh_cookie,
     confirm_email_verification,
     confirm_password_reset,
@@ -388,6 +391,37 @@ class PasswordResetConfirmView(APIView):
             raise ValidationError({'new_password': [str(exc)]}) from exc
         return Response(
             {'detail': 'Contraseña actualizada. Ya podés iniciar sesión con la nueva.'},
+            status=status.HTTP_200_OK,
+        )
+
+
+class PasswordChangeView(APIView):
+    """Cambio de contraseña para el usuario autenticado."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=PasswordChangeSerializer,
+        responses={200: DetailMessageSerializer},
+        summary='Cambiar la contraseña (usuario autenticado)',
+        operation_id='auth_password_change',
+    )
+    def post(self, request):
+        """Cambia la contraseña validando la actual y cierra las sesiones abiertas."""
+        serializer = PasswordChangeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            change_password(
+                user=request.user,
+                current_password=serializer.validated_data['current_password'],
+                new_password=serializer.validated_data['new_password'],
+            )
+        except InvalidCurrentPassword as exc:
+            raise ValidationError({'current_password': [str(exc)]}) from exc
+        except WeakPassword as exc:
+            raise ValidationError({'new_password': [str(exc)]}) from exc
+        return Response(
+            {'detail': 'Contraseña actualizada. Las otras sesiones se cerraron.'},
             status=status.HTTP_200_OK,
         )
 

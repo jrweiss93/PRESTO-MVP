@@ -99,6 +99,14 @@ export function confirmPasswordReset(
   return apiPost<DetailMessage>("/auth/password-reset/confirm/", payload);
 }
 
+/** Cambia la contraseña del usuario autenticado (cierra las otras sesiones). */
+export function changePassword(payload: {
+  current_password: string;
+  new_password: string;
+}): Promise<DetailMessage> {
+  return apiPost<DetailMessage>("/auth/password/change/", payload);
+}
+
 /** Confirma el email con el uid y el token del enlace. */
 export function verifyEmail(
   payload: EmailVerification,
