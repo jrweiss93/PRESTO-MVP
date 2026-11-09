@@ -65,12 +65,17 @@ def test_welcome_bonus_skips_non_borrowers():
     assert _wallet_balance(investor.id) == Decimal('0.00')
 
 
-@override_settings(DEMO_MODE=True)
 def test_welcome_bonus_requires_simulated_deposits():
     """Sin depósitos simulados habilitados el regalo no se acredita."""
-    user = _approved_kyc_user('regalo-sin-demo@example.com', 'borrower')
-
+    # Aprobamos el KYC con depósitos simulados deshabilitados para que la señal
+    # no acredite el bono durante el armado; así partimos de saldo cero.
     with override_settings(DEMO_MODE=True, LEDGER_SIMULATED_DEPOSITS_ENABLED=False):
+        user = register_user(
+            email='regalo-sin-demo@example.com', password='TestPass123!', profile_kind='borrower'
+        )
+        verification = submit_kyc(user=user, documents={})
+        resolve_kyc(verification_id=verification.id, status='approved', resolved_by_user_id=user.id)
+
         assert grant_welcome_bonus(user.id) is False
 
     assert _wallet_balance(user.id) == Decimal('0.00')

@@ -21,11 +21,16 @@ pytestmark = pytest.mark.django_db
 PASSWORD = 'PrestoTest123!'
 
 
-def register(client, email):
+def register(client, email, profile_kind='borrower'):
     """Registra un usuario y devuelve su id."""
     response = client.post(
         '/api/v1/auth/register/',
-        {'email': email, 'password': PASSWORD, 'terms_accepted': True},
+        {
+            'email': email,
+            'password': PASSWORD,
+            'terms_accepted': True,
+            'profile_kind': profile_kind,
+        },
         format='json',
     )
     assert response.status_code == 201, response.data
@@ -97,9 +102,9 @@ def _run_the_flow(currency):
     lender_client = APIClient()
     borrower_client = APIClient()
 
-    # 1. Registro
-    lender_id = register(lender_client, f'prestamista-{currency}@example.com')
-    borrower_id = register(borrower_client, f'prestatario-{currency}@example.com')
+    # 1. Registro (perfil fijo por persona)
+    lender_id = register(lender_client, f'prestamista-{currency}@example.com', 'lender')
+    borrower_id = register(borrower_client, f'prestatario-{currency}@example.com', 'borrower')
 
     # 2. Login
     lender_token = login(lender_client, f'prestamista-{currency}@example.com')
