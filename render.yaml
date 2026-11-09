@@ -94,7 +94,7 @@ services:
     plan: free
     # El entrypoint de la imagen hace `exec "$@"`: arranca el worker de Celery,
     # que envía los emails y corre las tareas encoladas.
-    command: celery -A config worker -l info --concurrency 2
+    dockerCommand: celery -A config worker -l info --concurrency 2
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: config.settings.production
@@ -152,7 +152,7 @@ services:
     plan: free
     # Beat dispara las tareas diarias: marcar cuotas vencidas y liquidar plazos
     # fijos. Sin este servicio las liquidaciones y vencimientos no son automáticos.
-    command: celery -A config beat -l info --schedule /var/celerybeat/celerybeat-schedule
+    dockerCommand: celery -A config beat -l info --schedule /var/celerybeat/celerybeat-schedule
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: config.settings.production
