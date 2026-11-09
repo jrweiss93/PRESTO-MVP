@@ -46,7 +46,7 @@ def _collect_metrics():
     today = timezone.localdate()
 
     users_total = User.objects.count()
-    users_verified = User.objects.filter(is_email_verified=True).count()
+    users_verified = User.objects.filter(email_verified_at__isnull=False).count()
     profiles = {
         row['kind']: row['total']
         for row in PrestoProfile.objects.filter(is_active=True)
@@ -58,7 +58,7 @@ def _collect_metrics():
         row['status']: row['total']
         for row in KYCVerification.objects.values('status').annotate(total=Count('id'))
     }
-    biometric_passed = BiometricCheck.objects.filter(passed=True).count()
+    biometric_passed = BiometricCheck.objects.filter(status=BiometricCheck.Status.PASSED).count()
 
     loans = {
         row['status']: row['total']
@@ -125,7 +125,7 @@ def _collect_metrics():
         },
         'loans': {
             'active': loans.get(Loan.Status.ACTIVE, 0),
-            'completed': loans.get(Loan.Status.COMPLETED, 0),
+            'completed': loans.get(Loan.Status.PAID, 0),
             'defaulted': loans.get(Loan.Status.DEFAULTED, 0),
             'active_principal_ars': active_principal_ars,
             'overdue_installments': overdue_installments,
@@ -133,12 +133,12 @@ def _collect_metrics():
         },
         'offers': {
             'active': offers.get(Offer.Status.ACTIVE, 0),
-            'matched': offers.get(Offer.Status.MATCHED, 0),
-            'cancelled': offers.get(Offer.Status.CANCELLED, 0),
+            'matched': offers.get(Offer.Status.ACCEPTED, 0),
+            'cancelled': offers.get(Offer.Status.EXPIRED, 0),
         },
         'investments': {
             'active': positions.get(Position.Status.ACTIVE, 0),
-            'settled': positions.get(Position.Status.SETTLED, 0),
+            'settled': positions.get(Position.Status.MATURED, 0),
             'invested_ars': invested_ars,
         },
         'payments': payments,
