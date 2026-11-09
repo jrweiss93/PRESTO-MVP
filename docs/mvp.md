@@ -29,7 +29,7 @@ están en [`COMO-USAR-LA-DEMO.txt`](../COMO-USAR-LA-DEMO.txt).
 
 ### Con Docker (o manual)
 
-Requisitos: Docker + Docker Compose, Node 20+ y `pnpm`.
+Requisitos: Docker + Docker Compose, Node 24+ y `pnpm` (versión fijada en `.nvmrc`/`.node-version` y `frontend/package.json#engines`; la CI usa Node 24).
 
 ```sh
 # 1) Backend, base, Redis, worker y beat

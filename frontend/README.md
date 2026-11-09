@@ -6,7 +6,7 @@ mediante el contrato OpenAPI (`contract/openapi.yaml`).
 
 ## Requisitos
 
-- Node.js 20+ y pnpm (`npm i -g pnpm`)
+- Node.js 24+ y pnpm (`npm i -g pnpm`) — versión fijada en `.nvmrc`/`.node-version` (`24`) y `package.json#engines` (la misma que usa la CI)
 - La API de Presto corriendo (por defecto `http://localhost:8000/api/v1`)
   o el mock local (`pnpm mock`, puerto 8001)
 
