@@ -25,6 +25,13 @@ class RegisterSerializer(serializers.Serializer):
         choices=PrestoProfile.Kind.choices,
         required=False,
     )
+    terms_accepted = serializers.BooleanField()
+
+    def validate_terms_accepted(self, value):
+        """Exige que el usuario haya aceptado los términos y condiciones."""
+        if value is not True:
+            raise serializers.ValidationError('Debés aceptar los términos y condiciones.')
+        return value
 
 
 class LoginSerializer(serializers.Serializer):
@@ -68,11 +75,12 @@ class UserSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
             'email_verified',
+            'terms_accepted_at',
             'profile',
             'profiles',
             'active_profile',
         ]
-        read_only_fields = ['id', 'email', 'email_verified']
+        read_only_fields = ['id', 'email', 'email_verified', 'terms_accepted_at']
 
     @extend_schema_field(ProfileSerializer(allow_null=True))
     def get_profile(self, obj):

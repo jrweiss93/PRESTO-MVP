@@ -28,7 +28,7 @@ def test_register_returns_201_and_creates_user(client):
 
     response = client.post(
         '/api/v1/auth/register/',
-        {'email': 'nuevo@example.com', 'password': 'TestPass123!'},
+        {'email': 'nuevo@example.com', 'password': 'TestPass123!', 'terms_accepted': True},
         format='json',
     )
 
@@ -41,7 +41,7 @@ def test_register_does_not_expose_password(client):
     """La respuesta del registro nunca incluye la contraseña."""
     response = client.post(
         '/api/v1/auth/register/',
-        {'email': 'nuevo@example.com', 'password': 'TestPass123!'},
+        {'email': 'nuevo@example.com', 'password': 'TestPass123!', 'terms_accepted': True},
         format='json',
     )
 
@@ -55,7 +55,7 @@ def test_register_rejects_duplicate_email(client):
 
     response = client.post(
         '/api/v1/auth/register/',
-        {'email': 'duplicado@example.com', 'password': 'TestPass123!'},
+        {'email': 'duplicado@example.com', 'password': 'TestPass123!', 'terms_accepted': True},
         format='json',
     )
 
@@ -68,7 +68,7 @@ def test_register_rejects_invalid_email(client):
     """Un email inválido devuelve 400."""
     response = client.post(
         '/api/v1/auth/register/',
-        {'email': 'no-es-un-email', 'password': 'TestPass123!'},
+        {'email': 'no-es-un-email', 'password': 'TestPass123!', 'terms_accepted': True},
         format='json',
     )
 
@@ -79,11 +79,50 @@ def test_register_rejects_short_password(client):
     """Una contraseña corta devuelve 400."""
     response = client.post(
         '/api/v1/auth/register/',
-        {'email': 'corto@example.com', 'password': '123'},
+        {'email': 'corto@example.com', 'password': '123', 'terms_accepted': True},
         format='json',
     )
 
     assert response.status_code == 400
+
+
+def test_register_requires_terms_accepted(client):
+    """Registrar sin aceptar los términos devuelve 400."""
+    response = client.post(
+        '/api/v1/auth/register/',
+        {'email': 'sin-terminos@example.com', 'password': 'TestPass123!'},
+        format='json',
+    )
+
+    assert response.status_code == 400
+    assert response.data['error']['code'] == 'validation_error'
+
+
+def test_register_rejects_unaccepted_terms(client):
+    """Aceptar los términos con `false` devuelve 400."""
+    response = client.post(
+        '/api/v1/auth/register/',
+        {
+            'email': 'terminos-false@example.com',
+            'password': 'TestPass123!',
+            'terms_accepted': False,
+        },
+        format='json',
+    )
+
+    assert response.status_code == 400
+
+
+def test_register_records_the_terms_acceptance(client):
+    """Al registrarse con aceptación, queda guardada la fecha de aceptación."""
+    response = client.post(
+        '/api/v1/auth/register/',
+        {'email': 'terminos-ok@example.com', 'password': 'TestPass123!', 'terms_accepted': True},
+        format='json',
+    )
+
+    assert response.status_code == 201
+    assert response.data['terms_accepted_at'] is not None
 
 
 def test_login_returns_access_and_sets_the_refresh_cookie(client):
@@ -151,7 +190,11 @@ def test_register_is_throttled_after_five_attempts(client):
     for index in range(6):
         response = client.post(
             '/api/v1/auth/register/',
-            {'email': f'throttle{index}@example.com', 'password': 'TestPass123!'},
+            {
+                'email': f'throttle{index}@example.com',
+                'password': 'TestPass123!',
+                'terms_accepted': True,
+            },
             format='json',
         )
         statuses.append(response.status_code)

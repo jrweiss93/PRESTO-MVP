@@ -141,6 +141,7 @@ def test_register_endpoint_accepts_a_profile(client):
             'email': 'nuevo-inversor@example.com',
             'password': 'TestPass123!',
             'profile_kind': 'investor',
+            'terms_accepted': True,
         },
         format='json',
     )
@@ -153,7 +154,11 @@ def test_register_endpoint_defaults_to_borrower(client):
     """Sin profile_kind el registro crea un prestatario."""
     response = client.post(
         '/api/v1/auth/register/',
-        {'email': 'nuevo-prestatario@example.com', 'password': 'TestPass123!'},
+        {
+            'email': 'nuevo-prestatario@example.com',
+            'password': 'TestPass123!',
+            'terms_accepted': True,
+        },
         format='json',
     )
 
@@ -169,6 +174,7 @@ def test_register_endpoint_rejects_unknown_profile(client):
             'email': 'nuevo-invalido@example.com',
             'password': 'TestPass123!',
             'profile_kind': 'admin',
+            'terms_accepted': True,
         },
         format='json',
     )

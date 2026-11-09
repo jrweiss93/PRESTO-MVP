@@ -1820,6 +1820,7 @@ export interface components {
             email: string;
             password: string;
             profile_kind?: components["schemas"]["PrestoProfileKindEnum"];
+            terms_accepted: boolean;
         };
         /** @description Ficha del marco regulatorio. */
         RegulationCard: {
@@ -1894,6 +1895,11 @@ export interface components {
             first_name?: string;
             last_name?: string;
             readonly email_verified: boolean;
+            /**
+             * Format: date-time
+             * @description Cuándo aceptó los términos y condiciones (null si no los aceptó).
+             */
+            readonly terms_accepted_at: string | null;
             readonly profile: components["schemas"]["Profile"] | null;
             readonly profiles: components["schemas"]["PrestoProfile"][];
             readonly active_profile: string | null;

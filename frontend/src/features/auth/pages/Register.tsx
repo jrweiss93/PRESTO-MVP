@@ -12,6 +12,7 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [profileKind, setProfileKind] = useState<ProfileKind>("borrower");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -19,6 +20,10 @@ export default function Register() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!acceptedTerms) {
+      setError("Debés aceptar los términos y condiciones para continuar.");
+      return;
+    }
     if (password !== confirm) {
       setError("Las contraseñas no coinciden.");
       return;
@@ -170,7 +175,30 @@ export default function Register() {
                 className="h-11"
               />
             </div>
-            <button className="btn block" type="submit" disabled={submitting}>
+            <label className="flex items-start gap-2 text-theme-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                Acepto los{" "}
+                <Link
+                  to="/legal"
+                  target="_blank"
+                  className="text-brand-500 hover:text-brand-600"
+                >
+                  Términos y Condiciones
+                </Link>{" "}
+                y la Política de Privacidad de Presto.
+              </span>
+            </label>
+            <button
+              className="btn block"
+              type="submit"
+              disabled={submitting || !acceptedTerms}
+            >
               {submitting ? "Creando cuenta…" : "Registrarme"}
             </button>
           </form>

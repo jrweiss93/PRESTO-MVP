@@ -59,6 +59,11 @@ class User(AbstractUser):
         blank=True,
         help_text='Cuándo se confirmó el email (null si todavía no se verificó).',
     )
+    terms_accepted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Cuándo aceptó los términos y condiciones (null si no los aceptó).',
+    )
 
     @property
     def email_verified(self) -> bool:

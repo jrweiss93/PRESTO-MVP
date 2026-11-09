@@ -51,7 +51,7 @@ export default function Landing() {
               to="/legal"
               className="hidden text-theme-sm text-gray-600 hover:text-gray-900 sm:block"
             >
-              Legal
+              Términos
             </Link>
             {user ? (
               <Link to="/dashboard" className="btn">
@@ -78,7 +78,7 @@ export default function Landing() {
         <strong>Demo pública.</strong> El dinero es simulado: no se mueve plata
         real.{" "}
         <Link to="/legal" className="underline">
-          Ver alcance
+          Ver términos y condiciones
         </Link>
       </div>
 
@@ -231,7 +231,7 @@ export default function Landing() {
           <p>© {new Date().getFullYear()} Presto. Demo con dinero simulado.</p>
           <div className="flex gap-4">
             <Link to="/legal" className="hover:text-gray-700">
-              Legal y alcance
+              Términos y condiciones
             </Link>
             <Link to="/login" className="hover:text-gray-700">
               Ingresar

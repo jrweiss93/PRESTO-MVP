@@ -3249,9 +3249,12 @@ components:
           minLength: 8
         profile_kind:
           $ref: '#/components/schemas/PrestoProfileKindEnum'
+        terms_accepted:
+          type: boolean
       required:
       - email
       - password
+      - terms_accepted
     RegulationCard:
       type: object
       description: Ficha del marco regulatorio.
@@ -3427,6 +3430,12 @@ components:
         email_verified:
           type: boolean
           readOnly: true
+        terms_accepted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Cuándo aceptó los términos y condiciones (null si no los aceptó).
         profile:
           allOf:
           - $ref: '#/components/schemas/Profile'
@@ -3448,6 +3457,7 @@ components:
       - id
       - profile
       - profiles
+      - terms_accepted_at
     WebhookEvent:
       type: object
       description: Respuesta del endpoint de webhook.

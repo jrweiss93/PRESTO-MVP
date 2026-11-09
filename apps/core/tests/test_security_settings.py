@@ -48,7 +48,7 @@ def test_register_rejects_a_numeric_password(client):
     """Una contraseña solo numérica devuelve 400 (validador de Django)."""
     response = client.post(
         '/api/v1/auth/register/',
-        {'email': 'numerico@example.com', 'password': '1234567890'},
+        {'email': 'numerico@example.com', 'password': '1234567890', 'terms_accepted': True},
         format='json',
     )
 
@@ -60,7 +60,7 @@ def test_register_rejects_a_common_password(client):
     """Una contraseña común devuelve 400 (validador de Django)."""
     response = client.post(
         '/api/v1/auth/register/',
-        {'email': 'comun@example.com', 'password': 'password123'},
+        {'email': 'comun@example.com', 'password': 'password123', 'terms_accepted': True},
         format='json',
     )
 

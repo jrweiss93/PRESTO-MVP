@@ -127,7 +127,11 @@ def register_user(email: str, password: str, profile_kind: str = 'borrower') -> 
     except DjangoValidationError as exc:
         raise WeakPassword('; '.join(exc.messages)) from exc
     with transaction.atomic():
-        user = User.objects.create_user(email=email, password=password)
+        user = User.objects.create_user(
+            email=email,
+            password=password,
+            terms_accepted_at=timezone.now(),
+        )
         Profile.objects.create(user=user)
         PrestoProfile.objects.create(user=user, kind=profile_kind, is_active=True)
     logger.info('Usuario registrado: user_id=%s profile=%s', user.id, profile_kind)

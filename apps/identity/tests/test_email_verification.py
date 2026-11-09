@@ -39,7 +39,7 @@ def register(client, email: str = 'nuevo@example.com'):
     """Registra un usuario por la API."""
     return client.post(
         '/api/v1/auth/register/',
-        {'email': email, 'password': PASSWORD},
+        {'email': email, 'password': PASSWORD, 'terms_accepted': True},
         format='json',
     )
 
