@@ -6,19 +6,26 @@ devuelven la respuesta. Cada usuario ve solo lo suyo.
 
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.pagination import StandardPagination
-from apps.notifications.selectors import list_notifications_for_user
+from apps.notifications.selectors import count_unread_notifications, list_notifications_for_user
 from apps.notifications.serializers import (
     NotificationPreferenceListSerializer,
     NotificationPreferenceSerializer,
+    NotificationReadAllSerializer,
     NotificationSerializer,
+    NotificationUnreadCountSerializer,
 )
-from apps.notifications.services import get_preferences, set_preference
+from apps.notifications.services import (
+    get_preferences,
+    mark_all_notifications_read,
+    mark_notification_read,
+    set_preference,
+)
 
 
 class NotificationListView(APIView):
@@ -77,3 +84,58 @@ class NotificationPreferenceView(APIView):
             ).data,
             status=status.HTTP_200_OK,
         )
+
+
+class NotificationUnreadCountView(APIView):
+    """Cantidad de avisos sin leer del usuario autenticado."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: NotificationUnreadCountSerializer},
+        summary='Contar los avisos sin leer',
+        operation_id='notifications_unread_count',
+    )
+    def get(self, request):
+        """Devuelve cuántos avisos tiene el usuario sin leer."""
+        unread = count_unread_notifications(user_id=request.user.id)
+        return Response({'unread': unread})
+
+
+class NotificationReadView(APIView):
+    """Marcar un aviso como leído."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=None,
+        responses={200: NotificationSerializer},
+        summary='Marcar un aviso como leído',
+        operation_id='notifications_read',
+    )
+    def post(self, request, notification_id):
+        """Marca un aviso propio como leído."""
+        notification = mark_notification_read(
+            user_id=request.user.id,
+            notification_id=notification_id,
+        )
+        if notification is None:
+            raise NotFound('El aviso no existe.')
+        return Response(NotificationSerializer(notification).data)
+
+
+class NotificationReadAllView(APIView):
+    """Marcar todos los avisos como leídos."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=None,
+        responses={200: NotificationReadAllSerializer},
+        summary='Marcar todos los avisos como leídos',
+        operation_id='notifications_read_all',
+    )
+    def post(self, request):
+        """Marca todos los avisos propios como leídos."""
+        read = mark_all_notifications_read(user_id=request.user.id)
+        return Response({'read': read})

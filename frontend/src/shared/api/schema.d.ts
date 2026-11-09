@@ -787,6 +787,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notifications/{notification_id}/read/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Marcar un aviso como leído
+         * @description Marca un aviso propio como leído.
+         */
+        post: operations["notifications_read"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notifications/preferences/": {
         parameters: {
             query?: never;
@@ -804,6 +824,46 @@ export interface paths {
          * @description Guarda si el usuario quiere recibir un tipo de aviso.
          */
         put: operations["notifications_preferences_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/read-all/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Marcar todos los avisos como leídos
+         * @description Marca todos los avisos propios como leídos.
+         */
+        post: operations["notifications_read_all"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/unread-count/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Contar los avisos sin leer
+         * @description Devuelve cuántos avisos tiene el usuario sin leer.
+         */
+        get: operations["notifications_unread_count"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -1565,6 +1625,11 @@ export interface components {
             /** Format: uuid */
             readonly reference_id: string;
             readonly status: components["schemas"]["NotificationStatusEnum"];
+            /**
+             * Format: date-time
+             * @description Cuándo leyó el usuario el aviso en la app (null si está sin leer).
+             */
+            readonly read_at: string | null;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */
@@ -1580,6 +1645,10 @@ export interface components {
         NotificationPreferenceList: {
             preferences: components["schemas"]["NotificationPreference"][];
         };
+        /** @description Resultado de marcar todos los avisos como leídos. */
+        NotificationReadAll: {
+            read: number;
+        };
         /**
          * @description * `pending` - Pendiente
          *     * `sent` - Enviado
@@ -1587,6 +1656,10 @@ export interface components {
          * @enum {string}
          */
         NotificationStatusEnum: "pending" | "sent" | "failed";
+        /** @description Cantidad de avisos sin leer. */
+        NotificationUnreadCount: {
+            unread: number;
+        };
         /** @description Datos de una oferta de préstamo. */
         Offer: {
             /** Format: uuid */
@@ -2965,6 +3038,27 @@ export interface operations {
             };
         };
     };
+    notifications_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notification"];
+                };
+            };
+        };
+    };
     notifications_preferences: {
         parameters: {
             query?: never;
@@ -3005,6 +3099,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NotificationPreference"];
+                };
+            };
+        };
+    };
+    notifications_read_all: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationReadAll"];
+                };
+            };
+        };
+    };
+    notifications_unread_count: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationUnreadCount"];
                 };
             };
         };

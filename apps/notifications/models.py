@@ -37,6 +37,11 @@ class Notification(BaseModel):
     event_type = models.CharField(max_length=32, choices=EventType.choices)
     reference_id = models.UUIDField()
     status = models.CharField(max_length=8, choices=Status.choices, default=Status.PENDING)
+    read_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Cuándo leyó el usuario el aviso en la app (null si está sin leer).',
+    )
     sent_at = models.DateTimeField(null=True, blank=True)
     error = models.CharField(max_length=255, blank=True)
     attempts = models.PositiveSmallIntegerField(default=0)

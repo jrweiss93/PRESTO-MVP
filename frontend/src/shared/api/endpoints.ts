@@ -417,6 +417,24 @@ export async function listNotifications(): Promise<Notification[]> {
   );
 }
 
+export async function getUnreadCount(): Promise<number> {
+  const data = await apiGet<{ unread: number }>(
+    "/notifications/unread-count/",
+  );
+  return data.unread;
+}
+
+export function markNotificationRead(
+  notificationId: string,
+): Promise<Notification> {
+  return apiPost<Notification>(`/notifications/${notificationId}/read/`);
+}
+
+export async function markAllNotificationsRead(): Promise<number> {
+  const data = await apiPost<{ read: number }>("/notifications/read-all/");
+  return data.read;
+}
+
 // ---- asistente Presti (implementado en el backend, sin LLM) ----
 
 export function getMarket(): Promise<MarketSnapshot> {

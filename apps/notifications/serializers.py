@@ -16,6 +16,7 @@ class NotificationSerializer(serializers.ModelSerializer):
             'event_type',
             'reference_id',
             'status',
+            'read_at',
             'created_at',
             'sent_at',
             'error',
@@ -34,3 +35,15 @@ class NotificationPreferenceListSerializer(serializers.Serializer):
     """Las preferencias del usuario con todos los eventos."""
 
     preferences = NotificationPreferenceSerializer(many=True)
+
+
+class NotificationUnreadCountSerializer(serializers.Serializer):
+    """Cantidad de avisos sin leer."""
+
+    unread = serializers.IntegerField()
+
+
+class NotificationReadAllSerializer(serializers.Serializer):
+    """Resultado de marcar todos los avisos como leídos."""
+
+    read = serializers.IntegerField()

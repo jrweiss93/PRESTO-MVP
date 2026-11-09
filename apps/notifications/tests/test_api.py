@@ -133,3 +133,74 @@ def test_preferences_are_isolated_between_users(client):
 
     preferences = {item['event_type']: item['enabled'] for item in response.data['preferences']}
     assert preferences[Notification.EventType.INVESTMENT_SETTLED] is True
+
+
+def test_unread_count_counts_only_unread(client):
+    """El contador devuelve solo los avisos sin leer."""
+    from apps.notifications.tests.factories import NotificationFactory
+
+    user = create_user()
+    NotificationFactory(user_id=user.id)
+    NotificationFactory(user_id=user.id)
+    authenticate(client, user)
+
+    response = client.get('/api/v1/notifications/unread-count/')
+
+    assert response.status_code == 200
+    assert response.data['unread'] == 2
+
+
+def test_unread_count_requires_authentication(client):
+    """Sin token el contador responde 401."""
+    response = client.get('/api/v1/notifications/unread-count/')
+
+    assert response.status_code == 401
+
+
+def test_mark_read_sets_read_at(client):
+    """Marcar un aviso como leído guarda la fecha de lectura."""
+    from apps.notifications.tests.factories import NotificationFactory
+
+    user = create_user()
+    notification = NotificationFactory(user_id=user.id)
+    authenticate(client, user)
+
+    response = client.post(f'/api/v1/notifications/{notification.id}/read/')
+
+    assert response.status_code == 200
+    assert response.data['read_at'] is not None
+
+    count = client.get('/api/v1/notifications/unread-count/')
+    assert count.data['unread'] == 0
+
+
+def test_mark_read_of_other_user_returns_404(client):
+    """No se puede marcar como leído un aviso de otro usuario."""
+    from apps.notifications.tests.factories import NotificationFactory
+
+    user = create_user()
+    other = create_user(email='notificaciones-lectura-otro@example.com')
+    notification = NotificationFactory(user_id=other.id)
+    authenticate(client, user)
+
+    response = client.post(f'/api/v1/notifications/{notification.id}/read/')
+
+    assert response.status_code == 404
+
+
+def test_mark_all_read_marks_everything(client):
+    """Marcar todo como leído deja el contador en cero."""
+    from apps.notifications.tests.factories import NotificationFactory
+
+    user = create_user()
+    NotificationFactory(user_id=user.id)
+    NotificationFactory(user_id=user.id)
+    authenticate(client, user)
+
+    response = client.post('/api/v1/notifications/read-all/')
+
+    assert response.status_code == 200
+    assert response.data['read'] == 2
+
+    count = client.get('/api/v1/notifications/unread-count/')
+    assert count.data['unread'] == 0

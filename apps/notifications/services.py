@@ -5,7 +5,11 @@ from datetime import UTC, datetime
 
 from apps.notifications.exceptions import InvalidEventType
 from apps.notifications.models import Notification, NotificationPreference
-from apps.notifications.selectors import get_preference_for_user, list_preferences_for_user
+from apps.notifications.selectors import (
+    get_notification_for_user,
+    get_preference_for_user,
+    list_preferences_for_user,
+)
 
 
 def create_notification(
@@ -137,3 +141,35 @@ def mark_notification_failed(notification: Notification, error: str) -> Notifica
     notification.error = error[:255]
     notification.save(update_fields=['status', 'error', 'updated_at'])
     return notification
+
+
+def mark_notification_read(user_id: uuid.UUID, notification_id: uuid.UUID) -> Notification | None:
+    """Marca un aviso como leído, si pertenece al usuario.
+
+    Args:
+        user_id: identificador del usuario propietario.
+        notification_id: identificador del aviso.
+
+    Returns:
+        El aviso actualizado, o None si no existe o es de otro usuario.
+    """
+    notification = get_notification_for_user(user_id=user_id, notification_id=notification_id)
+    if notification is None or notification.read_at is not None:
+        return notification
+    notification.read_at = datetime.now(UTC)
+    notification.save(update_fields=['read_at', 'updated_at'])
+    return notification
+
+
+def mark_all_notifications_read(user_id: uuid.UUID) -> int:
+    """Marca como leídos todos los avisos sin leer del usuario.
+
+    Args:
+        user_id: identificador del usuario.
+
+    Returns:
+        La cantidad de avisos marcados como leídos.
+    """
+    return Notification.objects.filter(user_id=user_id, read_at__isnull=True).update(
+        read_at=datetime.now(UTC)
+    )

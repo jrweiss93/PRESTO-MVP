@@ -74,3 +74,15 @@ def list_preferences_for_user(user_id: uuid.UUID) -> QuerySet[NotificationPrefer
         QuerySet con las preferencias del usuario.
     """
     return NotificationPreference.objects.filter(user_id=user_id).order_by('event_type')
+
+
+def count_unread_notifications(user_id: uuid.UUID) -> int:
+    """Cuenta los avisos sin leer del usuario.
+
+    Args:
+        user_id: identificador del usuario.
+
+    Returns:
+        La cantidad de avisos con `read_at` nulo.
+    """
+    return Notification.objects.filter(user_id=user_id, read_at__isnull=True).count()

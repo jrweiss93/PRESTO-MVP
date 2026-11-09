@@ -15,6 +15,7 @@ import LoanDetail from "@/features/loans/pages/LoanDetail";
 import Loans from "@/features/loans/pages/Loans";
 import Marketplace from "@/features/marketplace/pages/Marketplace";
 import Offers from "@/features/marketplace/pages/Offers";
+import Notifications from "@/features/notifications/pages/Notifications";
 import Payments from "@/features/payments/pages/Payments";
 import Dashboard from "@/features/wallet/pages/Dashboard";
 import Wallet from "@/features/wallet/pages/Wallet";
@@ -66,6 +67,7 @@ export default function App() {
         <Route path="/prestamos" element={<Loans />} />
         <Route path="/prestamos/:loanId" element={<LoanDetail />} />
         <Route path="/inversiones" element={<Investments />} />
+        <Route path="/notificaciones" element={<Notifications />} />
         {ENABLE_ASSISTANT && (
           <Route path="/asistente" element={<Assistant />} />
         )}

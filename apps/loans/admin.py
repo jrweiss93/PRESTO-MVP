@@ -1,17 +1,45 @@
 """Administración de Django para la app loans.
 
 Los préstamos y sus cuotas los crea el motor de matching y los servicios de
-loans: el admin solo permite consultarlos.
+loans: el admin solo permite consultarlos. Desde acá se puede forzar el marcado
+de cuotas vencidas (la tarea que normalmente dispara el beat de Celery).
 """
 
 from django.contrib import admin
+from django.utils import timezone
 
 from apps.loans.models import Installment, Loan, OfferTermsSnapshot
 
 
+class InstallmentInline(admin.TabularInline):
+    """Cuotas de un préstamo, en modo solo lectura."""
+
+    model = Installment
+    extra = 0
+    can_delete = False
+    fields = [
+        'number',
+        'due_date',
+        'amount',
+        'principal_amount',
+        'interest_amount',
+        'status',
+        'paid_at',
+    ]
+    readonly_fields = fields
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(Loan)
 class LoanAdmin(admin.ModelAdmin):
-    """Consulta de los préstamos."""
+    """Consulta de los préstamos, con sus cuotas."""
+
+    inlines = [InstallmentInline]
 
     list_display = [
         'id',
@@ -43,6 +71,7 @@ class LoanAdmin(admin.ModelAdmin):
         'created_at',
         'updated_at',
     ]
+    actions = ['mark_overdue_now']
 
     def has_add_permission(self, request):
         """Los préstamos se crean únicamente desde los servicios de loans."""
@@ -51,6 +80,18 @@ class LoanAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         """Los préstamos no se editan a mano."""
         return False
+
+    def has_view_permission(self, request, obj=None):
+        """El detalle se puede abrir en modo solo lectura (para ver las cuotas)."""
+        return True
+
+    @admin.action(description='Marcar cuotas vencidas (ahora)')
+    def mark_overdue_now(self, request, queryset):
+        """Ejecuta el marcado de cuotas vencidas sin esperar al beat de Celery."""
+        from apps.loans.services import mark_overdue
+
+        marked = mark_overdue(today=timezone.localdate())
+        self.message_user(request, f'{marked} cuota(s) marcada(s) como vencida(s).')
 
 
 @admin.register(OfferTermsSnapshot)

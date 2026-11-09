@@ -1122,6 +1122,29 @@ paths:
               schema:
                 $ref: '#/components/schemas/Notification'
           description: ''
+  /api/v1/notifications/{notification_id}/read/:
+    post:
+      operationId: notifications_read
+      description: Marca un aviso propio como leído.
+      summary: Marcar un aviso como leído
+      parameters:
+      - in: path
+        name: notification_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
   /api/v1/notifications/preferences/:
     get:
       operationId: notifications_preferences
@@ -1164,6 +1187,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotificationPreference'
+          description: ''
+  /api/v1/notifications/read-all/:
+    post:
+      operationId: notifications_read_all
+      description: Marca todos los avisos propios como leídos.
+      summary: Marcar todos los avisos como leídos
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationReadAll'
+          description: ''
+  /api/v1/notifications/unread-count/:
+    get:
+      operationId: notifications_unread_count
+      description: Devuelve cuántos avisos tiene el usuario sin leer.
+      summary: Contar los avisos sin leer
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationUnreadCount'
           description: ''
   /api/v1/offers/:
     get:
@@ -2689,6 +2744,13 @@ components:
           allOf:
           - $ref: '#/components/schemas/NotificationStatusEnum'
           readOnly: true
+        read_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Cuándo leyó el usuario el aviso en la app (null si está sin
+            leer).
         created_at:
           type: string
           format: date-time
@@ -2706,6 +2768,7 @@ components:
       - error
       - event_type
       - id
+      - read_at
       - reference_id
       - sent_at
       - status
@@ -2731,6 +2794,14 @@ components:
             $ref: '#/components/schemas/NotificationPreference'
       required:
       - preferences
+    NotificationReadAll:
+      type: object
+      description: Resultado de marcar todos los avisos como leídos.
+      properties:
+        read:
+          type: integer
+      required:
+      - read
     NotificationStatusEnum:
       enum:
       - pending
@@ -2741,6 +2812,14 @@ components:
         * `pending` - Pendiente
         * `sent` - Enviado
         * `failed` - Fallido
+    NotificationUnreadCount:
+      type: object
+      description: Cantidad de avisos sin leer.
+      properties:
+        unread:
+          type: integer
+      required:
+      - unread
     Offer:
       type: object
       description: Datos de una oferta de préstamo.

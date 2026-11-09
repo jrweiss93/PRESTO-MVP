@@ -5,6 +5,7 @@ import { ENABLE_ASSISTANT } from "@/shared/lib/features";
 import type { ProfileKind } from "@/shared/api/types";
 import { NavLink } from "react-router-dom";
 import {
+  BellIcon,
   CartIcon,
   CheckCircleIcon,
   DollarLineIcon,
@@ -129,6 +130,17 @@ const navItems: NavItem[] = [
       />
     ),
     path: "/asistente",
+  },
+  {
+    name: "Notificaciones",
+    icon: (a) => (
+      <BellIcon
+        className={
+          a ? "text-brand-500" : "text-gray-500 group-hover:text-gray-700"
+        }
+      />
+    ),
+    path: "/notificaciones",
   },
   {
     name: "Perfil y KYC",
