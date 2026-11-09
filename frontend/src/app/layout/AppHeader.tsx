@@ -2,6 +2,7 @@ import { useSidebar } from "@/app/providers/SidebarContext";
 import NotificationsBell from "@/app/layout/NotificationsBell";
 import { useAuth } from "@/features/auth/AuthContext";
 import { cn } from "@/shared/lib";
+import * as api from "@/shared/api/endpoints";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -16,6 +17,7 @@ export default function AppHeader() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isDropdownOpen, setDropdownOpen] = useState(false);
+  const [isDemoMode, setDemoMode] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleToggle = () => {
@@ -37,6 +39,19 @@ export default function AppHeader() {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .getMeta()
+      .then((meta) => {
+        if (active) setDemoMode(meta?.mode === "demo");
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
   }, []);
 
   function handleLogout() {
@@ -76,9 +91,19 @@ export default function AppHeader() {
 
           <div className="hidden xl:block" />
 
-          <NotificationsBell />
+          <div className="flex items-center gap-2 sm:gap-3">
+            {isDemoMode && (
+              <span
+                className="hidden items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-800 sm:inline-flex"
+                title="Esta instancia usa dinero simulado"
+              >
+                <span className="size-1.5 rounded-full bg-amber-500" />
+                Dinero simulado
+              </span>
+            )}
+            <NotificationsBell />
 
-          <div className="relative" ref={dropdownRef}>
+            <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen((prev) => !prev)}
               className="dropdown-toggle flex items-center text-gray-700"
@@ -147,6 +172,7 @@ export default function AppHeader() {
                 </ul>
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>
