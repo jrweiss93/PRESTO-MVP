@@ -126,7 +126,7 @@ entorno real sin cambiar la contraseña.
 
 | App | Endpoints |
 |---|---|
-| identity | `POST /api/v1/auth/register/`, `POST /api/v1/auth/login/`, `POST /api/v1/auth/token/refresh/`, `POST /api/v1/auth/logout/`, `POST /api/v1/auth/password-reset/`, `POST /api/v1/auth/password-reset/confirm/`, `POST /api/v1/auth/email/verify/`, `POST /api/v1/auth/email/resend/`, `GET/PATCH /api/v1/auth/me/`, `GET/POST /api/v1/kyc/`, `GET /api/v1/kyc/{id}/` |
+| identity | `POST /api/v1/auth/register/`, `POST /api/v1/auth/login/`, `POST /api/v1/auth/token/refresh/`, `POST /api/v1/auth/logout/`, `POST /api/v1/auth/password/change/`, `POST /api/v1/auth/password-reset/`, `POST /api/v1/auth/password-reset/confirm/`, `POST /api/v1/auth/email/verify/`, `POST /api/v1/auth/email/resend/`, `GET/PATCH /api/v1/auth/me/`, `GET/POST /api/v1/kyc/`, `GET /api/v1/kyc/{id}/`, `GET/POST /api/v1/kyc/{id}/biometric/` |
 | ledger | `GET/POST /api/v1/ledger/accounts/`, `GET /api/v1/ledger/accounts/{id}/balance/`, `GET/POST /api/v1/ledger/transactions/`, `GET /api/v1/ledger/transactions/{id}/` |
 | offers | `GET/POST /api/v1/offers/`, `GET/PATCH /api/v1/offers/{id}/` (el PATCH también expira la oferta) |
 | matching | `GET /api/v1/matching/offers/`, `POST /api/v1/matching/comparisons/` |
@@ -134,7 +134,7 @@ entorno real sin cambiar la contraseña.
 | investments | `GET /api/v1/investments/products/`, `GET/POST /api/v1/investments/positions/`, `GET /api/v1/investments/positions/{id}/` |
 | budgets | `GET/POST /api/v1/budgets/`, `GET/PATCH /api/v1/budgets/{id}/`, `GET /api/v1/budgets/{id}/status/`, `GET/POST /api/v1/budgets/categories/`, `GET/PATCH /api/v1/budgets/categories/{id}/`, `GET/POST /api/v1/budgets/expenses/` |
 | reports | `GET /api/v1/reports/spending/`, `GET /api/v1/reports/investments/`, `GET /api/v1/reports/loans/`, `GET /api/v1/reports/movements/` |
-| notifications | `GET /api/v1/notifications/`, `GET/PUT /api/v1/notifications/preferences/` |
+| notifications | `GET /api/v1/notifications/`, `GET /api/v1/notifications/unread-count/`, `POST /api/v1/notifications/read-all/`, `POST /api/v1/notifications/{id}/read/`, `GET/PUT /api/v1/notifications/preferences/` |
 | assistant | `GET /api/v1/assistant/market/`, `GET /api/v1/assistant/news/`, `GET /api/v1/assistant/regulations/`, `GET /api/v1/assistant/regulations/<str:regulation_id>/`, `POST /api/v1/assistant/chat/` |
 | payments | `GET/POST /api/v1/payments/`, `GET /api/v1/payments/{id}/`, `POST /api/v1/payments/webhooks/<str:provider_name>/` (webhook del proveedor: lo llama el proveedor, no el usuario) |
 

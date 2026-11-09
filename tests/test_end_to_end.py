@@ -25,7 +25,7 @@ def register(client, email):
     """Registra un usuario y devuelve su id."""
     response = client.post(
         '/api/v1/auth/register/',
-        {'email': email, 'password': PASSWORD},
+        {'email': email, 'password': PASSWORD, 'terms_accepted': True},
         format='json',
     )
     assert response.status_code == 201, response.data

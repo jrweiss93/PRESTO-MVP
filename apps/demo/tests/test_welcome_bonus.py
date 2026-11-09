@@ -11,6 +11,13 @@ from apps.identity.services import register_user, resolve_kyc, submit_kyc
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture(autouse=True)
+def _demo_mode(settings):
+    """El bono de bienvenida es una funcionalidad de demo."""
+    settings.DEMO_MODE = True
+    settings.LEDGER_SIMULATED_DEPOSITS_ENABLED = True
+
+
 def _wallet_balance(user_id):
     """Devuelve el saldo ARS de la billetera del usuario, o 0."""
     from apps.ledger import selectors as ledger_selectors
@@ -58,11 +65,12 @@ def test_welcome_bonus_skips_non_borrowers():
     assert _wallet_balance(investor.id) == Decimal('0.00')
 
 
+@override_settings(DEMO_MODE=True)
 def test_welcome_bonus_requires_simulated_deposits():
-    """Fuera del modo demo el regalo no se acredita."""
+    """Sin depósitos simulados habilitados el regalo no se acredita."""
     user = _approved_kyc_user('regalo-sin-demo@example.com', 'borrower')
 
-    with override_settings(LEDGER_SIMULATED_DEPOSITS_ENABLED=False):
+    with override_settings(DEMO_MODE=True, LEDGER_SIMULATED_DEPOSITS_ENABLED=False):
         assert grant_welcome_bonus(user.id) is False
 
     assert _wallet_balance(user.id) == Decimal('0.00')

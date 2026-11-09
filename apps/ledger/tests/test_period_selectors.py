@@ -34,12 +34,21 @@ def make_withdrawal(user_id, amount='100.00', currency='ARS', key='gasto'):
     )
 
 
-def period(start='2026-10-01', end='2026-10-31'):
-    """Devuelve el rango (inicio y fin) de un período en UTC."""
-    from datetime import date
+def period(start=None, end=None):
+    """Devuelve el rango (inicio y fin) de un período en UTC.
 
-    start_date = date.fromisoformat(start)
-    end_date = date.fromisoformat(end)
+    Sin argumentos, usa un rango amplio alrededor de "ahora" para que los
+    movimientos creados en el test queden incluidos.
+    """
+    from datetime import date, timedelta
+
+    if start is None or end is None:
+        today = datetime.now(UTC).date()
+        start_date = today - timedelta(days=1)
+        end_date = today + timedelta(days=1)
+    else:
+        start_date = date.fromisoformat(start)
+        end_date = date.fromisoformat(end)
     return (
         datetime(start_date.year, start_date.month, start_date.day, tzinfo=UTC),
         datetime(end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, tzinfo=UTC),

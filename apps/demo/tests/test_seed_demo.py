@@ -6,10 +6,18 @@ import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.db.models import Sum
+from django.test import override_settings
 
 from apps.demo.seeds import DEMO_BORROWER, DEMO_INVESTOR, DEMO_LENDER, seed_demo
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture(autouse=True)
+def _demo_mode(settings):
+    """El escenario de demo corre con dinero simulado y modo demo."""
+    settings.DEMO_MODE = True
+    settings.LEDGER_SIMULATED_DEPOSITS_ENABLED = True
 
 
 def _total_balance(currency):
@@ -28,8 +36,6 @@ def _total_balance(currency):
 
 def test_the_command_says_it_needs_simulated_money():
     """Sin dinero simulado el comando avisa y no siembra."""
-    from django.test import override_settings
-
     with override_settings(LEDGER_SIMULATED_DEPOSITS_ENABLED=False):
         with pytest.raises(CommandError):
             call_command('seed_demo')
