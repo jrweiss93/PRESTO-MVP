@@ -17,7 +17,11 @@ interface AuthContextValue {
   activeProfile: ProfileKind | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (
+    email: string,
+    password: string,
+    profile_kind: ProfileKind,
+  ) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -75,12 +79,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(res.user);
   }, []);
 
-  const register = useCallback(async (email: string, password: string) => {
-    await api.register({ email, password });
-    const res = await api.login({ email, password });
-    setAccessToken(res.access);
-    setUser(res.user);
-  }, []);
+  const register = useCallback(
+    async (email: string, password: string, profile_kind: ProfileKind) => {
+      await api.register({ email, password, profile_kind });
+      const res = await api.login({ email, password });
+      setAccessToken(res.access);
+      setUser(res.user);
+    },
+    [],
+  );
 
   const logout = useCallback(async () => {
     try {

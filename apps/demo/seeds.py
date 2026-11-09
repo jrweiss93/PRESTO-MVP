@@ -30,6 +30,7 @@ from django.utils import timezone
 
 from apps.budgets import selectors as budget_selectors
 from apps.budgets import services as budget_services
+from apps.demo.welcome import grant_welcome_bonus
 from apps.identity import selectors as identity_selectors
 from apps.identity import services as identity_services
 from apps.investments import selectors as investment_selectors
@@ -52,15 +53,8 @@ DEMO_BORROWER = 'ana@presto.demo'
 DEMO_LENDER = 'beto@presto.demo'
 DEMO_INVESTOR = 'carla@presto.demo'
 
-#: Regalo de bienvenida para la persona prestataria (una sola vez).
-WELCOME_BONUS_AMOUNT = Decimal('100000.00')
-WELCOME_BONUS_CURRENCY = 'ARS'
-
 #: Importe del depósito del prestamista.
 LENDER_DEPOSIT = Decimal('250000.00')
-
-#: Importe del depósito de la prestataria (paga cuotas y gasta).
-BORROWER_DEPOSIT = Decimal('180000.00')
 
 #: Importe del depósito de la inversor (financia el plazo fijo).
 INVESTOR_DEPOSIT = Decimal('150000.00')
@@ -142,28 +136,6 @@ def _ensure_user(email: str, password: str, profile_kind: str):
     return identity_services.register_user(
         email=email, password=password, profile_kind=profile_kind
     ), True
-
-
-def _ensure_welcome_bonus(user) -> None:
-    """Acredita el regalo de bienvenida de la persona (una sola vez).
-
-    Es un depósito simulado real: el dinero queda disponible en la billetera
-    para operar. La clave de idempotencia es fija, así que volver a sembrar
-    no acredita el regalo dos veces.
-
-    Args:
-        user: la persona prestataria.
-
-    Returns:
-        None.
-    """
-    ledger_services.deposit(
-        user_id=user.id,
-        currency=WELCOME_BONUS_CURRENCY,
-        amount=WELCOME_BONUS_AMOUNT,
-        idempotency_key=f'welcome-bonus-{user.id}',
-        description='Regalo de bienvenida',
-    )
 
 
 def _ensure_kyc(user) -> None:
@@ -441,7 +413,8 @@ def seed_demo(currency: str = 'ARS', password: str = DEMO_PASSWORD) -> DemoSumma
 
     # Regalo de bienvenida: solo la prestataria, una sola vez, con dinero real
     # (simulado) que queda disponible para operar y repercutir en el prestamista.
-    _ensure_welcome_bonus(borrower)
+    # Es el único saldo inicial de la prestataria (reemplaza al depósito inicial).
+    grant_welcome_bonus(borrower.id)
 
     _ensure_deposit(
         lender,
@@ -449,13 +422,6 @@ def seed_demo(currency: str = 'ARS', password: str = DEMO_PASSWORD) -> DemoSumma
         LENDER_DEPOSIT,
         'demo-deposito-beto',
         'Depósito inicial del prestamista',
-    )
-    _ensure_deposit(
-        borrower,
-        currency,
-        BORROWER_DEPOSIT,
-        'demo-deposito-ana',
-        'Depósito inicial de la prestataria',
     )
     _ensure_deposit(
         investor,

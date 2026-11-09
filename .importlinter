@@ -446,6 +446,8 @@ type = forbidden
 allow_indirect_imports = True
 source_modules =
     apps.demo.seeds
+    apps.demo.welcome
+    apps.demo.receivers
     apps.demo.management.commands.seed_demo
 forbidden_modules =
     apps.identity.models

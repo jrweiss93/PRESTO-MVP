@@ -1,5 +1,8 @@
 import type { ProfileKind } from "@/shared/api/types";
 
+/** Orden de presentación de los perfiles. */
+export const PROFILE_KINDS: ProfileKind[] = ["borrower", "lender", "investor"];
+
 /** Nombre visible de cada perfil de Presto. */
 export const PROFILE_LABELS: Record<ProfileKind, string> = {
   borrower: "Prestatario",

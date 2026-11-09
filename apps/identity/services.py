@@ -14,6 +14,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from apps.identity import signals
 from apps.identity.emails import send_email_verification_email, send_password_reset_email
 from apps.identity.exceptions import (
     EmailAlreadyRegistered,
@@ -220,6 +221,8 @@ def resolve_kyc(
         verification.resolved_at = timezone.now()
         verification.resolved_by_user_id = resolved_by_user_id
         verification.save(update_fields=['status', 'resolved_at', 'resolved_by_user_id'])
+    if status == KYCVerification.Status.APPROVED:
+        signals.kyc_approved.send(sender=None, user_id=verification.user_id)
     logger.info(
         'Verificación KYC resuelta: user_id=%s verification_id=%s status=%s resolved_by_user_id=%s',
         verification.user_id,

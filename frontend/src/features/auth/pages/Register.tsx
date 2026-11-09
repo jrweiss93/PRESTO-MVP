@@ -2,6 +2,8 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthContext";
 import { ApiError } from "@/shared/api/client";
+import type { ProfileKind } from "@/shared/api/types";
+import { PROFILE_KINDS, PROFILE_LABELS } from "@/shared/lib/profiles";
 import { EyeCloseIcon, EyeIcon } from "@/shared/ui/icons";
 
 export default function Register() {
@@ -9,6 +11,7 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [profileKind, setProfileKind] = useState<ProfileKind>("borrower");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -26,7 +29,7 @@ export default function Register() {
     }
     setSubmitting(true);
     try {
-      await register(email, password);
+      await register(email, password, profileKind);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -71,6 +74,36 @@ export default function Register() {
           {error && <div className="alert error">{error}</div>}
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label
+                htmlFor="profile-kind"
+                className="label.field mb-1.5 block text-theme-sm font-medium text-gray-700"
+              >
+                Perfil <span className="text-error-500">*</span>
+              </label>
+              <select
+                id="profile-kind"
+                name="profile-kind"
+                value={profileKind}
+                onChange={(e) => setProfileKind(e.target.value as ProfileKind)}
+                required
+                className="h-11"
+              >
+                {PROFILE_KINDS.map((kind) => (
+                  <option key={kind} value={kind}>
+                    {PROFILE_LABELS[kind]}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1.5 text-theme-xs text-gray-500">
+                {profileKind === "borrower" &&
+                  "Prestatario: pedís préstamos y pagás en cuotas."}
+                {profileKind === "lender" &&
+                  "Prestamista: publicás ofertas y prestás tu dinero."}
+                {profileKind === "investor" &&
+                  "Inversor: abrís plazos fijos y hacés rendir tu saldo."}
+              </p>
+            </div>
             <div>
               <label
                 htmlFor="email"
