@@ -312,11 +312,8 @@ def test_list_offers_without_kyc_is_allowed(client):
 
 
 def test_create_offer_with_wrong_active_profile_returns_403(client):
-    """Con KYC pero sin el perfil Prestamista activo, publicar devuelve 403."""
-    from apps.identity.services import activate_profile
-
-    user = create_approved_user(email='perfil-oferta@example.com')
-    activate_profile(user=user, kind='borrower')
+    """Con KYC pero sin el perfil Prestamista, publicar devuelve 403."""
+    user = create_approved_user(email='perfil-oferta@example.com', profile_kind='borrower')
     authenticate(client, user)
 
     response = client.post(

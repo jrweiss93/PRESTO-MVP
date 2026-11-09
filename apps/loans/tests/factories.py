@@ -52,16 +52,15 @@ class InstallmentFactory(factory.django.DjangoModelFactory):
     status = Installment.Status.PENDING
 
 
-def create_approved_user(email: str = 'prestatario@example.com'):
-    """Crea un usuario con KYC aprobada y el perfil Prestatario activo."""
-    from apps.identity.services import activate_profile, register_user, resolve_kyc, submit_kyc
+def create_approved_user(email: str = 'prestatario@example.com', profile_kind: str = 'borrower'):
+    """Crea un usuario con KYC aprobada y un perfil de Presto fijo."""
+    from apps.identity.services import register_user, resolve_kyc, submit_kyc
 
-    user = register_user(email=email, password='TestPass123!')
+    user = register_user(email=email, password='TestPass123!', profile_kind=profile_kind)
     verification = submit_kyc(user=user, documents={})
     resolve_kyc(
         verification_id=verification.id,
         status='approved',
         resolved_by_user_id=uuid.uuid4(),
     )
-    activate_profile(user=user, kind='borrower')
     return user

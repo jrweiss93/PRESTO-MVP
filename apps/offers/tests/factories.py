@@ -21,16 +21,15 @@ class OfferFactory(factory.django.DjangoModelFactory):
     status = Offer.Status.ACTIVE
 
 
-def create_approved_user(email: str = 'prestamista@example.com'):
-    """Crea un usuario con KYC aprobada y el perfil Prestamista activo."""
-    from apps.identity.services import activate_profile, register_user, resolve_kyc, submit_kyc
+def create_approved_user(email: str = 'prestamista@example.com', profile_kind: str = 'lender'):
+    """Crea un usuario con KYC aprobada y un perfil de Presto fijo."""
+    from apps.identity.services import register_user, resolve_kyc, submit_kyc
 
-    user = register_user(email=email, password='TestPass123!')
+    user = register_user(email=email, password='TestPass123!', profile_kind=profile_kind)
     verification = submit_kyc(user=user, documents={})
     resolve_kyc(
         verification_id=verification.id,
         status='approved',
         resolved_by_user_id=uuid.uuid4(),
     )
-    activate_profile(user=user, kind='lender')
     return user

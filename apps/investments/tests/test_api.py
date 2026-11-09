@@ -293,11 +293,8 @@ def test_list_positions_without_kyc_is_allowed(client):
 
 
 def test_open_position_with_wrong_active_profile_returns_403(client):
-    """Con KYC pero sin el perfil Inversor activo, invertir devuelve 403."""
-    from apps.identity.services import activate_profile
-
-    user = create_approved_user(email='perfil-inversor@example.com')
-    activate_profile(user=user, kind='borrower')
+    """Con KYC pero sin el perfil Inversor, invertir devuelve 403."""
+    user = create_approved_user(email='perfil-inversor@example.com', profile_kind='borrower')
     product = InvestmentProductFactory(min_amount=Decimal('1000.00'))
     fund_user(user.id, amount='10000.00', key='api-perfil-dep')
     authenticate(client, user)

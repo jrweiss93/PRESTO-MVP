@@ -37,18 +37,17 @@ class PositionFactory(factory.django.DjangoModelFactory):
     request_hash = factory.Sequence(lambda n: f'position-hash-{n}')
 
 
-def create_approved_user(email: str = 'inversor@example.com'):
-    """Crea un usuario con KYC aprobada y el perfil Inversor activo."""
-    from apps.identity.services import activate_profile, register_user, resolve_kyc, submit_kyc
+def create_approved_user(email: str = 'inversor@example.com', profile_kind: str = 'investor'):
+    """Crea un usuario con KYC aprobada y un perfil de Presto fijo."""
+    from apps.identity.services import register_user, resolve_kyc, submit_kyc
 
-    user = register_user(email=email, password='TestPass123!')
+    user = register_user(email=email, password='TestPass123!', profile_kind=profile_kind)
     verification = submit_kyc(user=user, documents={})
     resolve_kyc(
         verification_id=verification.id,
         status='approved',
         resolved_by_user_id=uuid.uuid4(),
     )
-    activate_profile(user=user, kind='investor')
     return user
 
 
