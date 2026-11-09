@@ -101,22 +101,27 @@ def _run_the_flow(currency):
     """Recorre el flujo completo de un usuario en la moneda indicada."""
     lender_client = APIClient()
     borrower_client = APIClient()
+    investor_client = APIClient()
 
     # 1. Registro (perfil fijo por persona)
     lender_id = register(lender_client, f'prestamista-{currency}@example.com', 'lender')
     borrower_id = register(borrower_client, f'prestatario-{currency}@example.com', 'borrower')
+    investor_id = register(investor_client, f'inversor-{currency}@example.com', 'investor')
 
     # 2. Login
     lender_token = login(lender_client, f'prestamista-{currency}@example.com')
     borrower_token = login(borrower_client, f'prestatario-{currency}@example.com')
+    investor_token = login(investor_client, f'inversor-{currency}@example.com')
     lender_client.credentials(HTTP_AUTHORIZATION=f'Bearer {lender_token}')
     borrower_client.credentials(HTTP_AUTHORIZATION=f'Bearer {borrower_token}')
+    investor_client.credentials(HTTP_AUTHORIZATION=f'Bearer {investor_token}')
 
     # 3. KYC aprobado (obligatorio para mover dinero)
     approve_kyc(lender_id)
     approve_kyc(borrower_id)
+    approve_kyc(investor_id)
 
-    # 4. Depósito simulado del prestamista
+    # 4. Depósito simulado del prestamista y del inversor
     response = lender_client.post(
         '/api/v1/ledger/transactions/',
         {
@@ -126,7 +131,20 @@ def _run_the_flow(currency):
             'description': 'Depósito de prueba',
         },
         format='json',
-        HTTP_IDEMPOTENCY_KEY=f'deposito-{currency}',
+        HTTP_IDEMPOTENCY_KEY=f'deposito-lender-{currency}',
+    )
+    assert response.status_code == 201, response.data
+
+    response = investor_client.post(
+        '/api/v1/ledger/transactions/',
+        {
+            'type': 'deposit',
+            'currency': currency,
+            'amount': '20000.00',
+            'description': 'Depósito de prueba',
+        },
+        format='json',
+        HTTP_IDEMPOTENCY_KEY=f'deposito-investor-{currency}',
     )
     assert response.status_code == 201, response.data
 
@@ -166,9 +184,9 @@ def _run_the_flow(currency):
     assert response.status_code == 200, response.data
     assert response.data['status'] == 'paid'
 
-    # 8. Inversión a plazo fijo con parte del dinero recibido
+    # 8. Inversión a plazo fijo (perfil inversor)
     product = create_investment_product(currency)
-    response = borrower_client.post(
+    response = investor_client.post(
         '/api/v1/investments/positions/',
         {
             'product_id': str(product.id),
@@ -181,10 +199,12 @@ def _run_the_flow(currency):
     assert response.status_code == 201, response.data
     assert response.data['status'] == 'active'
 
-    # 9. Reportes del prestatario
-    for report in ('spending', 'investments', 'loans', 'movements'):
+    # 9. Reportes (prestatario: préstamos/presupuestos/movimientos; inversor: inversiones)
+    for report in ('spending', 'loans', 'movements'):
         response = borrower_client.get(f'/api/v1/reports/{report}/', {'currency': currency})
         assert response.status_code == 200, (report, response.data)
+    response = investor_client.get('/api/v1/reports/investments/', {'currency': currency})
+    assert response.status_code == 200, response.data
 
     # 10. Un presupuesto que se dispara al categorizar un gasto
     response = borrower_client.post(
