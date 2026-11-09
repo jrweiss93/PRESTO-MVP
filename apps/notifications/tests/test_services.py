@@ -213,3 +213,46 @@ def test_models_have_a_readable_representation():
 
     assert notification.event_type in str(notification)
     assert 'budget_alert' in str(preference)
+
+
+def test_mark_notification_read_sets_read_at():
+    """Marcar como leído guarda la fecha y es idempotente."""
+    from apps.notifications.services import mark_notification_read
+
+    notification = NotificationFactory(user_id=USER_ID)
+    assert notification.read_at is None
+
+    read = mark_notification_read(user_id=USER_ID, notification_id=notification.id)
+
+    assert read is not None
+    assert read.read_at is not None
+
+    again = mark_notification_read(user_id=USER_ID, notification_id=notification.id)
+    assert again is not None
+    assert again.read_at == read.read_at
+
+
+def test_mark_notification_read_returns_none_for_other_user():
+    """No se puede marcar como leído un aviso ajeno."""
+    from apps.notifications.services import mark_notification_read
+
+    notification = NotificationFactory(user_id=USER_ID)
+
+    assert mark_notification_read(user_id=OTHER_USER_ID, notification_id=notification.id) is None
+
+
+def test_mark_all_notifications_read_marks_only_unread():
+    """Marcar todos como leídos solo afecta los avisos sin leer."""
+    from apps.notifications.selectors import count_unread_notifications
+    from apps.notifications.services import mark_all_notifications_read, mark_notification_read
+
+    first = NotificationFactory(user_id=USER_ID)
+    NotificationFactory(user_id=USER_ID)
+    NotificationFactory(user_id=OTHER_USER_ID)
+    mark_notification_read(user_id=USER_ID, notification_id=first.id)
+
+    read = mark_all_notifications_read(user_id=USER_ID)
+
+    assert read == 1
+    assert count_unread_notifications(user_id=USER_ID) == 0
+    assert count_unread_notifications(user_id=OTHER_USER_ID) == 1
