@@ -81,7 +81,7 @@ export default function Notifications() {
         <div>
           <h1>Notificaciones</h1>
           <p className="page-subtitle">
-            Avisos de tus cuotas, inversiones y presupuestos.
+            Avisos de tus préstamos, cuotas, inversiones y presupuestos.
           </p>
         </div>
         {unreadCount > 0 && (
