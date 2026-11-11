@@ -44,7 +44,13 @@ export default function Landing() {
     <div className="min-h-screen bg-white">
       <header className="border-b border-gray-200">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <Link to="/" className="text-title-sm font-semibold text-gray-800">
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-title-sm font-semibold text-gray-800"
+          >
+            <span className="brand-mark flex size-8 items-center justify-center rounded-lg text-lg font-semibold text-white">
+              P
+            </span>
             Presto<span className="text-brand-500">.</span>
           </Link>
           <nav className="flex items-center gap-3">
@@ -84,7 +90,8 @@ export default function Landing() {
       </div>
 
       <main>
-        <section className="landing-hero mx-auto grid max-w-6xl gap-10 px-5 py-14 lg:grid-cols-2 lg:items-center lg:py-20">
+        <section className="landing-hero border-b border-gray-100">
+          <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 lg:grid-cols-2 lg:items-center lg:py-20">
           <div>
             <span className="inline-flex rounded-full bg-brand-50 px-3 py-1 text-theme-xs font-medium text-brand-600">
               Finanzas P2P · ARS y USD
@@ -152,16 +159,14 @@ export default function Landing() {
                 </li>
               ))}
             </ul>
-            <Link
-              to="/login"
-              className="mt-5 block rounded-lg bg-brand-500 px-4 py-2.5 text-center text-theme-sm font-medium text-white hover:bg-brand-600"
-            >
+            <Link to="/login" className="btn block mt-5">
               Iniciar sesión
             </Link>
             <p className="mt-3 text-theme-xs text-gray-500">
               Los datos y los saldos son de ejemplo. No uses datos personales
               reales en esta demo.
             </p>
+          </div>
           </div>
         </section>
 
@@ -178,9 +183,11 @@ export default function Landing() {
               {FEATURES.map((feature) => (
                 <article
                   key={feature.title}
-                  className="rounded-xl border border-gray-200 bg-white p-5"
+                  className="rounded-xl border border-gray-200 bg-white p-5 transition duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-theme-md"
                 >
-                  <div className="mb-3">{feature.icon}</div>
+                  <div className="mb-3 inline-flex size-11 items-center justify-center rounded-xl bg-brand-50 ring-1 ring-brand-100">
+                    {feature.icon}
+                  </div>
                   <h3 className="text-theme-sm font-semibold text-gray-800">
                     {feature.title}
                   </h3>
