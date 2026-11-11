@@ -6,6 +6,8 @@ de negocio acá y el envío nunca ocurre dentro de la transacción que originó 
 evento: se encola con `transaction.on_commit`.
 """
 
+import logging
+
 from django.db import transaction
 from django.dispatch import receiver
 
@@ -15,6 +17,20 @@ from apps.loans.signals import installment_due_soon, installment_overdue, loan_c
 from apps.notifications.models import Notification
 from apps.notifications.services import create_notification
 from apps.notifications.tasks import send_notification_email
+
+logger = logging.getLogger(__name__)
+
+
+def _enqueue_email(notification_id: str) -> None:
+    """Encola el email sin romper la operación si el broker no responde.
+
+    El aviso in-app ya quedó creado: el email es best-effort. Un broker caído
+    no debe convertir en 500 una operación que ya se confirmó.
+    """
+    try:
+        send_notification_email.delay(notification_id)
+    except Exception:
+        logger.exception('No se pudo encolar el email de la notificación %s', notification_id)
 
 
 def dispatch_notification(user_id, event_type: str, reference_id) -> None:
@@ -32,7 +48,7 @@ def dispatch_notification(user_id, event_type: str, reference_id) -> None:
     )
     if notification is None:
         return
-    transaction.on_commit(lambda: send_notification_email.delay(str(notification.id)))
+    transaction.on_commit(lambda: _enqueue_email(str(notification.id)))
 
 
 @receiver(loan_created)

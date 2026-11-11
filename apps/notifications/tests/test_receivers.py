@@ -115,6 +115,31 @@ def test_receiver_creates_the_budget_alert_notification():
     ).exists()
 
 
+def test_receiver_does_not_fail_when_the_email_broker_is_down(
+    django_capture_on_commit_callbacks,
+):
+    """Un broker caído no rompe la operación: el aviso in-app queda creado."""
+    from unittest.mock import patch
+
+    from apps.notifications.receivers import handle_installment_due_soon
+
+    with patch(
+        'apps.notifications.receivers.send_notification_email.delay',
+        side_effect=RuntimeError('broker caído'),
+    ):
+        with django_capture_on_commit_callbacks(execute=True):
+            handle_installment_due_soon(
+                sender=None,
+                user_id=USER_ID,
+                reference_id=REFERENCE_ID,
+            )
+
+    assert Notification.objects.filter(
+        user_id=USER_ID,
+        event_type=Notification.EventType.INSTALLMENT_DUE_SOON,
+    ).exists()
+
+
 def test_receiver_creates_the_loan_created_notifications():
     """El receptor del préstamo avisa al prestamista y al prestatario."""
     from apps.notifications.receivers import handle_loan_created
