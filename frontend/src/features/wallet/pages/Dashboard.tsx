@@ -17,7 +17,12 @@ import {
 } from "@/shared/lib/format";
 import { PROFILE_LABELS } from "@/shared/lib/profiles";
 import { sumDecimals, compareDecimals } from "@/shared/lib/decimal";
-import { DollarLineIcon, PieChartIcon, UserMoneyIcon } from "@/shared/ui/icons";
+import {
+  CheckCircleIcon,
+  DollarLineIcon,
+  PieChartIcon,
+  UserMoneyIcon,
+} from "@/shared/ui/icons";
 import Mascot from "@/shared/ui/Mascot";
 
 export default function Dashboard() {
@@ -69,6 +74,9 @@ export default function Dashboard() {
   const activeLoans = loans.filter((l) => l.status === "active");
   const activePositions = positions.filter((p) => p.status === "active");
   const totalInvested = sumDecimals(activePositions.map((p) => p.amount));
+  const hasVerifiedBackup = backupAccounts.some(
+    (account) => account.status === "verified",
+  );
 
   return (
     <>
@@ -163,6 +171,22 @@ export default function Dashboard() {
               <div className="value">{activeLoans.length}</div>
               <Link className="small text-brand-500" to="/prestamos">
                 Ver préstamos
+              </Link>
+            </div>
+          </div>
+        )}
+        {activeProfile === "borrower" && (
+          <div className="stat-card flex items-start gap-4">
+            <span className="flex items-center justify-center rounded-xl bg-brand-50 p-4 text-brand-500">
+              <CheckCircleIcon />
+            </span>
+            <div>
+              <div className="label">Cuenta de respaldo</div>
+              <div className="value" style={{ fontSize: "1.35rem" }}>
+                {hasVerifiedBackup ? "Verificada" : "Pendiente"}
+              </div>
+              <Link className="small text-brand-500" to="/perfil#respaldo">
+                Gestionar respaldo
               </Link>
             </div>
           </div>

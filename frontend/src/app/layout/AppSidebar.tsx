@@ -192,9 +192,14 @@ const AppSidebar: React.FC = () => {
       >
         <NavLink to="/dashboard" className="flex items-center gap-2">
           {showLabels ? (
-            <span className="text-title-sm font-semibold text-gray-800">
-              Presto<span className="text-brand-500">.</span>
-            </span>
+            <>
+              <span className="brand-mark flex size-8 items-center justify-center rounded-lg text-lg font-semibold text-white">
+                P
+              </span>
+              <span className="text-title-sm font-semibold text-gray-800">
+                Presto<span className="text-brand-500">.</span>
+              </span>
+            </>
           ) : (
             <span className="brand-mark flex size-8 items-center justify-center rounded-lg text-lg font-semibold text-white">
               P

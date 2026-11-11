@@ -407,8 +407,11 @@ export default function Profile() {
                   <div>
                     <strong>{account.display_name}</strong>{" "}
                     <span className="small text-muted">
-                      {providerLabel(account.provider)} · {account.masked_ref} ·{" "}
-                      {account.currency}
+                      {providerLabel(account.provider).toLowerCase() !==
+                      account.display_name.trim().toLowerCase()
+                        ? `${providerLabel(account.provider)} · `
+                        : ""}
+                      {account.masked_ref} · {account.currency}
                     </span>
                   </div>
                   <span
