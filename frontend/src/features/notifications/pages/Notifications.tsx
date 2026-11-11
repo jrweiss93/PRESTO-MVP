@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import * as api from "@/shared/api/endpoints";
 import { ApiError } from "@/shared/api/client";
 import type { Notification } from "@/shared/api/types";
@@ -10,6 +11,7 @@ const EVENT_LABELS: Record<string, string> = {
   installment_overdue: "Cuota vencida",
   investment_settled: "Inversión liquidada",
   budget_alert: "Alerta de presupuesto",
+  loan_created: "Préstamo creado",
 };
 
 const EVENT_ICONS: Record<string, string> = {
@@ -17,9 +19,11 @@ const EVENT_ICONS: Record<string, string> = {
   installment_overdue: "🔴",
   investment_settled: "✅",
   budget_alert: "📊",
+  loan_created: "🤝",
 };
 
 export default function Notifications() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +64,15 @@ export default function Notifications() {
     await load();
   }
 
+  async function handleOpen(notification: Notification) {
+    if (notification.read_at == null) {
+      await handleRead(notification.id);
+    }
+    if (notification.event_type === "loan_created") {
+      navigate(`/prestamos/${notification.reference_id}`);
+    }
+  }
+
   const unreadCount = items.filter((n) => n.read_at == null).length;
 
   return (
@@ -94,7 +107,7 @@ export default function Notifications() {
               <li key={notification.id}>
                 <button
                   type="button"
-                  onClick={() => isUnread && handleRead(notification.id)}
+                  onClick={() => void handleOpen(notification)}
                   className={cn(
                     "flex w-full items-start gap-3 rounded-xl border p-4 text-left",
                     isUnread
@@ -119,6 +132,11 @@ export default function Notifications() {
                     <span className="mt-0.5 block text-theme-xs text-gray-500">
                       {formatDateTime(notification.created_at)}
                     </span>
+                    {notification.event_type === "loan_created" && (
+                      <span className="mt-1 block text-theme-xs font-medium text-brand-500">
+                        Ver préstamo →
+                      </span>
+                    )}
                   </span>
                   {isUnread && (
                     <span className="badge info">Nuevo</span>

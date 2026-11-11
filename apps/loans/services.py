@@ -15,6 +15,7 @@ from apps.core.money import french_installment, monthly_rate_from_annual_tna, ro
 from apps.identity.selectors import is_kyc_approved
 from apps.ledger import services as ledger_services
 from apps.ledger.exceptions import IdempotencyConflict
+from apps.loans import signals
 from apps.loans.exceptions import (
     InstallmentAlreadyPaid,
     InstallmentOutOfOrder,
@@ -168,6 +169,12 @@ def accept_offer(
                 offer.id,
                 borrower_user_id,
                 offer.lender_user_id,
+            )
+            signals.loan_created.send(
+                sender=None,
+                loan_id=loan.id,
+                borrower_user_id=loan.borrower_user_id,
+                lender_user_id=loan.lender_user_id,
             )
             return loan
     except IntegrityError:

@@ -316,3 +316,26 @@ def test_settling_a_position_creates_the_notification_and_sends_the_email(
     assert notification.status == Notification.Status.SENT
     assert len(mail.outbox) == 1
     assert mail.outbox[0].to == ['notif-inversion-email@example.com']
+
+
+def test_build_email_of_a_loan_created():
+    """El email del préstamo menciona el capital, la tasa y el rol del destinatario."""
+    from apps.notifications.emails import build_email
+    from apps.notifications.tests.factories import NotificationFactory
+
+    user = create_user(email='loan-email-borrower@example.com')
+    installment = create_installment(user, key='loan-email')
+    loan = installment.loan
+
+    notification = NotificationFactory(
+        user_id=loan.lender_user_id,
+        event_type=Notification.EventType.LOAN_CREATED,
+        reference_id=loan.id,
+    )
+
+    subject, body = build_email(notification)
+
+    assert 'préstamo' in subject.lower()
+    assert 'prestamista' in body
+    assert '3000.00' in body
+    assert '24.00' in body

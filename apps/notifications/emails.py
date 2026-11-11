@@ -26,7 +26,27 @@ def build_email(notification: Notification) -> tuple[str, str]:
         return _investment_settled_email(notification)
     if notification.event_type == Notification.EventType.BUDGET_ALERT:
         return _budget_alert_email(notification)
+    if notification.event_type == Notification.EventType.LOAN_CREATED:
+        return _loan_created_email(notification)
     return SUBJECT_FALLBACK, 'Tenés un aviso nuevo en Presto.\n'
+
+
+def _loan_created_email(notification: Notification) -> tuple[str, str]:
+    """Email del préstamo creado, con el rol de quien lo recibe."""
+    from apps.loans.selectors import get_loan_for_party
+
+    loan = get_loan_for_party(loan_id=notification.reference_id, user_id=notification.user_id)
+    if loan is None:
+        return SUBJECT_FALLBACK, 'Se creó un préstamo en Presto.\n'
+    role = 'prestamista' if loan.lender_user_id == notification.user_id else 'prestatario'
+    body = (
+        'Hola,\n\n'
+        f'Se creó un préstamo en Presto y sos {role}.\n'
+        f'Capital: {loan.principal} {loan.currency}.\n'
+        f'Tasa: {loan.interest_rate}% TNA. Plazo: {loan.term_months} meses.\n\n'
+        'Podés ver el detalle del préstamo desde Presto.\n'
+    )
+    return 'Presto: se creó un préstamo', body
 
 
 def _installment_due_soon_email(notification: Notification) -> tuple[str, str]:

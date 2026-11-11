@@ -12,16 +12,29 @@ export default function NotificationsBell() {
 
   useEffect(() => {
     let active = true;
-    api
-      .getUnreadCount()
-      .then((count) => {
-        if (active) setUnread(count);
-      })
-      .catch(() => {
-        // sin red el badge simplemente no se muestra
-      });
+    const refresh = () => {
+      api
+        .getUnreadCount()
+        .then((count) => {
+          if (active) setUnread(count);
+        })
+        .catch(() => {
+          // sin red el badge simplemente no se muestra
+        });
+    };
+    refresh();
+    const interval = window.setInterval(refresh, 20000);
+    const onFocus = () => refresh();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       active = false;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 

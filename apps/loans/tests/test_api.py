@@ -214,6 +214,28 @@ def test_loan_detail_of_party_returns_snapshot_and_installments(client):
     assert len(response.data['installments']) == 12
 
 
+def test_loan_detail_exposes_the_counterparty_emails(client):
+    """El detalle muestra los emails de ambas partes para coordinar."""
+    from apps.loans.services import accept_offer
+
+    lender = create_approved_user(email='contacto-prestamista@example.com')
+    borrower = create_approved_user(email='contacto-prestatario@example.com')
+    offer = make_offer(lender.id)
+    fund_user(lender.id, key='fund-contacto')
+    loan = accept_offer(
+        borrower_user_id=borrower.id,
+        offer_id=offer.id,
+        idempotency_key='accept-contacto',
+    )
+    authenticate(client, lender)
+
+    response = client.get(f'/api/v1/loans/{loan.id}/')
+
+    assert response.status_code == 200
+    assert response.data['borrower_email'] == borrower.email
+    assert response.data['lender_email'] == lender.email
+
+
 def test_loan_detail_of_third_party_returns_404(client):
     """Un tercero no puede ver el préstamo."""
     from apps.loans.services import accept_offer

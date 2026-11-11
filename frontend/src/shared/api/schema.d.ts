@@ -1304,9 +1304,10 @@ export interface components {
          *     * `installment_overdue` - Cuota vencida
          *     * `investment_settled` - Inversión liquidada
          *     * `budget_alert` - Alerta de presupuesto
+         *     * `loan_created` - Préstamo creado
          * @enum {string}
          */
-        EventTypeEnum: "installment_due_soon" | "installment_overdue" | "investment_settled" | "budget_alert";
+        EventTypeEnum: "installment_due_soon" | "installment_overdue" | "investment_settled" | "budget_alert" | "loan_created";
         /** @description Gasto personal: un movimiento del ledger con su categoría. */
         Expense: {
             /** Format: uuid */
@@ -1473,6 +1474,10 @@ export interface components {
             readonly borrower_user_id: string;
             /** Format: uuid */
             readonly lender_user_id: string;
+            /** Format: email */
+            readonly borrower_email?: string | null;
+            /** Format: email */
+            readonly lender_email?: string | null;
             /** Format: uuid */
             readonly offer_id: string;
             /** Format: decimal */
@@ -1498,6 +1503,10 @@ export interface components {
             readonly borrower_user_id: string;
             /** Format: uuid */
             readonly lender_user_id: string;
+            /** Format: email */
+            readonly borrower_email?: string | null;
+            /** Format: email */
+            readonly lender_email?: string | null;
             /** Format: uuid */
             readonly offer_id: string;
             /** Format: decimal */

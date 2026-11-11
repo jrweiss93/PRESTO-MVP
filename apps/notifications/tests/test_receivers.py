@@ -113,3 +113,22 @@ def test_receiver_creates_the_budget_alert_notification():
         user_id=USER_ID,
         event_type=Notification.EventType.BUDGET_ALERT,
     ).exists()
+
+
+def test_receiver_creates_the_loan_created_notifications():
+    """El receptor del préstamo avisa al prestamista y al prestatario."""
+    from apps.notifications.receivers import handle_loan_created
+
+    lender_id = uuid.uuid4()
+    handle_loan_created(
+        sender=None,
+        loan_id=REFERENCE_ID,
+        borrower_user_id=USER_ID,
+        lender_user_id=lender_id,
+    )
+
+    notifications = Notification.objects.filter(
+        event_type=Notification.EventType.LOAN_CREATED,
+        reference_id=REFERENCE_ID,
+    )
+    assert set(notifications.values_list('user_id', flat=True)) == {USER_ID, lender_id}

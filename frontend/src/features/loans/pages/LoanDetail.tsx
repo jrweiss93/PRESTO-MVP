@@ -78,6 +78,7 @@ export default function LoanDetailPage() {
   }
 
   const isBorrower = loan.borrower_user_id === user?.id;
+  const counterpartEmail = isBorrower ? loan.lender_email : loan.borrower_email;
   const payables = loan.installments.filter(
     (i: Installment) => i.status === "pending" || i.status === "overdue",
   );
@@ -122,6 +123,21 @@ export default function LoanDetailPage() {
           </div>
         </div>
       </div>
+
+      {counterpartEmail && (
+        <div className="card">
+          <h2>Contacto</h2>
+          <p className="mb-0">
+            {isBorrower ? "Prestamista" : "Prestatario"}:{" "}
+            <a
+              className="text-brand-500 hover:text-brand-600"
+              href={`mailto:${counterpartEmail}`}
+            >
+              {counterpartEmail}
+            </a>
+          </p>
+        </div>
+      )}
 
       <div className="card">
         <h2>Cuotas</h2>

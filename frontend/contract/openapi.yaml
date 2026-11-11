@@ -1987,12 +1987,14 @@ components:
       - installment_overdue
       - investment_settled
       - budget_alert
+      - loan_created
       type: string
       description: |-
         * `installment_due_soon` - Cuota por vencer
         * `installment_overdue` - Cuota vencida
         * `investment_settled` - Inversión liquidada
         * `budget_alert` - Alerta de presupuesto
+        * `loan_created` - Préstamo creado
     Expense:
       type: object
       description: 'Gasto personal: un movimiento del ledger con su categoría.'
@@ -2361,6 +2363,16 @@ components:
           type: string
           format: uuid
           readOnly: true
+        borrower_email:
+          type: string
+          format: email
+          nullable: true
+          readOnly: true
+        lender_email:
+          type: string
+          format: email
+          nullable: true
+          readOnly: true
         offer_id:
           type: string
           format: uuid
@@ -2423,6 +2435,16 @@ components:
         lender_user_id:
           type: string
           format: uuid
+          readOnly: true
+        borrower_email:
+          type: string
+          format: email
+          nullable: true
+          readOnly: true
+        lender_email:
+          type: string
+          format: email
+          nullable: true
           readOnly: true
         offer_id:
           type: string

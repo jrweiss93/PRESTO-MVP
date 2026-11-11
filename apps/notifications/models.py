@@ -27,6 +27,7 @@ class Notification(BaseModel):
         INSTALLMENT_OVERDUE = 'installment_overdue', 'Cuota vencida'
         INVESTMENT_SETTLED = 'investment_settled', 'Inversión liquidada'
         BUDGET_ALERT = 'budget_alert', 'Alerta de presupuesto'
+        LOAN_CREATED = 'loan_created', 'Préstamo creado'
 
     class Status(models.TextChoices):
         PENDING = 'pending', 'Pendiente'

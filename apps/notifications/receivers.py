@@ -11,7 +11,7 @@ from django.dispatch import receiver
 
 from apps.budgets.signals import budget_alert
 from apps.investments.signals import investment_settled
-from apps.loans.signals import installment_due_soon, installment_overdue
+from apps.loans.signals import installment_due_soon, installment_overdue, loan_created
 from apps.notifications.models import Notification
 from apps.notifications.services import create_notification
 from apps.notifications.tasks import send_notification_email
@@ -33,6 +33,17 @@ def dispatch_notification(user_id, event_type: str, reference_id) -> None:
     if notification is None:
         return
     transaction.on_commit(lambda: send_notification_email.delay(str(notification.id)))
+
+
+@receiver(loan_created)
+def handle_loan_created(sender, loan_id, borrower_user_id, lender_user_id, **kwargs):
+    """Avisa al prestamista y al prestatario que se creó el préstamo."""
+    for user_id in dict.fromkeys((lender_user_id, borrower_user_id)):
+        dispatch_notification(
+            user_id=user_id,
+            event_type=Notification.EventType.LOAN_CREATED,
+            reference_id=loan_id,
+        )
 
 
 @receiver(installment_due_soon)
