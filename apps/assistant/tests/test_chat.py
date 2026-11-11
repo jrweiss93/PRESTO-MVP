@@ -91,6 +91,14 @@ def test_chat_answers_the_investments_summary(client, user):
     assert 'ARS 500,00' in response.data['reply']
 
 
+def test_chat_explains_investing_in_presto(client):
+    """Presti explica el producto 'Invertí en Presto'."""
+    response = ask(client, '¿Qué es invertir en Presto?')
+
+    assert response.status_code == 200
+    assert 'Invertí en Presto' in response.data['reply']
+
+
 def test_chat_answers_the_legal_framework(client):
     """Las preguntas legales devuelven la ficha curada y el aviso."""
     response = ask(client, '¿Qué dice la CNV sobre invertir?')

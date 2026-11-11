@@ -53,6 +53,28 @@ def test_products_list_returns_only_active_products(client):
     assert response.data['results'][0]['status'] == 'active'
 
 
+def test_products_list_requires_the_investor_profile(client):
+    """Un prestatario no puede ver los productos de inversión."""
+    user = create_approved_user(email='productos-prestatario@example.com', profile_kind='borrower')
+    authenticate(client, user)
+
+    response = client.get('/api/v1/investments/products/')
+
+    assert response.status_code == 403
+    assert 'Inversor' in response.data['error']['message']
+
+
+def test_positions_list_requires_the_investor_profile(client):
+    """Un prestamista no puede ver las posiciones de inversión."""
+    user = create_approved_user(email='posiciones-prestamista@example.com', profile_kind='lender')
+    authenticate(client, user)
+
+    response = client.get('/api/v1/investments/positions/')
+
+    assert response.status_code == 403
+    assert 'Inversor' in response.data['error']['message']
+
+
 def test_positions_list_requires_authentication(client):
     """El listado de posiciones exige autenticación."""
     response = client.get('/api/v1/investments/positions/')
@@ -226,6 +248,17 @@ def test_position_detail_of_owner_returns_200(client):
     assert response.data['product_detail']['term_days'] == product.term_days
 
 
+def test_position_detail_requires_the_investor_profile(client):
+    """Sin perfil Inversor el detalle de una posición devuelve 403."""
+    user = create_approved_user(email='detalle-prestatario@example.com', profile_kind='borrower')
+    authenticate(client, user)
+
+    response = client.get(f'/api/v1/investments/positions/{uuid.uuid4()}/')
+
+    assert response.status_code == 403
+    assert 'Inversor' in response.data['error']['message']
+
+
 def test_position_detail_of_third_party_returns_404(client):
     """Un tercero no puede ver la posición."""
     from apps.investments.services import open_position
@@ -262,7 +295,11 @@ def test_open_position_without_kyc_is_blocked_by_the_permission(client):
     """Sin KYC abrir una posición se corta con el 403 del permiso (AGENTS §9.9)."""
     from apps.identity.services import register_user
 
-    user = register_user(email='sin-kyc-inversion@example.com', password='TestPass123!')
+    user = register_user(
+        email='sin-kyc-inversion@example.com',
+        password='TestPass123!',
+        profile_kind='investor',
+    )
     product = InvestmentProductFactory(min_amount=Decimal('1000.00'))
     authenticate(client, user)
 
@@ -284,7 +321,11 @@ def test_list_positions_without_kyc_is_allowed(client):
     """Las lecturas no cambian: sin KYC se pueden listar las posiciones."""
     from apps.identity.services import register_user
 
-    user = register_user(email='sin-kyc-inversion-lectura@example.com', password='TestPass123!')
+    user = register_user(
+        email='sin-kyc-inversion-lectura@example.com',
+        password='TestPass123!',
+        profile_kind='investor',
+    )
     authenticate(client, user)
 
     response = client.get('/api/v1/investments/positions/')

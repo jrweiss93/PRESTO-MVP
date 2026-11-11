@@ -2132,6 +2132,12 @@ components:
           type: string
           format: uuid
           readOnly: true
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
         type:
           allOf:
           - $ref: '#/components/schemas/InvestmentProductTypeEnum'

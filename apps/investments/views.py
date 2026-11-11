@@ -3,7 +3,7 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -15,6 +15,7 @@ from apps.investments.exceptions import (
     ProductNotActive,
     ProductNotFound,
 )
+from apps.investments.permissions import IsInvestor
 from apps.investments.selectors import (
     get_position_for_user,
     list_active_products,
@@ -30,7 +31,25 @@ from apps.investments.services import open_position
 from apps.ledger.exceptions import CurrencyMismatch, IdempotencyConflict, IdempotencyKeyConflict
 
 
-class InvestmentProductListView(APIView):
+class InvestorProfileForAllMethods(ActiveProfileForUnsafeMethods):
+    """Exige el perfil Inversor también en las lecturas.
+
+    La escritura conserva el orden de `ActiveProfileForUnsafeMethods`: primero
+    KYC y después perfil. La lectura se restringe al perfil Inversor para que
+    Ana y Beto no puedan ver ni operar inversiones.
+    """
+
+    profile_kind = 'investor'
+
+    def get_permissions(self):
+        """Agrega `IsInvestor` a los métodos de lectura."""
+        permissions = list(super().get_permissions())
+        if self.request.method in SAFE_METHODS:
+            permissions.append(IsInvestor())
+        return permissions
+
+
+class InvestmentProductListView(InvestorProfileForAllMethods, APIView):
     """Productos de inversión activos del marketplace."""
 
     permission_classes = [IsAuthenticated]
@@ -48,10 +67,9 @@ class InvestmentProductListView(APIView):
         return paginator.get_paginated_response(InvestmentProductSerializer(page, many=True).data)
 
 
-class PositionListCreateView(ActiveProfileForUnsafeMethods, APIView):
+class PositionListCreateView(InvestorProfileForAllMethods, APIView):
     """Posiciones de inversión del usuario autenticado."""
 
-    profile_kind = 'investor'
     permission_classes = [IsAuthenticated]
     pagination_class = StandardPagination
 
@@ -103,7 +121,7 @@ class PositionListCreateView(ActiveProfileForUnsafeMethods, APIView):
         return Response(PositionSerializer(position).data, status=status.HTTP_201_CREATED)
 
 
-class PositionDetailView(APIView):
+class PositionDetailView(InvestorProfileForAllMethods, APIView):
     """Detalle de una posición de inversión propia."""
 
     permission_classes = [IsAuthenticated]

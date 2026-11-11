@@ -17,6 +17,7 @@ class InvestmentProductAdmin(admin.ModelAdmin):
 
     list_display = [
         'id',
+        'name',
         'type',
         'currency',
         'term_days',

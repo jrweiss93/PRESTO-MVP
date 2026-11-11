@@ -6,6 +6,7 @@ import type {
   NewsFeed,
   RegulationsResponse,
 } from "@/shared/api/types";
+import { useAuth } from "@/features/auth/AuthContext";
 import { SendIcon } from "@/shared/ui/icons";
 import Mascot from "@/shared/ui/Mascot";
 
@@ -23,8 +24,20 @@ const SUGGESTIONS = [
   "¿Puedo captar fondos?",
 ];
 
+const INVESTOR_SUGGESTIONS = [
+  "¿Cómo está bitcoin?",
+  "¿Cómo está el mercado?",
+  "¿Qué es invertir en Presto?",
+  "¿Cómo van mis inversiones?",
+  "Marco legal de inversiones",
+  "¿Qué acciones me convienen?",
+];
+
 const GREETING =
   "¡Hola! Soy Presti, tu mago de finanzas. Te leo el mercado en la bola de cristal: dólar, bitcoin, acciones, tu cuenta y el marco legal para operar. ¿Qué querés saber?";
+
+const INVESTOR_GREETING =
+  "¡Hola! Soy Presti, tu asesor de inversiones. Te ayudo con mercado, acciones, bitcoin, tus posiciones en Presto y el marco legal. ¿Qué querés analizar?";
 
 function formatPrice(n: number | null | undefined, currency = "USD"): string {
   if (n == null) return "—";
@@ -216,8 +229,11 @@ function ChatPanel({
   news: NewsFeed | null;
   onOpenLegal: () => void;
 }) {
+  const { activeProfile } = useAuth();
+  const isInvestor = activeProfile === "investor";
+  const suggestions = isInvestor ? INVESTOR_SUGGESTIONS : SUGGESTIONS;
   const [messages, setMessages] = useState<ChatEntry[]>([
-    { role: "assistant", text: GREETING },
+    { role: "assistant", text: isInvestor ? INVESTOR_GREETING : GREETING },
   ]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -361,7 +377,7 @@ function ChatPanel({
             </div>
 
             <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {SUGGESTIONS.map((s) => (
+              {suggestions.map((s) => (
                 <button
                   key={s}
                   type="button"
@@ -612,6 +628,8 @@ function RegulationsPanel({
 }
 
 export default function Assistant() {
+  const { activeProfile } = useAuth();
+  const isInvestor = activeProfile === "investor";
   const [tab, setTab] = useState<"chat" | "legal">("chat");
   const [market, setMarket] = useState<MarketSnapshot | null>(null);
   const [news, setNews] = useState<NewsFeed | null>(null);
@@ -636,8 +654,9 @@ export default function Assistant() {
     <>
       <h1>Conocé a Presti</h1>
       <p className="page-subtitle">
-        Tu mago de finanzas. Mercado en vivo, noticias, tu cuenta y el marco
-        legal para operar.
+        {isInvestor
+          ? "Tu asesor de inversiones. Mercado en vivo, acciones, bitcoin, tus posiciones en Presto y el marco legal."
+          : "Tu mago de finanzas. Mercado en vivo, noticias, tu cuenta y el marco legal para operar."}
       </p>
 
       <div className="mb-5 inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">

@@ -85,6 +85,9 @@ export default function Investments() {
 
   const activePositions = positions.filter((p) => p.status === "active");
   const totalInvested = sumDecimals(activePositions.map((p) => p.amount));
+  const prestoProduct = products.find(
+    (p) => p.name === "Invertí en Presto" && p.status === "active",
+  );
 
   return (
     <>
@@ -121,6 +124,30 @@ export default function Investments() {
         </div>
       </div>
 
+      {prestoProduct && (
+        <div className="card">
+          <h2>Invertí en Presto</h2>
+          <p className="text-muted">{prestoProduct.description}</p>
+          <p className="mb-3">
+            TNA {formatRate(prestoProduct.annual_rate_tna)} ·{" "}
+            {prestoProduct.term_days} días · mínimo{" "}
+            {formatMoney(prestoProduct.min_amount, prestoProduct.currency)}
+          </p>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              setSelectedProduct(prestoProduct.id);
+              document
+                .getElementById("investment-form")
+                ?.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
+            Invertir en Presto
+          </button>
+        </div>
+      )}
+
       <div className="card">
         <h2>Productos disponibles</h2>
         {products.length === 0 ? (
@@ -132,7 +159,7 @@ export default function Investments() {
             <table className="data">
               <thead>
                 <tr>
-                  <th>Tipo</th>
+                  <th>Producto</th>
                   <th>Moneda</th>
                   <th>Plazo</th>
                   <th>TNA</th>
@@ -143,7 +170,12 @@ export default function Investments() {
               <tbody>
                 {products.map((p) => (
                   <tr key={p.id}>
-                    <td>Plazo fijo</td>
+                    <td>
+                      <div className="font-medium">{p.name}</div>
+                      {p.description && (
+                        <div className="small text-muted">{p.description}</div>
+                      )}
+                    </td>
                     <td>{p.currency}</td>
                     <td>{p.term_days} días</td>
                     <td>{formatRate(p.annual_rate_tna)}</td>
@@ -167,7 +199,7 @@ export default function Investments() {
         )}
       </div>
 
-      <div className="card">
+      <div className="card" id="investment-form">
         <h2>Abrir inversión a plazo fijo</h2>
         <form onSubmit={handleOpen}>
           <div className="form-grid">
@@ -183,7 +215,7 @@ export default function Investments() {
                   .filter((p) => p.status === "active")
                   .map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.currency} · {p.term_days} días · TNA{" "}
+                      {p.name} · {p.currency} · {p.term_days} días · TNA{" "}
                       {p.annual_rate_tna}% · mín.{" "}
                       {formatMoney(p.min_amount, p.currency)}
                     </option>

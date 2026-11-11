@@ -78,6 +78,21 @@ def _balances():
     return result
 
 
+def test_the_seed_creates_the_presto_product_and_does_not_invest_for_ana():
+    """Ana es solo prestataria: el seed no le abre posiciones de inversión."""
+    from apps.identity.models import User
+    from apps.investments.models import InvestmentProduct, Position
+
+    seed_demo()
+
+    assert InvestmentProduct.objects.filter(
+        name='Invertí en Presto',
+        status=InvestmentProduct.Status.ACTIVE,
+    ).exists()
+    ana = User.objects.get(email=DEMO_BORROWER)
+    assert not Position.objects.filter(user_id=ana.id).exists()
+
+
 def test_the_scenario_leaves_a_loan_with_a_paid_installment():
     """El préstamo del escenario tiene la primera cuota pagada."""
     from apps.loans import selectors as loan_selectors

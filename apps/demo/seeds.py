@@ -65,12 +65,23 @@ OFFER_RATE = Decimal('32.00')
 OFFER_TERM_MONTHS = 6
 
 #: Plazo fijo.
+INVESTMENT_PRODUCT_NAME = 'Plazo fijo Presto'
+INVESTMENT_PRODUCT_DESCRIPTION = (
+    'Rendimiento fijo en pesos para tus excedentes. Producto simulado de demo.'
+)
 INVESTMENT_AMOUNT = Decimal('100000.00')
 INVESTMENT_RATE = Decimal('18.00')
 INVESTMENT_TERM_DAYS = 30
 
-#: Plazo fijo de la prestataria (la otra cara de la app: prestar e invertir).
-BORROWER_INVESTMENT = Decimal('50000.00')
+#: Producto para invertir en el propio Presto (renta fija simulada).
+PRESTO_INVESTMENT_NAME = 'Invertí en Presto'
+PRESTO_INVESTMENT_DESCRIPTION = (
+    'Financiá el crecimiento de Presto con un plazo fijo simulado. '
+    'No es una oferta pública de inversión ni una participación societaria.'
+)
+PRESTO_INVESTMENT_RATE = Decimal('22.00')
+PRESTO_INVESTMENT_TERM_DAYS = 90
+PRESTO_INVESTMENT_MIN_AMOUNT = Decimal('10000.00')
 
 #: Presupuesto de Ana.
 BUDGET_LIMIT = Decimal('80000.00')
@@ -266,15 +277,46 @@ def _ensure_product(currency: str):
         El producto de plazo fijo activo.
     """
     products = investment_selectors.list_active_products()
-    product = products.filter(currency=currency).first()
+    product = products.filter(currency=currency, name=INVESTMENT_PRODUCT_NAME).first()
+    if product is None:
+        product = products.filter(currency=currency).exclude(name=PRESTO_INVESTMENT_NAME).first()
     if product is not None:
+        changed = False
+        if product.name != INVESTMENT_PRODUCT_NAME:
+            product.name = INVESTMENT_PRODUCT_NAME
+            changed = True
+        if not product.description:
+            product.description = INVESTMENT_PRODUCT_DESCRIPTION
+            changed = True
+        if changed:
+            product.save(update_fields=['name', 'description', 'updated_at'])
         return product
     return _product_model().objects.create(
         type='fixed_term',
+        name=INVESTMENT_PRODUCT_NAME,
+        description=INVESTMENT_PRODUCT_DESCRIPTION,
         currency=currency,
         term_days=INVESTMENT_TERM_DAYS,
         annual_rate_tna=INVESTMENT_RATE,
         min_amount=Decimal('10000.00'),
+        status='active',
+    )
+
+
+def _ensure_presto_product(currency: str):
+    """Devuelve el producto 'Invertí en Presto', creándolo si hace falta."""
+    products = investment_selectors.list_active_products()
+    product = products.filter(currency=currency, name=PRESTO_INVESTMENT_NAME).first()
+    if product is not None:
+        return product
+    return _product_model().objects.create(
+        type='fixed_term',
+        name=PRESTO_INVESTMENT_NAME,
+        description=PRESTO_INVESTMENT_DESCRIPTION,
+        currency=currency,
+        term_days=PRESTO_INVESTMENT_TERM_DAYS,
+        annual_rate_tna=PRESTO_INVESTMENT_RATE,
+        min_amount=PRESTO_INVESTMENT_MIN_AMOUNT,
         status='active',
     )
 
@@ -438,8 +480,8 @@ def seed_demo(currency: str = 'ARS', password: str = DEMO_PASSWORD) -> DemoSumma
     summary.loan_id = str(loan.id)
 
     product = _ensure_product(currency)
+    _ensure_presto_product(currency)
     _ensure_position(investor, product, currency, INVESTMENT_AMOUNT, 'demo-plazo-fijo-carla')
-    _ensure_position(borrower, product, currency, BORROWER_INVESTMENT, 'demo-plazo-fijo-ana')
 
     _ensure_budget(borrower, currency)
 

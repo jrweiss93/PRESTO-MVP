@@ -122,35 +122,39 @@ export default function Dashboard() {
             </div>
           ))
         )}
-        <div className="stat-card flex items-start gap-4">
-          <span className="flex items-center justify-center rounded-xl bg-warning-50 p-4 text-warning-500">
-            <UserMoneyIcon />
-          </span>
-          <div>
-            <div className="label">Préstamos activos</div>
-            <div className="value">{activeLoans.length}</div>
-            <Link className="small text-brand-500" to="/prestamos">
-              Ver préstamos
-            </Link>
+        {activeProfile !== "investor" && (
+          <div className="stat-card flex items-start gap-4">
+            <span className="flex items-center justify-center rounded-xl bg-warning-50 p-4 text-warning-500">
+              <UserMoneyIcon />
+            </span>
+            <div>
+              <div className="label">Préstamos activos</div>
+              <div className="value">{activeLoans.length}</div>
+              <Link className="small text-brand-500" to="/prestamos">
+                Ver préstamos
+              </Link>
+            </div>
           </div>
-        </div>
-        <div className="stat-card flex items-start gap-4">
-          <span className="flex items-center justify-center rounded-xl bg-success-50 p-4 text-success-500">
-            <PieChartIcon />
-          </span>
-          <div>
-            <div className="label">Inversiones activas</div>
-            <div className="value">{activePositions.length}</div>
-            {compareDecimals(totalInvested, "0") > 0 && (
-              <div className="small text-muted">
-                Capital: {formatMoney(totalInvested)}
-              </div>
-            )}
-            <Link className="small text-brand-500" to="/inversiones">
-              Ver inversiones
-            </Link>
+        )}
+        {activeProfile === "investor" && (
+          <div className="stat-card flex items-start gap-4">
+            <span className="flex items-center justify-center rounded-xl bg-success-50 p-4 text-success-500">
+              <PieChartIcon />
+            </span>
+            <div>
+              <div className="label">Inversiones activas</div>
+              <div className="value">{activePositions.length}</div>
+              {compareDecimals(totalInvested, "0") > 0 && (
+                <div className="small text-muted">
+                  Capital: {formatMoney(totalInvested)}
+                </div>
+              )}
+              <Link className="small text-brand-500" to="/inversiones">
+                Ver inversiones
+              </Link>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="card">
@@ -179,7 +183,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {activeLoans.length > 0 && (
+      {activeProfile !== "investor" && activeLoans.length > 0 && (
         <div className="card">
           <h2>Tus préstamos activos</h2>
           <div className="table-wrap">

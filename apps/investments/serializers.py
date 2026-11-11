@@ -12,6 +12,8 @@ class InvestmentProductSerializer(serializers.ModelSerializer):
         model = InvestmentProduct
         fields = [
             'id',
+            'name',
+            'description',
             'type',
             'currency',
             'term_days',

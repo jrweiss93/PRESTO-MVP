@@ -29,6 +29,8 @@ class InvestmentProduct(BaseModel):
         USD = 'USD', 'Dólar'
 
     type = models.CharField(max_length=16, choices=Type.choices, default=Type.FIXED_TERM)
+    name = models.CharField(max_length=120, default='Plazo fijo')
+    description = models.TextField(blank=True)
     currency = models.CharField(max_length=3, choices=Currency.choices)
     term_days = models.PositiveIntegerField()
     annual_rate_tna = models.DecimalField(
@@ -57,7 +59,7 @@ class InvestmentProduct(BaseModel):
         ordering = ['annual_rate_tna', 'term_days']
 
     def __str__(self):
-        return f'InvestmentProduct<{self.id}:{self.currency}:{self.term_days}d>'
+        return f'InvestmentProduct<{self.id}:{self.name}:{self.currency}:{self.term_days}d>'
 
 
 class Position(BaseModel):

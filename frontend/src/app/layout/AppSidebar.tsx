@@ -60,6 +60,7 @@ const navItems: NavItem[] = [
       />
     ),
     path: "/pagos",
+    profiles: ["borrower", "lender"],
   },
   {
     name: "Presupuestos",
@@ -71,6 +72,7 @@ const navItems: NavItem[] = [
       />
     ),
     path: "/presupuestos",
+    profiles: ["borrower", "lender"],
   },
   {
     name: "Marketplace",

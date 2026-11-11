@@ -1370,6 +1370,8 @@ export interface components {
         InvestmentProduct: {
             /** Format: uuid */
             readonly id: string;
+            readonly name?: string;
+            readonly description?: string;
             readonly type: components["schemas"]["InvestmentProductTypeEnum"];
             readonly currency: components["schemas"]["CurrencyEnum"];
             readonly term_days: number;

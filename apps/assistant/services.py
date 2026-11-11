@@ -212,6 +212,17 @@ def _legal_reply(text: str) -> str:
     )
 
 
+def _presto_investment_reply() -> str:
+    """Explica el producto para invertir en el propio Presto."""
+    return (
+        '*Invertí en Presto*\n'
+        'Es un plazo fijo simulado para financiar el crecimiento de Presto. '
+        'No es una oferta pública de inversión ni una participación societaria.\n'
+        'Podés verlo en la sección Inversiones, con su plazo, TNA y monto mínimo.\n'
+        f'{regulations.DISCLAIMER}'
+    )
+
+
 def answer_question(user_id, message: str) -> dict:
     """Responde una pregunta del usuario con una regla.
 
@@ -235,6 +246,8 @@ def answer_question(user_id, message: str) -> dict:
         return {'reply': _balance_reply(user_id), 'intent': 'rules'}
     if _matches(text, 'cuota', 'prestamo', 'deuda', 'debo'):
         return {'reply': _loans_reply(user_id), 'intent': 'rules'}
+    if _matches(text, 'presto') and _matches(text, 'invertir', 'inversion', 'inverti'):
+        return {'reply': _presto_investment_reply(), 'intent': 'rules'}
     if _matches(text, 'inversion', 'plazo fijo', 'rendimiento', 'interes ganado'):
         return {'reply': _investments_reply(user_id), 'intent': 'rules'}
     if _matches(text, 'prestar', 'prestamista', 'publicar', 'oferta', 'captar'):
