@@ -30,6 +30,18 @@ def test_the_image_ends_as_a_non_root_user():
     assert 'useradd' in dockerfile
 
 
+def test_the_runtime_image_installs_the_redis_transport_dependency():
+    """La imagen runtime instala `packaging`, que kombu importa para Redis.
+
+    Sin esa dependencia, `send_notification_email.delay()` falla en producción
+    (ModuleNotFoundError) y cualquier evento de notificación devuelve 500.
+    """
+    dockerfile = (ROOT / 'Dockerfile').read_text(encoding='utf-8')
+    runtime = dockerfile.split('FROM base AS runtime')[1].split('FROM runtime AS development')[0]
+
+    assert '"packaging' in runtime
+
+
 def test_the_image_keeps_the_writes_out_of_the_project_directory():
     """El bytecode, la cache de pytest, la de ruff y la cobertura no se
     escriben en el proyecto.
