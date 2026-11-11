@@ -79,6 +79,7 @@ paths:
           - inversion
           - consumidor
           - antilavado
+          - integraciones
           - general
           type: string
           minLength: 1
@@ -88,6 +89,7 @@ paths:
           * `inversion` - Inversión y oferta pública
           * `consumidor` - Derechos del consumidor
           * `antilavado` - Prevención de lavado (PLA/FT)
+          * `integraciones` - Integraciones y pagos
           * `general` - General
       - in: query
         name: q
@@ -259,6 +261,34 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
           description: ''
+  /api/v1/auth/me/close/:
+    post:
+      operationId: auth_close_account
+      description: Cierra la cuenta si no hay préstamos ni inversiones activas.
+      summary: Cerrar la cuenta (baja lógica)
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloseAccount'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CloseAccount'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CloseAccount'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailMessage'
+          description: ''
   /api/v1/auth/password-reset/:
     post:
       operationId: auth_password_reset_request
@@ -394,6 +424,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenRefreshResponse'
+          description: ''
+  /api/v1/backup-accounts/:
+    get:
+      operationId: backup_accounts_list
+      description: Lista las cuentas de respaldo del usuario.
+      summary: Listar las cuentas de respaldo propias
+      tags:
+      - backup-accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupAccount'
+          description: ''
+    post:
+      operationId: backup_accounts_create
+      description: Crea una cuenta de respaldo pendiente de verificación.
+      summary: Vincular una cuenta de respaldo
+      tags:
+      - backup-accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BackupAccountCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BackupAccountCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BackupAccountCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupAccount'
+          description: ''
+  /api/v1/backup-accounts/{account_id}/:
+    delete:
+      operationId: backup_accounts_delete
+      description: Elimina la cuenta si no hay un préstamo activo como prestatario.
+      summary: Desvincular una cuenta de respaldo
+      parameters:
+      - in: path
+        name: account_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - backup-accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/backup-accounts/{account_id}/verify/:
+    post:
+      operationId: backup_accounts_verify
+      description: Valida el código de demo y marca la cuenta como verificada.
+      summary: Verificar una cuenta de respaldo
+      parameters:
+      - in: path
+        name: account_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - backup-accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BackupAccountVerify'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BackupAccountVerify'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BackupAccountVerify'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupAccount'
           description: ''
   /api/v1/budgets/:
     get:
@@ -1551,6 +1678,127 @@ components:
       - id
       - kind
       - user_id
+    BackupAccount:
+      type: object
+      description: Cuenta de respaldo con el identificador enmascarado.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        provider:
+          allOf:
+          - $ref: '#/components/schemas/BackupAccountProviderEnum'
+          readOnly: true
+        display_name:
+          type: string
+          readOnly: true
+        masked_ref:
+          type: string
+          description: Devuelve la referencia sin los primeros dígitos.
+          readOnly: true
+        verification_hint:
+          type: string
+          nullable: true
+          description: En la demo muestra el código fijo de verificación.
+          readOnly: true
+        currency:
+          allOf:
+          - $ref: '#/components/schemas/CurrencyEnum'
+          readOnly: true
+        declared_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,16}(?:\.\d{0,2})?$
+          readOnly: true
+          description: Saldo informado por el usuario; no se consulta al proveedor.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/BackupAccountStatusEnum'
+          readOnly: true
+        verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        consent_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - consent_at
+      - created_at
+      - currency
+      - declared_balance
+      - display_name
+      - id
+      - masked_ref
+      - provider
+      - status
+      - verification_hint
+      - verified_at
+    BackupAccountCreate:
+      type: object
+      description: Datos para vincular una cuenta de respaldo.
+      properties:
+        provider:
+          $ref: '#/components/schemas/BackupAccountProviderEnum'
+        display_name:
+          type: string
+          maxLength: 80
+        account_ref:
+          type: string
+          writeOnly: true
+          maxLength: 64
+        currency:
+          $ref: '#/components/schemas/CurrencyEnum'
+        declared_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,16}(?:\.\d{0,2})?$
+      required:
+      - account_ref
+      - currency
+      - declared_balance
+      - display_name
+      - provider
+    BackupAccountProviderEnum:
+      enum:
+      - bank
+      - wallet
+      - mercado_pago
+      - binance
+      - other
+      type: string
+      description: |-
+        * `bank` - Banco
+        * `wallet` - Billetera virtual
+        * `mercado_pago` - Mercado Pago
+        * `binance` - Binance
+        * `other` - Otra
+    BackupAccountStatusEnum:
+      enum:
+      - pending
+      - verified
+      - rejected
+      type: string
+      description: |-
+        * `pending` - Pendiente
+        * `verified` - Verificada
+        * `rejected` - Rechazada
+    BackupAccountVerify:
+      type: object
+      description: Código de verificación de la cuenta de respaldo.
+      properties:
+        code:
+          type: string
+          maxLength: 12
+      required:
+      - code
     Balance:
       type: object
       description: Saldo de una cuenta.
@@ -1755,6 +2003,14 @@ components:
       required:
       - intent
       - reply
+    CloseAccount:
+      type: object
+      description: Confirmación explícita para cerrar la cuenta.
+      properties:
+        confirm:
+          type: boolean
+      required:
+      - confirm
     CompareOffers:
       type: object
       description: Identificadores de las ofertas a comparar.
@@ -2172,8 +2428,10 @@ components:
       - annual_rate_tna
       - created_at
       - currency
+      - description
       - id
       - min_amount
+      - name
       - status
       - term_days
       - type
@@ -2418,11 +2676,13 @@ components:
           readOnly: true
       required:
       - accepted_at
+      - borrower_email
       - borrower_user_id
       - currency
       - effective_annual_rate
       - id
       - interest_rate
+      - lender_email
       - lender_user_id
       - offer_id
       - principal
@@ -2500,12 +2760,14 @@ components:
           readOnly: true
       required:
       - accepted_at
+      - borrower_email
       - borrower_user_id
       - currency
       - effective_annual_rate
       - id
       - installments
       - interest_rate
+      - lender_email
       - lender_user_id
       - offer_id
       - principal
@@ -2802,8 +3064,8 @@ components:
         loan_id:
           type: string
           format: uuid
-          readOnly: true
           nullable: true
+          readOnly: true
         status:
           allOf:
           - $ref: '#/components/schemas/NotificationStatusEnum'
@@ -2832,6 +3094,7 @@ components:
       - error
       - event_type
       - id
+      - loan_id
       - read_at
       - reference_id
       - sent_at
@@ -3185,7 +3448,7 @@ components:
           readOnly: true
         provider:
           allOf:
-          - $ref: '#/components/schemas/ProviderEnum'
+          - $ref: '#/components/schemas/PaymentProviderEnum'
           readOnly: true
         provider_reference:
           type: string
@@ -3223,6 +3486,14 @@ components:
       - provider_reference
       - status
       - updated_at
+    PaymentProviderEnum:
+      enum:
+      - simulated
+      - mercadopago
+      type: string
+      description: |-
+        * `simulated` - Simulado
+        * `mercadopago` - Mercado Pago
     PaymentStatusEnum:
       enum:
       - pending
@@ -3385,14 +3656,6 @@ components:
             maxLength: 0
       required:
       - id
-    ProviderEnum:
-      enum:
-      - simulated
-      - mercadopago
-      type: string
-      description: |-
-        * `simulated` - Simulado
-        * `mercadopago` - Mercado Pago
     Register:
       type: object
       description: Datos necesarios para registrar un usuario.

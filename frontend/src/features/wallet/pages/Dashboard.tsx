@@ -4,6 +4,7 @@ import * as api from "@/shared/api/endpoints";
 import { ApiError } from "@/shared/api/client";
 import type {
   Account,
+  BackupAccount,
   KYCVerification,
   Loan,
   Position,
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
+  const [backupAccounts, setBackupAccounts] = useState<BackupAccount[]>([]);
   const [kyc, setKyc] = useState<KYCVerification | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,17 +33,19 @@ export default function Dashboard() {
     let cancelled = false;
     (async () => {
       try {
-        const [acc, ln, pos, kv] = await Promise.all([
+        const [acc, ln, pos, kv, backup] = await Promise.all([
           api.listAccounts().catch(() => [] as Account[]),
           api.listLoans().catch(() => [] as Loan[]),
           api.listPositions().catch(() => [] as Position[]),
           api.getKyc().catch(() => null),
+          api.listBackupAccounts().catch(() => [] as BackupAccount[]),
         ]);
         if (cancelled) return;
         setAccounts(acc);
         setLoans(ln);
         setPositions(pos);
         setKyc(kv);
+        setBackupAccounts(backup);
       } catch (err) {
         if (!cancelled) {
           setError(
@@ -89,6 +93,13 @@ export default function Dashboard() {
           operar.
         </div>
       )}
+      {activeProfile === "borrower" &&
+        !backupAccounts.some((account) => account.status === "verified") && (
+          <div className="alert warning">
+            Para aceptar un préstamo necesitás una{" "}
+            <Link to="/perfil#respaldo">cuenta de respaldo verificada</Link>.
+          </div>
+        )}
 
       <div className="card-grid">
         {accounts.length === 0 ? (

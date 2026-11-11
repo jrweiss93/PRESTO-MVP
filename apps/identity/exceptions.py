@@ -49,3 +49,35 @@ class InvalidToken(IdentityError):
 
 class InvalidCurrentPassword(IdentityError):
     """La contraseña actual no coincide."""
+
+
+class BackupAccountNotFound(IdentityError):
+    """La cuenta de respaldo no existe o no pertenece al usuario."""
+
+
+class BackupAccountAlreadyExists(IdentityError):
+    """Ya hay una cuenta de respaldo con ese proveedor y referencia."""
+
+
+class InvalidBackupAccount(IdentityError):
+    """Los datos de la cuenta de respaldo no son válidos."""
+
+
+class InvalidBackupVerification(IdentityError):
+    """El código de verificación de la cuenta de respaldo no es válido."""
+
+
+class BackupAccountRequired(IdentityError):
+    """El prestatario necesita una cuenta de respaldo verificada."""
+
+
+class InsufficientRepaymentCapacity(IdentityError):
+    """La cuenta de respaldo no cubre la primera cuota del préstamo."""
+
+
+class ActiveLoanBlocksAction(IdentityError):
+    """Hay un préstamo activo que impide desvincular la cuenta."""
+
+
+class AccountClosureBlocked(IdentityError):
+    """La cuenta no se puede cerrar porque tiene operaciones activas."""

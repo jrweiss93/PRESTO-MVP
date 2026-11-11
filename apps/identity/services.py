@@ -17,7 +17,15 @@ from django.utils import timezone
 from apps.identity import signals
 from apps.identity.emails import send_email_verification_email, send_password_reset_email
 from apps.identity.exceptions import (
+    AccountClosureBlocked,
+    ActiveLoanBlocksAction,
+    BackupAccountAlreadyExists,
+    BackupAccountNotFound,
+    BackupAccountRequired,
     EmailAlreadyRegistered,
+    InsufficientRepaymentCapacity,
+    InvalidBackupAccount,
+    InvalidBackupVerification,
     InvalidBiometricSample,
     InvalidCurrentPassword,
     InvalidDocuments,
@@ -29,7 +37,20 @@ from apps.identity.exceptions import (
     PendingKYCExists,
     WeakPassword,
 )
-from apps.identity.models import BiometricCheck, KYCVerification, PrestoProfile, Profile, User
+from apps.identity.models import (
+    BackupAccount,
+    BiometricCheck,
+    KYCVerification,
+    PrestoProfile,
+    Profile,
+    User,
+)
+from apps.identity.selectors import (
+    get_active_financial_operations,
+    get_backup_account_for_user,
+    get_verified_backup_account,
+    has_active_loan_as_borrower,
+)
 from apps.identity.tokens import decode_uid, email_verification_token, encode_uid
 
 logger = logging.getLogger(__name__)
@@ -468,6 +489,108 @@ def _get_user_from_uid(uid: str) -> User | None:
         return User.objects.filter(pk=user_id, is_active=True).first()
     except (DjangoValidationError, ValueError):
         return None
+
+
+def create_backup_account(
+    user: User,
+    provider: str,
+    display_name: str,
+    account_ref: str,
+    currency: str,
+    declared_balance: Decimal,
+) -> BackupAccount:
+    """Crea una cuenta de respaldo pendiente de verificación."""
+    if provider not in BackupAccount.Provider.values:
+        raise InvalidBackupAccount('El proveedor indicado no es válido.')
+    if currency not in BackupAccount.Currency.values:
+        raise InvalidBackupAccount('La moneda indicada no es válida.')
+    if BackupAccount.objects.filter(user=user, provider=provider, account_ref=account_ref).exists():
+        raise BackupAccountAlreadyExists('Ya vinculaste esa cuenta.')
+    try:
+        return BackupAccount.objects.create(
+            user=user,
+            provider=provider,
+            display_name=display_name,
+            account_ref=account_ref,
+            currency=currency,
+            declared_balance=declared_balance,
+        )
+    except IntegrityError as exc:
+        raise BackupAccountAlreadyExists('Ya vinculaste esa cuenta.') from exc
+
+
+def verify_backup_account(
+    user: User,
+    account_id: uuid.UUID,
+    code: str,
+) -> BackupAccount:
+    """Verifica una cuenta de respaldo con el código de la demo."""
+    account = get_backup_account_for_user(account_id=account_id, user_id=user.id)
+    if account is None:
+        raise BackupAccountNotFound('La cuenta de respaldo no existe.')
+    expected = str(settings.BACKUP_ACCOUNT_VERIFICATION_CODE)
+    if code.strip() != expected:
+        raise InvalidBackupVerification('El código de verificación no es válido.')
+    if account.status != BackupAccount.Status.VERIFIED:
+        account.status = BackupAccount.Status.VERIFIED
+        account.verified_at = timezone.now()
+        account.save(update_fields=['status', 'verified_at', 'updated_at'])
+    return account
+
+
+def delete_backup_account(user: User, account_id: uuid.UUID) -> None:
+    """Desvincula una cuenta salvo que el usuario tenga un préstamo activo."""
+    account = get_backup_account_for_user(account_id=account_id, user_id=user.id)
+    if account is None:
+        raise BackupAccountNotFound('La cuenta de respaldo no existe.')
+    if has_active_loan_as_borrower(user.id):
+        raise ActiveLoanBlocksAction(
+            'No podés desvincular una cuenta de respaldo mientras tengas un '
+            'préstamo activo o en mora.'
+        )
+    account.delete()
+
+
+def require_repayment_source(
+    user_id: uuid.UUID,
+    currency: str,
+    minimum_balance: Decimal,
+) -> None:
+    """Exige una cuenta de respaldo verificada que cubra la primera cuota.
+
+    Solo aplica cuando `REPAYMENT_SOURCE_REQUIRED` está activo. En la demo se
+    exige una cuenta con saldo informado suficiente; no se consulta al
+    proveedor externo.
+    """
+    if not settings.REPAYMENT_SOURCE_REQUIRED:
+        return
+    account = get_verified_backup_account(
+        user_id=user_id,
+        currency=currency,
+        minimum_balance=minimum_balance,
+    )
+    if account is not None:
+        return
+    any_verified = get_verified_backup_account(user_id=user_id, currency=currency)
+    if any_verified is None:
+        raise BackupAccountRequired(
+            'Vinculá y verificá una cuenta de respaldo antes de aceptar un préstamo.'
+        )
+    raise InsufficientRepaymentCapacity(
+        'La cuenta de respaldo verificada no cubre la primera cuota. '
+        'Actualizá el saldo informado o vinculá otra cuenta.'
+    )
+
+
+def close_account(user: User) -> None:
+    """Cierra la cuenta (baja lógica) si no hay operaciones activas."""
+    operations = get_active_financial_operations(user.id)
+    if operations['loans'] or operations['positions']:
+        raise AccountClosureBlocked(
+            'No podés cerrar la cuenta con préstamos activos, en mora o inversiones abiertas.'
+        )
+    user.is_active = False
+    user.save(update_fields=['is_active'])
 
 
 def change_password(user: User, current_password: str, new_password: str) -> User:

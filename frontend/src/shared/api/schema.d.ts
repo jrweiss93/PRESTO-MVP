@@ -208,6 +208,26 @@ export interface paths {
         patch: operations["auth_me_partial_update"];
         trace?: never;
     };
+    "/api/v1/auth/me/close/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cerrar la cuenta (baja lógica)
+         * @description Cierra la cuenta si no hay préstamos ni inversiones activas.
+         */
+        post: operations["auth_close_account"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/password-reset/": {
         parameters: {
             query?: never;
@@ -305,6 +325,70 @@ export interface paths {
          * @description Lee el refresh token de la cookie httpOnly y lo rota: la cookie se reemplaza por una nueva y el token anterior queda blacklisted (ADR 0014).
          */
         post: operations["auth_token_refresh_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backup-accounts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar las cuentas de respaldo propias
+         * @description Lista las cuentas de respaldo del usuario.
+         */
+        get: operations["backup_accounts_list"];
+        put?: never;
+        /**
+         * Vincular una cuenta de respaldo
+         * @description Crea una cuenta de respaldo pendiente de verificación.
+         */
+        post: operations["backup_accounts_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backup-accounts/{account_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Desvincular una cuenta de respaldo
+         * @description Elimina la cuenta si no hay un préstamo activo como prestatario.
+         */
+        delete: operations["backup_accounts_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backup-accounts/{account_id}/verify/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verificar una cuenta de respaldo
+         * @description Valida el código de demo y marca la cuenta como verificada.
+         */
+        post: operations["backup_accounts_verify"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1105,6 +1189,59 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /** @description Cuenta de respaldo con el identificador enmascarado. */
+        BackupAccount: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly provider: components["schemas"]["BackupAccountProviderEnum"];
+            readonly display_name: string;
+            /** @description Devuelve la referencia sin los primeros dígitos. */
+            readonly masked_ref: string;
+            /** @description En la demo muestra el código fijo de verificación. */
+            readonly verification_hint: string | null;
+            readonly currency: components["schemas"]["CurrencyEnum"];
+            /**
+             * Format: decimal
+             * @description Saldo informado por el usuario; no se consulta al proveedor.
+             */
+            readonly declared_balance: string;
+            readonly status: components["schemas"]["BackupAccountStatusEnum"];
+            /** Format: date-time */
+            readonly verified_at: string | null;
+            /** Format: date-time */
+            readonly consent_at: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /** @description Datos para vincular una cuenta de respaldo. */
+        BackupAccountCreate: {
+            provider: components["schemas"]["BackupAccountProviderEnum"];
+            display_name: string;
+            account_ref: string;
+            currency: components["schemas"]["CurrencyEnum"];
+            /** Format: decimal */
+            declared_balance: string;
+        };
+        /**
+         * @description * `bank` - Banco
+         *     * `wallet` - Billetera virtual
+         *     * `mercado_pago` - Mercado Pago
+         *     * `binance` - Binance
+         *     * `other` - Otra
+         * @enum {string}
+         */
+        BackupAccountProviderEnum: "bank" | "wallet" | "mercado_pago" | "binance" | "other";
+        /**
+         * @description * `pending` - Pendiente
+         *     * `verified` - Verificada
+         *     * `rejected` - Rechazada
+         * @enum {string}
+         */
+        BackupAccountStatusEnum: "pending" | "verified" | "rejected";
+        /** @description Código de verificación de la cuenta de respaldo. */
+        BackupAccountVerify: {
+            code: string;
+        };
         /** @description Saldo de una cuenta. */
         Balance: {
             /** Format: uuid */
@@ -1192,6 +1329,10 @@ export interface components {
         ChatReply: {
             reply: string;
             intent: components["schemas"]["IntentEnum"];
+        };
+        /** @description Confirmación explícita para cerrar la cuenta. */
+        CloseAccount: {
+            confirm: boolean;
         };
         /** @description Identificadores de las ofertas a comparar. */
         CompareOffers: {
@@ -1370,8 +1511,8 @@ export interface components {
         InvestmentProduct: {
             /** Format: uuid */
             readonly id: string;
-            readonly name?: string;
-            readonly description?: string;
+            readonly name: string;
+            readonly description: string;
             readonly type: components["schemas"]["InvestmentProductTypeEnum"];
             readonly currency: components["schemas"]["CurrencyEnum"];
             readonly term_days: number;
@@ -1478,9 +1619,9 @@ export interface components {
             /** Format: uuid */
             readonly lender_user_id: string;
             /** Format: email */
-            readonly borrower_email?: string | null;
+            readonly borrower_email: string | null;
             /** Format: email */
-            readonly lender_email?: string | null;
+            readonly lender_email: string | null;
             /** Format: uuid */
             readonly offer_id: string;
             /** Format: decimal */
@@ -1507,9 +1648,9 @@ export interface components {
             /** Format: uuid */
             readonly lender_user_id: string;
             /** Format: email */
-            readonly borrower_email?: string | null;
+            readonly borrower_email: string | null;
             /** Format: email */
-            readonly lender_email?: string | null;
+            readonly lender_email: string | null;
             /** Format: uuid */
             readonly offer_id: string;
             /** Format: decimal */
@@ -1657,7 +1798,7 @@ export interface components {
             /** Format: uuid */
             readonly reference_id: string;
             /** Format: uuid */
-            readonly loan_id?: string | null;
+            readonly loan_id: string | null;
             readonly status: components["schemas"]["NotificationStatusEnum"];
             /**
              * Format: date-time
@@ -1835,7 +1976,7 @@ export interface components {
             /** Format: decimal */
             readonly amount: string;
             readonly currency: components["schemas"]["CurrencyEnum"];
-            readonly provider: components["schemas"]["ProviderEnum"];
+            readonly provider: components["schemas"]["PaymentProviderEnum"];
             readonly provider_reference: string;
             readonly status: components["schemas"]["PaymentStatusEnum"];
             /** Format: uuid */
@@ -1847,6 +1988,12 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
         };
+        /**
+         * @description * `simulated` - Simulado
+         *     * `mercadopago` - Mercado Pago
+         * @enum {string}
+         */
+        PaymentProviderEnum: "simulated" | "mercadopago";
         /**
          * @description * `pending` - Pendiente
          *     * `confirmed` - Confirmado
@@ -1920,12 +2067,6 @@ export interface components {
             date_of_birth?: string | null;
             country?: string;
         };
-        /**
-         * @description * `simulated` - Simulado
-         *     * `mercadopago` - Mercado Pago
-         * @enum {string}
-         */
-        ProviderEnum: "simulated" | "mercadopago";
         /** @description Datos necesarios para registrar un usuario. */
         Register: {
             /** Format: email */
@@ -2103,9 +2244,10 @@ export interface operations {
                  *     * `inversion` - Inversión y oferta pública
                  *     * `consumidor` - Derechos del consumidor
                  *     * `antilavado` - Prevención de lavado (PLA/FT)
+                 *     * `integraciones` - Integraciones y pagos
                  *     * `general` - General
                  */
-                category?: "prestamos" | "entidades" | "inversion" | "consumidor" | "antilavado" | "general";
+                category?: "prestamos" | "entidades" | "inversion" | "consumidor" | "antilavado" | "integraciones" | "general";
                 q?: string;
             };
             header?: never;
@@ -2276,6 +2418,31 @@ export interface operations {
             };
         };
     };
+    auth_close_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseAccount"];
+                "application/x-www-form-urlencoded": components["schemas"]["CloseAccount"];
+                "multipart/form-data": components["schemas"]["CloseAccount"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailMessage"];
+                };
+            };
+        };
+    };
     auth_password_reset_request: {
         parameters: {
             query?: never;
@@ -2391,6 +2558,97 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TokenRefreshResponse"];
+                };
+            };
+        };
+    };
+    backup_accounts_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupAccount"];
+                };
+            };
+        };
+    };
+    backup_accounts_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackupAccountCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["BackupAccountCreate"];
+                "multipart/form-data": components["schemas"]["BackupAccountCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupAccount"];
+                };
+            };
+        };
+    };
+    backup_accounts_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    backup_accounts_verify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackupAccountVerify"];
+                "application/x-www-form-urlencoded": components["schemas"]["BackupAccountVerify"];
+                "multipart/form-data": components["schemas"]["BackupAccountVerify"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupAccount"];
                 };
             };
         };

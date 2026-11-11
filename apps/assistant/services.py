@@ -24,8 +24,8 @@ INVESTOR_GREETING = (
 
 SUGGESTIONS = (
     'Podés preguntarme: “¿cómo está el dólar?”, “¿cuál es mi saldo?”, '
-    '“¿cuánto pago de cuota?”, “¿cómo van mis inversiones?” o '
-    '“¿qué necesito para prestar?”.'
+    '“¿cuánto pago de cuota?”, “¿cómo vinculo una cuenta de respaldo?”, '
+    '“¿cómo van mis inversiones?” o “¿qué necesito para prestar?”.'
 )
 
 INVESTOR_MENU = (
@@ -38,6 +38,7 @@ INVESTOR_MENU = (
     '• “No me deja invertir”\n'
     '• “¿Qué es invertir en Presto?”\n'
     '• “¿Cómo van mis inversiones?”\n'
+    '• “¿Cómo se integran bancos y Binance?”\n'
     '• “Marco legal”'
 )
 
@@ -229,7 +230,9 @@ def _market_reply() -> str:
 
 
 def _legal_reply(text: str) -> str:
-    if _matches(text, 'cnv', 'oferta publica', 'inversion'):
+    if _matches(text, 'integr', 'binance', 'debin', 'open banking', 'mercado pago'):
+        item = regulations.get_regulation('integraciones-pagos')
+    elif _matches(text, 'cnv', 'oferta publica', 'inversion'):
         item = regulations.get_regulation('oferta-publica-cnv')
     elif _matches(text, 'bcra', 'captar', 'entidad'):
         item = regulations.get_regulation('entidades-financieras')
@@ -441,6 +444,62 @@ def _investment_liquidity_reply() -> str:
     )
 
 
+def _backup_account_reply(user_id) -> str:
+    """Explica cómo vincular y verificar una cuenta de respaldo."""
+    accounts = selectors.get_backup_accounts_summary(user_id=user_id)
+    lines = [
+        '*Cuenta de respaldo para préstamos*',
+        'Para aceptar un préstamo necesitás al menos una cuenta de respaldo '
+        'verificada. Es un requisito de la demo para reducir el riesgo de impago.',
+    ]
+    if accounts:
+        lines.append('*Tus cuentas*')
+        for account in accounts:
+            lines.append(
+                f'• {account["provider"]} · {account["display_name"]} · '
+                f'{account["masked_ref"]} · {account["status"]} · saldo informado '
+                f'{_money(account["declared_balance"], account["currency"])}'
+            )
+    else:
+        lines.append('Todavía no tenés cuentas de respaldo vinculadas.')
+    lines.extend(
+        [
+            'Pasos: Perfil y KYC → Cuentas de respaldo → elegí banco/billetera → '
+            'cargá una referencia y el saldo informado → verificá con el código '
+            'de la demo.',
+            'Solo guardamos proveedor, referencia enmascarada y saldo informado. '
+            'No pedimos claves, tokens ni datos bancarios completos.',
+            'El saldo informado no se consulta al banco: es una declaración del '
+            'usuario y no garantiza el pago.',
+            'Mientras tengas un préstamo activo o en mora no podés desvincular la cuenta.',
+        ]
+    )
+    return '\n'.join(lines)
+
+
+def _integrations_reply() -> str:
+    """Explica el alcance real de integrar bancos, billeteras y Binance."""
+    return (
+        '*Integraciones y regulación*\n'
+        '• En la demo, la vinculación es simulada: no se consulta ni debita una '
+        'cuenta real.\n'
+        '• Banco: se puede leer saldo con un proveedor de open banking y '
+        'consentimiento del usuario; debitar requiere DEBIN, un PSP o un convenio '
+        'bancario.\n'
+        '• Mercado Pago: OAuth del usuario y preapproval para débitos recurrentes.\n'
+        '• Binance: la API permite leer saldos con permisos de solo lectura; no '
+        'permite que un tercero debite automáticamente. Binance Pay requiere que '
+        'el usuario confirme el pago.\n'
+        '• Datos personales: Ley 25.326; consentimiento, finalidad y seguridad de '
+        'la información.\n'
+        '• Para operar con dinero real hacen falta contratos con los proveedores, '
+        'homologaciones y encuadre BCRA/CNV.\n'
+        'Abrí “Marco legal” en Presti → Integraciones y pagos para ver las normas '
+        'y los enlaces oficiales.\n'
+        f'{regulations.DISCLAIMER}'
+    )
+
+
 def _presto_investment_reply() -> str:
     """Explica el producto para invertir en el propio Presto."""
     products = selectors.get_active_investment_products()
@@ -497,6 +556,29 @@ def answer_question(user_id, message: str) -> dict:
                 'intent': 'rules',
             }
         return {'reply': f'{GREETING}\n\n{SUGGESTIONS}', 'intent': 'rules'}
+    if _matches(
+        text,
+        'integrar',
+        'integracion',
+        'binance',
+        'open banking',
+        'debin',
+        'mercado pago',
+        'debito automatico',
+        'api bancaria',
+        'proveedor de pagos',
+    ):
+        return {'reply': _integrations_reply(), 'intent': 'rules'}
+    if _matches(
+        text,
+        'cuenta de respaldo',
+        'vincular',
+        'cbu',
+        'cvu',
+        'cuenta bancaria',
+        'alias bancario',
+    ):
+        return {'reply': _backup_account_reply(user_id), 'intent': 'rules'}
     if _matches(text, 'saldo', 'cuenta', 'billetera', 'cuanto tengo'):
         return {'reply': _balance_reply(user_id), 'intent': 'rules'}
     if _matches(text, 'cuota', 'prestamo', 'deuda', 'debo'):

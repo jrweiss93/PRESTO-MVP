@@ -20,7 +20,7 @@ export type InvestmentProductType = Schema<"InvestmentProductTypeEnum">;
 export type InvestmentProductStatus = Schema<"InvestmentProductStatusEnum">;
 export type PaymentDirection = Schema<"DirectionEnum">;
 export type PaymentStatus = Schema<"PaymentStatusEnum">;
-export type PaymentProvider = Schema<"ProviderEnum">;
+export type PaymentProvider = Schema<"PaymentProviderEnum">;
 export type BudgetPeriod = Schema<"PeriodEnum">;
 
 export type User = Schema<"User">;
@@ -39,6 +39,14 @@ export type EmailVerificationResponse = Schema<"EmailVerificationResponse">;
 export type DetailMessage = Schema<"DetailMessage">;
 
 export type Account = Schema<"Account">;
+export type BackupAccount = Schema<"BackupAccount">;
+export type CreateBackupAccount = {
+  provider: string;
+  display_name: string;
+  account_ref: string;
+  currency: string;
+  declared_balance: string;
+};
 export type CreateAccount = Schema<"CreateAccount">;
 export type Balance = Schema<"Balance">;
 export type LedgerTransaction = Schema<"LedgerTransaction">;

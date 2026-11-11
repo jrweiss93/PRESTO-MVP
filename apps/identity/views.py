@@ -5,7 +5,12 @@ import logging
 from django.contrib.auth import authenticate
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
-from rest_framework.exceptions import AuthenticationFailed, NotFound, ValidationError
+from rest_framework.exceptions import (
+    AuthenticationFailed,
+    NotFound,
+    PermissionDenied,
+    ValidationError,
+)
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -14,7 +19,13 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.identity.exceptions import (
+    AccountClosureBlocked,
+    ActiveLoanBlocksAction,
+    BackupAccountAlreadyExists,
+    BackupAccountNotFound,
     EmailAlreadyRegistered,
+    InvalidBackupAccount,
+    InvalidBackupVerification,
     InvalidBiometricSample,
     InvalidCurrentPassword,
     InvalidProfileKind,
@@ -29,10 +40,19 @@ from apps.identity.permissions import (
     PasswordResetThrottle,
     RegisterThrottle,
 )
-from apps.identity.selectors import get_kyc_by_id, get_kyc_for_user, list_biometric_checks
+from apps.identity.selectors import (
+    get_kyc_by_id,
+    get_kyc_for_user,
+    list_backup_accounts_for_user,
+    list_biometric_checks,
+)
 from apps.identity.serializers import (
+    BackupAccountCreateSerializer,
+    BackupAccountSerializer,
+    BackupAccountVerifySerializer,
     BiometricCheckRequestSerializer,
     BiometricCheckSerializer,
+    CloseAccountSerializer,
     DetailMessageSerializer,
     EmailVerificationResponseSerializer,
     EmailVerificationSerializer,
@@ -51,8 +71,11 @@ from apps.identity.serializers import (
 from apps.identity.services import (
     change_password,
     clear_refresh_cookie,
+    close_account,
     confirm_email_verification,
     confirm_password_reset,
+    create_backup_account,
+    delete_backup_account,
     get_refresh_token,
     register_user,
     request_password_reset,
@@ -61,6 +84,7 @@ from apps.identity.services import (
     set_refresh_cookie,
     submit_kyc,
     update_profile,
+    verify_backup_account,
 )
 
 logger = logging.getLogger(__name__)
@@ -424,6 +448,124 @@ class PasswordChangeView(APIView):
             {'detail': 'Contraseña actualizada. Las otras sesiones se cerraron.'},
             status=status.HTTP_200_OK,
         )
+
+
+class BackupAccountListCreateView(APIView):
+    """Cuentas de respaldo del usuario autenticado."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: BackupAccountSerializer},
+        summary='Listar las cuentas de respaldo propias',
+        operation_id='backup_accounts_list',
+    )
+    def get(self, request):
+        """Lista las cuentas de respaldo del usuario."""
+        accounts = list_backup_accounts_for_user(user_id=request.user.id)
+        return Response(BackupAccountSerializer(accounts, many=True).data)
+
+    @extend_schema(
+        request=BackupAccountCreateSerializer,
+        responses={201: BackupAccountSerializer},
+        summary='Vincular una cuenta de respaldo',
+        operation_id='backup_accounts_create',
+    )
+    def post(self, request):
+        """Crea una cuenta de respaldo pendiente de verificación."""
+        serializer = BackupAccountCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            account = create_backup_account(
+                user=request.user,
+                provider=data['provider'],
+                display_name=data['display_name'],
+                account_ref=data['account_ref'],
+                currency=data['currency'],
+                declared_balance=data['declared_balance'],
+            )
+        except (BackupAccountAlreadyExists, InvalidBackupAccount) as exc:
+            raise ValidationError({'detail': [str(exc)]}) from exc
+        return Response(
+            BackupAccountSerializer(account).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class BackupAccountVerifyView(APIView):
+    """Verificación simulada de una cuenta de respaldo."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=BackupAccountVerifySerializer,
+        responses={200: BackupAccountSerializer},
+        summary='Verificar una cuenta de respaldo',
+        operation_id='backup_accounts_verify',
+    )
+    def post(self, request, account_id):
+        """Valida el código de demo y marca la cuenta como verificada."""
+        serializer = BackupAccountVerifySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            account = verify_backup_account(
+                user=request.user,
+                account_id=account_id,
+                code=serializer.validated_data['code'],
+            )
+        except BackupAccountNotFound as exc:
+            raise NotFound(str(exc)) from exc
+        except InvalidBackupVerification as exc:
+            raise ValidationError({'code': [str(exc)]}) from exc
+        return Response(BackupAccountSerializer(account).data, status=status.HTTP_200_OK)
+
+
+class BackupAccountDetailView(APIView):
+    """Desvinculación de una cuenta de respaldo."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={204: None},
+        summary='Desvincular una cuenta de respaldo',
+        operation_id='backup_accounts_delete',
+    )
+    def delete(self, request, account_id):
+        """Elimina la cuenta si no hay un préstamo activo como prestatario."""
+        try:
+            delete_backup_account(user=request.user, account_id=account_id)
+        except BackupAccountNotFound as exc:
+            raise NotFound(str(exc)) from exc
+        except ActiveLoanBlocksAction as exc:
+            raise PermissionDenied(str(exc)) from exc
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CloseAccountView(APIView):
+    """Cierre lógico de la cuenta del usuario."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=CloseAccountSerializer,
+        responses={200: DetailMessageSerializer},
+        summary='Cerrar la cuenta (baja lógica)',
+        operation_id='auth_close_account',
+    )
+    def post(self, request):
+        """Cierra la cuenta si no hay préstamos ni inversiones activas."""
+        serializer = CloseAccountSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            close_account(user=request.user)
+        except AccountClosureBlocked as exc:
+            raise PermissionDenied(str(exc)) from exc
+        clear_refresh_cookie_response = Response(
+            {'detail': 'Cuenta cerrada. Tus datos financieros se conservan por auditoría.'}
+        )
+        clear_refresh_cookie(clear_refresh_cookie_response)
+        return clear_refresh_cookie_response
 
 
 class EmailVerificationView(APIView):

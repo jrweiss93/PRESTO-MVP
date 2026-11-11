@@ -1,4 +1,5 @@
 import {
+  apiDelete,
   apiGet,
   apiPost,
   apiPatch,
@@ -8,8 +9,10 @@ import {
 import type {
   Account,
   AcceptOffer,
+  BackupAccount,
   Balance,
   BiometricCheck,
+  CreateBackupAccount,
   Budget,
   BudgetStatus,
   Category,
@@ -441,6 +444,35 @@ export function markNotificationRead(
 export async function markAllNotificationsRead(): Promise<number> {
   const data = await apiPost<{ read: number }>("/notifications/read-all/");
   return data.read;
+}
+
+// ---- cuentas de respaldo y cierre de cuenta ----
+
+export async function listBackupAccounts(): Promise<BackupAccount[]> {
+  return asArray(await apiGet<BackupAccount | BackupAccount[]>("/backup-accounts/"));
+}
+
+export function createBackupAccount(
+  payload: CreateBackupAccount,
+): Promise<BackupAccount> {
+  return apiPost<BackupAccount>("/backup-accounts/", payload);
+}
+
+export function verifyBackupAccount(
+  accountId: string,
+  code: string,
+): Promise<BackupAccount> {
+  return apiPost<BackupAccount>(`/backup-accounts/${accountId}/verify/`, {
+    code,
+  });
+}
+
+export function deleteBackupAccount(accountId: string): Promise<void> {
+  return apiDelete<void>(`/backup-accounts/${accountId}/`);
+}
+
+export function closeAccount(): Promise<{ detail: string }> {
+  return apiPost<{ detail: string }>("/auth/me/close/", { confirm: true });
 }
 
 // ---- asistente Presti (implementado en el backend, sin LLM) ----

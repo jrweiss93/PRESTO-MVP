@@ -1,8 +1,19 @@
 """Selectores de lectura de la app identity (interfaz pública)."""
 
 import uuid
+from decimal import Decimal
 
-from apps.identity.models import BiometricCheck, KYCVerification, PrestoProfile, Profile, User
+from django.apps import apps
+from django.db.models import Q
+
+from apps.identity.models import (
+    BackupAccount,
+    BiometricCheck,
+    KYCVerification,
+    PrestoProfile,
+    Profile,
+    User,
+)
 
 
 def get_profile(user_id: uuid.UUID) -> Profile | None:
@@ -129,6 +140,61 @@ def list_biometric_checks(
             user_id=user_id, kyc_verification_id=verification_id
         ).order_by('-created_at')
     )
+
+
+def list_backup_accounts_for_user(user_id: uuid.UUID):
+    """Lista las cuentas de respaldo del usuario."""
+    return BackupAccount.objects.filter(user_id=user_id).order_by('-created_at')
+
+
+def get_backup_account_for_user(account_id: uuid.UUID, user_id: uuid.UUID) -> BackupAccount | None:
+    """Devuelve una cuenta de respaldo propia, o None."""
+    return BackupAccount.objects.filter(id=account_id, user_id=user_id).first()
+
+
+def get_verified_backup_account(
+    user_id: uuid.UUID,
+    currency: str,
+    minimum_balance: Decimal | None = None,
+) -> BackupAccount | None:
+    """Devuelve una cuenta verificada que cubra el saldo mínimo pedido."""
+    queryset = BackupAccount.objects.filter(
+        user_id=user_id,
+        currency=currency,
+        status=BackupAccount.Status.VERIFIED,
+    )
+    if minimum_balance is not None:
+        queryset = queryset.filter(declared_balance__gte=minimum_balance)
+    return queryset.order_by('-declared_balance', '-verified_at').first()
+
+
+def has_verified_backup_account(user_id: uuid.UUID) -> bool:
+    """Indica si el usuario tiene al menos una cuenta de respaldo verificada."""
+    return BackupAccount.objects.filter(
+        user_id=user_id,
+        status=BackupAccount.Status.VERIFIED,
+    ).exists()
+
+
+def has_active_loan_as_borrower(user_id: uuid.UUID) -> bool:
+    """Indica si el usuario tiene un préstamo activo o en mora como prestatario."""
+    Loan = apps.get_model('loans', 'Loan')
+    return Loan.objects.filter(
+        borrower_user_id=user_id,
+        status__in=['active', 'defaulted'],
+    ).exists()
+
+
+def get_active_financial_operations(user_id: uuid.UUID) -> dict:
+    """Cuenta las operaciones que impiden cerrar la cuenta."""
+    Loan = apps.get_model('loans', 'Loan')
+    Position = apps.get_model('investments', 'Position')
+    loans = Loan.objects.filter(
+        Q(borrower_user_id=user_id) | Q(lender_user_id=user_id),
+        status__in=['active', 'defaulted'],
+    ).count()
+    positions = Position.objects.filter(user_id=user_id, status='active').count()
+    return {'loans': loans, 'positions': positions}
 
 
 def get_user_email(user_id: uuid.UUID) -> str | None:

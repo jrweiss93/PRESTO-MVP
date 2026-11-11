@@ -13,6 +13,7 @@ from django.utils import timezone
 from apps.core.exceptions import KYCNotCompleted
 from apps.core.money import french_installment, monthly_rate_from_annual_tna, round_two
 from apps.identity.selectors import is_kyc_approved
+from apps.identity.services import require_repayment_source
 from apps.ledger import services as ledger_services
 from apps.ledger.exceptions import IdempotencyConflict
 from apps.loans import signals
@@ -132,6 +133,15 @@ def accept_offer(
             offer = offers_services.accept_offer(
                 offer_id=offer_id,
                 borrower_user_id=borrower_user_id,
+            )
+            require_repayment_source(
+                user_id=borrower_user_id,
+                currency=offer.currency,
+                minimum_balance=french_installment(
+                    offer.amount,
+                    offer.interest_rate,
+                    offer.term_months,
+                ),
             )
             loan = Loan.objects.create(
                 borrower_user_id=borrower_user_id,

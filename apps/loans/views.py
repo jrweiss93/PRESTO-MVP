@@ -3,13 +3,17 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.exceptions import InsufficientFunds, KYCNotCompleted
 from apps.core.pagination import StandardPagination
-from apps.identity.permissions import ActiveProfileForUnsafeMethods
+from apps.identity.exceptions import BackupAccountRequired, InsufficientRepaymentCapacity
+from apps.identity.permissions import (
+    ActiveProfileForUnsafeMethods,
+    HasVerifiedBackupAccount,
+)
 from apps.ledger.exceptions import IdempotencyConflict, IdempotencyKeyConflict
 from apps.loans.exceptions import (
     InstallmentAlreadyPaid,
@@ -32,10 +36,22 @@ from apps.offers.exceptions import (
 )
 
 
-class LoanListCreateView(ActiveProfileForUnsafeMethods, APIView):
-    """Préstamos en los que el usuario autenticado es parte."""
+class BorrowerWithRepaymentSource(ActiveProfileForUnsafeMethods):
+    """Prestatario con KYC, perfil y cuenta de respaldo verificada."""
 
     profile_kind = 'borrower'
+
+    def get_permissions(self):
+        """Agrega la cuenta de respaldo a las operaciones de escritura."""
+        permissions = list(super().get_permissions())
+        if self.request.method not in SAFE_METHODS:
+            permissions.append(HasVerifiedBackupAccount())
+        return permissions
+
+
+class LoanListCreateView(BorrowerWithRepaymentSource, APIView):
+    """Préstamos en los que el usuario autenticado es parte."""
+
     permission_classes = [IsAuthenticated]
     pagination_class = StandardPagination
 
@@ -73,6 +89,8 @@ class LoanListCreateView(ActiveProfileForUnsafeMethods, APIView):
             )
         except IdempotencyConflict as exc:
             raise IdempotencyKeyConflict() from exc
+        except (BackupAccountRequired, InsufficientRepaymentCapacity) as exc:
+            raise PermissionDenied(str(exc)) from exc
         except KYCNotCompleted as exc:
             raise PermissionDenied(str(exc)) from exc
         except InsufficientFunds as exc:

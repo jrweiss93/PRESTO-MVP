@@ -211,6 +211,28 @@ def _ensure_deposit(user, currency: str, amount: Decimal, key: str, description:
     )
 
 
+def _ensure_backup_account(user, currency: str):
+    """Deja una cuenta de respaldo verificada para el prestatario de la demo."""
+    BackupAccount = django_apps.get_model('identity', 'BackupAccount')
+    account = BackupAccount.objects.filter(
+        user=user,
+        provider='bank',
+        account_ref='demo-cbu-0001',
+    ).first()
+    if account is not None:
+        return account
+    return BackupAccount.objects.create(
+        user=user,
+        provider='bank',
+        display_name='Banco demo',
+        account_ref='demo-cbu-0001',
+        currency=currency,
+        declared_balance=Decimal('500000.00'),
+        status='verified',
+        verified_at=timezone.now(),
+    )
+
+
 def _ensure_offer(lender, currency: str):
     """Publica la oferta del prestamista si no hay una activa equivalente.
 
@@ -472,6 +494,8 @@ def seed_demo(currency: str = 'ARS', password: str = DEMO_PASSWORD) -> DemoSumma
         'demo-deposito-carla',
         'Depósito inicial de la inversor',
     )
+
+    _ensure_backup_account(borrower, currency)
 
     offer = _ensure_offer(lender, currency)
     summary.offer_id = str(offer.id)

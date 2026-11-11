@@ -9,6 +9,9 @@ LEDGER_SIMULATED_DEPOSITS_ENABLED = True
 # The demo mode is off in the tests: they enable it explicitly when they need it
 DEMO_MODE = False
 
+# El requisito de cuenta de respaldo se prueba puntualmente con override_settings.
+REPAYMENT_SOURCE_REQUIRED = False
+
 # Use the test runner
 TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 

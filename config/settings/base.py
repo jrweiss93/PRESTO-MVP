@@ -147,6 +147,8 @@ SPECTACULAR_SETTINGS = {
         'PositionStatusEnum': 'apps.investments.models.Position.Status',
         'KindEnum': 'apps.ledger.models.Account.Kind',
         'PrestoProfileKindEnum': 'apps.identity.models.PrestoProfile.Kind',
+        'BackupAccountProviderEnum': 'apps.identity.models.BackupAccount.Provider',
+        'BackupAccountStatusEnum': 'apps.identity.models.BackupAccount.Status',
     },
 }
 
@@ -280,6 +282,13 @@ CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 # deposits are enabled and the ledger system check allows them). Without it,
 # the simulated deposits are only for local/test environments.
 DEMO_MODE = os.getenv('DEMO_MODE', 'False').strip().lower() == 'true'
+
+# Cuentas de respaldo: en la demo se exige una cuenta verificada para aceptar
+# un préstamo. En tests queda apagado salvo que el test lo active.
+REPAYMENT_SOURCE_REQUIRED = DEMO_MODE or (
+    os.getenv('REPAYMENT_SOURCE_REQUIRED', 'False').strip().lower() == 'true'
+)
+BACKUP_ACCOUNT_VERIFICATION_CODE = os.getenv('BACKUP_ACCOUNT_VERIFICATION_CODE', '123456')
 
 # Ledger: simulated deposits are only for local/test environments
 LEDGER_SIMULATED_DEPOSITS_ENABLED = DEMO_MODE or (

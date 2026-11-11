@@ -163,6 +163,21 @@ def get_kyc_status(user_id: uuid.UUID) -> str:
     return verification.status
 
 
+def get_backup_accounts_summary(user_id: uuid.UUID) -> list[dict]:
+    """Resume las cuentas de respaldo del usuario para Presti."""
+    return [
+        {
+            'provider': account.get_provider_display(),
+            'display_name': account.display_name,
+            'masked_ref': account.masked_ref,
+            'currency': account.currency,
+            'declared_balance': str(account.declared_balance),
+            'status': account.get_status_display(),
+        }
+        for account in identity_selectors.list_backup_accounts_for_user(user_id=user_id)
+    ]
+
+
 def get_profile_kind(user_id: uuid.UUID) -> str | None:
     """Devuelve el perfil activo del usuario, o None si no tiene."""
     profile = identity_selectors.get_active_profile(user_id=user_id)

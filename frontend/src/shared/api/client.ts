@@ -149,6 +149,10 @@ export function apiPost<T>(path: string, body?: unknown): Promise<T> {
   });
 }
 
+export function apiDelete<T = void>(path: string): Promise<T> {
+  return apiRequest<T>(path, { method: "DELETE" });
+}
+
 export function apiPatch<T>(path: string, body: unknown): Promise<T> {
   return apiRequest<T>(path, {
     method: "PATCH",

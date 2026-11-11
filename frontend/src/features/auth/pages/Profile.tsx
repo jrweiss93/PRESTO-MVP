@@ -1,9 +1,31 @@
 import { useEffect, useState, type FormEvent } from "react";
 import * as api from "@/shared/api/endpoints";
 import { ApiError } from "@/shared/api/client";
-import type { KYCVerification } from "@/shared/api/types";
+import type { BackupAccount, KYCVerification } from "@/shared/api/types";
 import { useAuth } from "@/features/auth/AuthContext";
-import { KYC_STATUS_LABELS, formatDateTime } from "@/shared/lib/format";
+import {
+  KYC_STATUS_LABELS,
+  formatDateTime,
+  formatMoney,
+} from "@/shared/lib/format";
+
+const PROVIDERS = [
+  { value: "bank", label: "Banco" },
+  { value: "wallet", label: "Billetera virtual" },
+  { value: "mercado_pago", label: "Mercado Pago" },
+  { value: "binance", label: "Binance" },
+  { value: "other", label: "Otra" },
+];
+
+const BACKUP_STATUS_BADGE: Record<string, string> = {
+  pending: "warning",
+  verified: "success",
+  rejected: "danger",
+};
+
+function providerLabel(value: string) {
+  return PROVIDERS.find((provider) => provider.value === value)?.label ?? value;
+}
 
 const KYC_BADGE: Record<string, string> = {
   pending: "warning",
@@ -14,6 +36,7 @@ const KYC_BADGE: Record<string, string> = {
 export default function Profile() {
   const { user, refreshUser, logout } = useAuth();
   const [kyc, setKyc] = useState<KYCVerification | null>(null);
+  const [backupAccounts, setBackupAccounts] = useState<BackupAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -38,10 +61,38 @@ export default function Profile() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
 
+  const [backupForm, setBackupForm] = useState({
+    provider: "bank",
+    display_name: "",
+    account_ref: "",
+    currency: "ARS",
+    declared_balance: "",
+  });
+  const [backupCodes, setBackupCodes] = useState<Record<string, string>>({});
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [closingAccount, setClosingAccount] = useState(false);
+
+  async function loadBackupAccounts() {
+    try {
+      setBackupAccounts(await api.listBackupAccounts());
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudieron cargar las cuentas de respaldo.",
+      );
+    }
+  }
+
   useEffect(() => {
     (async () => {
       try {
-        setKyc(await api.getKyc());
+        const [verification, accounts] = await Promise.all([
+          api.getKyc().catch(() => null),
+          api.listBackupAccounts().catch(() => [] as BackupAccount[]),
+        ]);
+        setKyc(verification);
+        setBackupAccounts(accounts);
       } catch (err) {
         setError(
           err instanceof ApiError
@@ -179,6 +230,113 @@ export default function Profile() {
     }
   }
 
+  async function handleCreateBackup(e: FormEvent) {
+    e.preventDefault();
+    setBackupBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const created = await api.createBackupAccount({
+        provider: backupForm.provider,
+        display_name: backupForm.display_name,
+        account_ref: backupForm.account_ref,
+        currency: backupForm.currency,
+        declared_balance: backupForm.declared_balance || "0",
+      });
+      setBackupForm({
+        provider: "bank",
+        display_name: "",
+        account_ref: "",
+        currency: "ARS",
+        declared_balance: "",
+      });
+      await loadBackupAccounts();
+      setNotice(
+        created.verification_hint
+          ? `Cuenta vinculada. ${created.verification_hint}`
+          : "Cuenta vinculada. Verificala para usarla como respaldo.",
+      );
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo vincular la cuenta de respaldo.",
+      );
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
+  async function handleVerifyBackup(accountId: string) {
+    const code = backupCodes[accountId]?.trim();
+    if (!code) {
+      setError("Ingresá el código de verificación.");
+      return;
+    }
+    setBackupBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await api.verifyBackupAccount(accountId, code);
+      setBackupCodes((current) => ({ ...current, [accountId]: "" }));
+      await loadBackupAccounts();
+      setNotice("Cuenta de respaldo verificada.");
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo verificar la cuenta de respaldo.",
+      );
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
+  async function handleDeleteBackup(accountId: string) {
+    if (!window.confirm("¿Desvincular esta cuenta de respaldo?")) return;
+    setBackupBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await api.deleteBackupAccount(accountId);
+      await loadBackupAccounts();
+      setNotice("Cuenta de respaldo desvinculada.");
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo desvincular la cuenta de respaldo.",
+      );
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
+  async function handleCloseAccount() {
+    if (
+      !window.confirm(
+        "¿Cerrar tu cuenta? No vas a poder volver a ingresar con este email.",
+      )
+    ) {
+      return;
+    }
+    setClosingAccount(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await api.closeAccount();
+      await logout();
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo cerrar la cuenta.",
+      );
+    } finally {
+      setClosingAccount(false);
+    }
+  }
+
   return (
     <>
       <h1>Perfil y KYC</h1>
@@ -223,6 +381,184 @@ export default function Profile() {
             </button>
           </div>
         )}
+      </div>
+
+      <div className="card" id="respaldo">
+        <h2>Cuentas de respaldo</h2>
+        <p className="small text-muted mt-0">
+          Para aceptar un préstamo necesitás al menos una cuenta verificada. La
+          verificación de la demo es simulada: no se consulta ni debita dinero
+          real. Solo guardamos proveedor, referencia enmascarada y saldo
+          informado; nunca claves ni tokens.
+        </p>
+
+        {backupAccounts.length === 0 ? (
+          <div className="empty-state">
+            Todavía no vinculaste ninguna cuenta de respaldo.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {backupAccounts.map((account) => (
+              <div
+                key={account.id}
+                className="rounded-xl border border-gray-200 p-4"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <strong>{account.display_name}</strong>{" "}
+                    <span className="small text-muted">
+                      {providerLabel(account.provider)} · {account.masked_ref} ·{" "}
+                      {account.currency}
+                    </span>
+                  </div>
+                  <span
+                    className={`badge ${BACKUP_STATUS_BADGE[account.status] ?? "info"}`}
+                  >
+                    {account.status === "verified"
+                      ? "Verificada"
+                      : account.status === "pending"
+                        ? "Pendiente"
+                        : "Rechazada"}
+                  </span>
+                </div>
+                <div className="small text-muted mt-1">
+                  Saldo informado:{" "}
+                  {formatMoney(account.declared_balance, account.currency)}
+                  {account.verified_at
+                    ? ` · Verificada ${formatDateTime(account.verified_at)}`
+                    : ""}
+                </div>
+
+                {account.status === "pending" && (
+                  <div className="mt-3 flex flex-wrap items-end gap-2">
+                    <label className="field mb-0">
+                      Código de verificación
+                      <input
+                        type="text"
+                        value={backupCodes[account.id] ?? ""}
+                        onChange={(event) =>
+                          setBackupCodes((current) => ({
+                            ...current,
+                            [account.id]: event.target.value,
+                          }))
+                        }
+                        placeholder="123456"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => handleVerifyBackup(account.id)}
+                      disabled={backupBusy}
+                    >
+                      Verificar
+                    </button>
+                    {account.verification_hint && (
+                      <span className="small text-muted">
+                        {account.verification_hint}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    className="btn secondary"
+                    onClick={() => handleDeleteBackup(account.id)}
+                    disabled={backupBusy}
+                  >
+                    Desvincular
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <form onSubmit={handleCreateBackup} className="mt-4">
+          <div className="form-grid">
+            <label className="field">
+              Proveedor
+              <select
+                value={backupForm.provider}
+                onChange={(event) =>
+                  setBackupForm({ ...backupForm, provider: event.target.value })
+                }
+              >
+                {PROVIDERS.map((provider) => (
+                  <option key={provider.value} value={provider.value}>
+                    {provider.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              Nombre de la cuenta
+              <input
+                type="text"
+                value={backupForm.display_name}
+                onChange={(event) =>
+                  setBackupForm({
+                    ...backupForm,
+                    display_name: event.target.value,
+                  })
+                }
+                placeholder="Ej. Banco Galicia"
+                required
+              />
+            </label>
+            <label className="field">
+              Referencia (CBU/CVU/alias/email)
+              <input
+                type="text"
+                value={backupForm.account_ref}
+                onChange={(event) =>
+                  setBackupForm({
+                    ...backupForm,
+                    account_ref: event.target.value,
+                  })
+                }
+                placeholder="Se muestra enmascarada"
+                required
+              />
+            </label>
+            <label className="field">
+              Moneda
+              <select
+                value={backupForm.currency}
+                onChange={(event) =>
+                  setBackupForm({ ...backupForm, currency: event.target.value })
+                }
+              >
+                <option value="ARS">ARS</option>
+                <option value="USD">USD</option>
+              </select>
+            </label>
+            <label className="field">
+              Saldo informado
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={backupForm.declared_balance}
+                onChange={(event) =>
+                  setBackupForm({
+                    ...backupForm,
+                    declared_balance: event.target.value,
+                  })
+                }
+                placeholder="Ej. 50000"
+                required
+              />
+            </label>
+          </div>
+          <div className="btn-row" style={{ marginTop: "0.9rem" }}>
+            <button className="btn" type="submit" disabled={backupBusy}>
+              {backupBusy ? "Guardando…" : "Vincular cuenta"}
+            </button>
+          </div>
+        </form>
       </div>
 
       <div className="card">
@@ -440,6 +776,23 @@ export default function Profile() {
             </button>
           </div>
         </form>
+      </div>
+
+      <div className="card">
+        <h2>Cerrar cuenta</h2>
+        <p className="small text-muted">
+          La baja es lógica: se conserva el historial financiero por auditoría.
+          No se puede cerrar la cuenta con préstamos activos, en mora o
+          inversiones abiertas.
+        </p>
+        <button
+          type="button"
+          className="btn secondary"
+          onClick={handleCloseAccount}
+          disabled={closingAccount}
+        >
+          {closingAccount ? "Cerrando…" : "Cerrar mi cuenta"}
+        </button>
       </div>
     </>
   );

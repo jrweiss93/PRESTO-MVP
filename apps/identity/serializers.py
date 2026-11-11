@@ -3,7 +3,14 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.identity.models import BiometricCheck, KYCVerification, PrestoProfile, Profile, User
+from apps.identity.models import (
+    BackupAccount,
+    BiometricCheck,
+    KYCVerification,
+    PrestoProfile,
+    Profile,
+    User,
+)
 from apps.identity.selectors import (
     get_active_profile,
     get_latest_biometric_check,
@@ -235,3 +242,71 @@ class DetailMessageSerializer(serializers.Serializer):
     """Mensaje informativo de una operación sin más datos."""
 
     detail = serializers.CharField()
+
+
+class BackupAccountSerializer(serializers.ModelSerializer):
+    """Cuenta de respaldo con el identificador enmascarado."""
+
+    masked_ref = serializers.SerializerMethodField()
+    verification_hint = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BackupAccount
+        fields = [
+            'id',
+            'provider',
+            'display_name',
+            'masked_ref',
+            'verification_hint',
+            'currency',
+            'declared_balance',
+            'status',
+            'verified_at',
+            'consent_at',
+            'created_at',
+        ]
+        read_only_fields = fields
+
+    def get_masked_ref(self, account: BackupAccount) -> str:
+        """Devuelve la referencia sin los primeros dígitos."""
+        return account.masked_ref
+
+    def get_verification_hint(self, account: BackupAccount) -> str | None:
+        """En la demo muestra el código fijo de verificación."""
+        from django.conf import settings
+
+        if account.status != BackupAccount.Status.PENDING or not settings.DEMO_MODE:
+            return None
+        return f'Código demo: {settings.BACKUP_ACCOUNT_VERIFICATION_CODE}'
+
+
+class BackupAccountCreateSerializer(serializers.Serializer):
+    """Datos para vincular una cuenta de respaldo."""
+
+    provider = serializers.ChoiceField(choices=BackupAccount.Provider.choices)
+    display_name = serializers.CharField(max_length=80)
+    account_ref = serializers.CharField(max_length=64, write_only=True)
+    currency = serializers.ChoiceField(choices=BackupAccount.Currency.choices)
+    declared_balance = serializers.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        min_value=0,
+    )
+
+
+class BackupAccountVerifySerializer(serializers.Serializer):
+    """Código de verificación de la cuenta de respaldo."""
+
+    code = serializers.CharField(max_length=12)
+
+
+class CloseAccountSerializer(serializers.Serializer):
+    """Confirmación explícita para cerrar la cuenta."""
+
+    confirm = serializers.BooleanField()
+
+    def validate_confirm(self, value):
+        """Exige confirmar la acción."""
+        if value is not True:
+            raise serializers.ValidationError('Confirmá que querés cerrar la cuenta.')
+        return value

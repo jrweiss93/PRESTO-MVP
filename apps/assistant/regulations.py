@@ -17,6 +17,7 @@ CATEGORIES = [
     {'id': 'inversion', 'label': 'Inversión y oferta pública'},
     {'id': 'consumidor', 'label': 'Derechos del consumidor'},
     {'id': 'antilavado', 'label': 'Prevención de lavado (PLA/FT)'},
+    {'id': 'integraciones', 'label': 'Integraciones y pagos'},
     {'id': 'general', 'label': 'General'},
 ]
 
@@ -167,6 +168,43 @@ REGULATIONS = [
             }
         ],
         'applies_to': 'Todos los usuarios de la plataforma.',
+    },
+    {
+        'id': 'integraciones-pagos',
+        'category': 'integraciones',
+        'title': 'Integraciones con bancos, billeteras y exchanges',
+        'summary': (
+            'Vincular una cuenta externa para leer saldos o debitar pagos exige '
+            'consentimiento del usuario, un proveedor habilitado y controles de '
+            'seguridad. No se resuelve solo con una API key del exchange.'
+        ),
+        'key_points': [
+            'Open banking: el proveedor accede con consentimiento y finalidad '
+            'declarada; Presto no debe guardar credenciales bancarias.',
+            'Débito bancario: requiere DEBIN, un PSP o un convenio; no es lo mismo '
+            'que leer el saldo por una API.',
+            'Billeteras como Mercado Pago usan OAuth y preapproval para débitos recurrentes.',
+            'Binance permite lectura de saldos con permisos mínimos, pero no '
+            'permite débitos automáticos de terceros; Binance Pay necesita que el '
+            'usuario confirme.',
+            'Los datos personales se rigen por la Ley 25.326: consentimiento, '
+            'seguridad y derecho de acceso/rectificación.',
+            'Operar con dinero real requiere contratos, homologación técnica y '
+            'encuadre en las normas del BCRA y del mercado de capitales.',
+        ],
+        'norms': [
+            {'code': 'Ley 25.326', 'note': 'Protección de datos personales.'},
+            {'code': 'BCRA', 'note': 'Pagos, PSP y proveedores no financieros.'},
+            {'code': 'Ley 26.831', 'note': 'Mercado de capitales.'},
+        ],
+        'links': [
+            {'label': 'BCRA', 'url': 'https://www.bcra.gob.ar/'},
+            {
+                'label': 'AAIP (datos personales)',
+                'url': 'https://www.argentina.gob.ar/aaip',
+            },
+        ],
+        'applies_to': 'Usuarios que vinculan cuentas externas y plataformas que integran pagos.',
     },
 ]
 

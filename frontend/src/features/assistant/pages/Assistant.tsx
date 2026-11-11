@@ -27,6 +27,7 @@ const SUGGESTIONS = [
   "Últimas noticias",
   "¿Qué necesito para prestar?",
   "¿Puedo captar fondos?",
+  "¿Cómo vinculo una cuenta de respaldo?",
 ];
 
 const INVESTOR_SUGGESTIONS = [
@@ -38,6 +39,7 @@ const INVESTOR_SUGGESTIONS = [
   "No me deja invertir",
   "¿Qué es invertir en Presto?",
   "Marco legal de inversiones",
+  "¿Se puede integrar Binance?",
 ];
 
 const GREETING =
@@ -634,6 +636,7 @@ function RegulationsPanel({
     inversion: "bg-success-50 text-success-600 border-success-100",
     consumidor: "bg-gray-100 text-gray-600 border-gray-200",
     antilavado: "bg-error-50 text-error-600 border-error-100",
+    integraciones: "bg-brand-50 text-brand-600 border-brand-200",
     general: "bg-gray-100 text-gray-600 border-gray-200",
   };
 

@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
@@ -221,3 +222,72 @@ class BiometricCheck(BaseModel):
 
     def __str__(self):
         return f'BiometricCheck<{self.user_id}:{self.status}>'
+
+
+class BackupAccount(BaseModel):
+    """Cuenta externa declarada como respaldo de repago.
+
+    Solo guarda un identificador enmascarado y un saldo informado. No guarda
+    credenciales, tokens ni datos bancarios completos. La verificación es
+    simulada en la demo (código fijo) y no acredita la titularidad real.
+    """
+
+    class Provider(models.TextChoices):
+        BANK = 'bank', 'Banco'
+        WALLET = 'wallet', 'Billetera virtual'
+        MERCADO_PAGO = 'mercado_pago', 'Mercado Pago'
+        BINANCE = 'binance', 'Binance'
+        OTHER = 'other', 'Otra'
+
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pendiente'
+        VERIFIED = 'verified', 'Verificada'
+        REJECTED = 'rejected', 'Rechazada'
+
+    class Currency(models.TextChoices):
+        ARS = 'ARS', 'Peso argentino'
+        USD = 'USD', 'Dólar'
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='backup_accounts')
+    provider = models.CharField(max_length=16, choices=Provider.choices)
+    display_name = models.CharField(max_length=80)
+    account_ref = models.CharField(
+        max_length=64,
+        help_text='Identificador de la cuenta (se muestra enmascarado).',
+    )
+    currency = models.CharField(max_length=3, choices=Currency.choices)
+    declared_balance = models.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text='Saldo informado por el usuario; no se consulta al proveedor.',
+    )
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    verified_at = models.DateTimeField(null=True, blank=True)
+    consent_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'provider', 'account_ref'],
+                name='identity_backupaccount_unique_per_user',
+            ),
+            models.CheckConstraint(
+                condition=models.Q(declared_balance__gte=0),
+                name='identity_backupaccount_balance_non_negative',
+            ),
+        ]
+
+    @property
+    def masked_ref(self) -> str:
+        """Devuelve el identificador con solo los últimos cuatro caracteres."""
+        ref = self.account_ref or ''
+        return f'****{ref[-4:]}' if len(ref) > 4 else '****'
+
+    def __str__(self):
+        return f'BackupAccount<{self.user_id}:{self.provider}:{self.status}>'

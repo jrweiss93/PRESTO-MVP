@@ -1,9 +1,14 @@
 """Permisos y límites de tasa de la app identity."""
 
+from django.conf import settings
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 from rest_framework.throttling import ScopedRateThrottle
 
-from apps.identity.selectors import get_active_profile, is_kyc_approved
+from apps.identity.selectors import (
+    get_active_profile,
+    has_verified_backup_account,
+    is_kyc_approved,
+)
 
 
 class LoginThrottle(ScopedRateThrottle):
@@ -60,6 +65,19 @@ class KycApprovedForUnsafeMethods:
         if self.request.method not in SAFE_METHODS:
             permissions.append(IsKycApproved())
         return permissions
+
+
+class HasVerifiedBackupAccount(BasePermission):
+    """Exige una cuenta de respaldo verificada para aceptar un préstamo."""
+
+    message = 'Vinculá y verificá una cuenta de respaldo antes de aceptar un préstamo.'
+
+    def has_permission(self, request, view) -> bool:
+        """Devuelve True si la exigencia está apagada o hay una cuenta verificada."""
+        if not settings.REPAYMENT_SOURCE_REQUIRED:
+            return True
+        user = request.user
+        return bool(user and user.is_authenticated and has_verified_backup_account(user_id=user.id))
 
 
 class IsActiveProfile(BasePermission):

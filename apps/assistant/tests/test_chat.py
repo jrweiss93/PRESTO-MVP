@@ -181,6 +181,25 @@ def test_chat_fallback_shows_the_investor_menu():
     assert 'Qué productos hay' in response.data['reply']
 
 
+def test_chat_explains_backup_accounts(client):
+    """Presti explica cómo vincular una cuenta de respaldo."""
+    response = ask(client, '¿Cómo vinculo una cuenta de respaldo?')
+
+    assert response.status_code == 200
+    assert 'Cuenta de respaldo' in response.data['reply']
+    assert 'Perfil y KYC' in response.data['reply']
+
+
+def test_chat_explains_integrations_and_regulation(client):
+    """Presti aclara el alcance de integrar Binance y bancos."""
+    response = ask(client, '¿Se puede integrar Binance?')
+
+    assert response.status_code == 200
+    assert 'Binance' in response.data['reply']
+    assert 'no permite' in response.data['reply']
+    assert 'Ley 25.326' in response.data['reply']
+
+
 def test_chat_explains_investing_in_presto(client):
     """Presti explica el producto 'Invertí en Presto'."""
     response = ask(client, '¿Qué es invertir en Presto?')

@@ -3,7 +3,14 @@
 from django.contrib import admin
 
 from apps.identity.exceptions import InvalidKYCResolution, KYCAlreadyResolved
-from apps.identity.models import BiometricCheck, KYCVerification, PrestoProfile, Profile, User
+from apps.identity.models import (
+    BackupAccount,
+    BiometricCheck,
+    KYCVerification,
+    PrestoProfile,
+    Profile,
+    User,
+)
 from apps.identity.services import resolve_kyc
 
 
@@ -34,6 +41,48 @@ class PrestoProfileAdmin(admin.ModelAdmin):
     list_filter = ['kind', 'is_active']
     search_fields = ['user__email']
     readonly_fields = ['id']
+
+
+@admin.register(BackupAccount)
+class BackupAccountAdmin(admin.ModelAdmin):
+    """Cuentas de respaldo declaradas por los usuarios (solo lectura)."""
+
+    list_display = [
+        'id',
+        'user',
+        'provider',
+        'display_name',
+        'masked_ref',
+        'currency',
+        'declared_balance',
+        'status',
+        'verified_at',
+    ]
+    list_filter = ['provider', 'status', 'currency']
+    search_fields = ['user__email', 'display_name']
+    readonly_fields = [
+        'id',
+        'user',
+        'provider',
+        'display_name',
+        'account_ref',
+        'currency',
+        'declared_balance',
+        'status',
+        'verified_at',
+        'consent_at',
+        'created_at',
+        'updated_at',
+    ]
+
+    def has_add_permission(self, request):
+        """Las cuentas se crean solo por API/servicio."""
+        return False
+
+    @admin.display(description='Referencia')
+    def masked_ref(self, obj):
+        """Muestra el identificador enmascarado."""
+        return obj.masked_ref
 
 
 @admin.register(BiometricCheck)

@@ -93,6 +93,21 @@ def test_the_seed_creates_the_presto_product_and_does_not_invest_for_ana():
     assert not Position.objects.filter(user_id=ana.id).exists()
 
 
+def test_the_seed_leaves_a_verified_backup_account_for_ana():
+    """El prestatario de la demo arranca con una cuenta de respaldo verificada."""
+    from django.apps import apps as django_apps
+
+    seed_demo()
+    User = django_apps.get_model('identity', 'User')
+    BackupAccount = django_apps.get_model('identity', 'BackupAccount')
+    ana = User.objects.get(email=DEMO_BORROWER)
+
+    assert BackupAccount.objects.filter(
+        user=ana,
+        status='verified',
+    ).exists()
+
+
 def test_the_scenario_leaves_a_loan_with_a_paid_installment():
     """El préstamo del escenario tiene la primera cuota pagada."""
     from apps.loans import selectors as loan_selectors
