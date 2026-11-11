@@ -28,6 +28,7 @@ class Notification(BaseModel):
         INVESTMENT_SETTLED = 'investment_settled', 'Inversión liquidada'
         BUDGET_ALERT = 'budget_alert', 'Alerta de presupuesto'
         LOAN_CREATED = 'loan_created', 'Préstamo creado'
+        INSTALLMENT_PAID = 'installment_paid', 'Cuota cobrada'
 
     class Status(models.TextChoices):
         PENDING = 'pending', 'Pendiente'

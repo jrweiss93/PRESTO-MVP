@@ -140,6 +140,24 @@ def test_receiver_does_not_fail_when_the_email_broker_is_down(
     ).exists()
 
 
+def test_receiver_creates_the_installment_paid_notification():
+    """El receptor de la cuota cobrada avisa solo al prestamista."""
+    from apps.notifications.receivers import handle_installment_paid
+
+    lender_id = uuid.uuid4()
+    handle_installment_paid(
+        sender=None,
+        installment_id=REFERENCE_ID,
+        lender_user_id=lender_id,
+    )
+
+    assert Notification.objects.filter(
+        user_id=lender_id,
+        event_type=Notification.EventType.INSTALLMENT_PAID,
+        reference_id=REFERENCE_ID,
+    ).exists()
+
+
 def test_receiver_creates_the_loan_created_notifications():
     """El receptor del préstamo avisa al prestamista y al prestatario."""
     from apps.notifications.receivers import handle_loan_created

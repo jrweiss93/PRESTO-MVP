@@ -9,6 +9,9 @@ from django.dispatch import Signal
 # Préstamo creado al aceptarse una oferta (lo reciben el prestatario y el prestamista).
 loan_created = Signal()
 
+# Cuota pagada (la recibe el prestamista).
+installment_paid = Signal()
+
 # Cuota que está por vencer (la recibe el prestatario).
 installment_due_soon = Signal()
 

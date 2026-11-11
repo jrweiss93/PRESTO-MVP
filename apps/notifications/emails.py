@@ -28,7 +28,25 @@ def build_email(notification: Notification) -> tuple[str, str]:
         return _budget_alert_email(notification)
     if notification.event_type == Notification.EventType.LOAN_CREATED:
         return _loan_created_email(notification)
+    if notification.event_type == Notification.EventType.INSTALLMENT_PAID:
+        return _installment_paid_email(notification)
     return SUBJECT_FALLBACK, 'Tenés un aviso nuevo en Presto.\n'
+
+
+def _installment_paid_email(notification: Notification) -> tuple[str, str]:
+    """Email de la cuota cobrada por el prestamista."""
+    from apps.loans.selectors import get_installment
+
+    installment = get_installment(notification.reference_id)
+    if installment is None:
+        return SUBJECT_FALLBACK, 'Se cobró una cuota de un préstamo en Presto.\n'
+    body = (
+        'Hola,\n\n'
+        f'El prestatario pagó la cuota {installment.number} del préstamo.\n'
+        f'Importe: {installment.amount} {installment.loan.currency}.\n\n'
+        'Podés ver el detalle del préstamo desde Presto.\n'
+    )
+    return 'Presto: se cobró una cuota', body
 
 
 def _loan_created_email(notification: Notification) -> tuple[str, str]:

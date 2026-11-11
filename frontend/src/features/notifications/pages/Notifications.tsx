@@ -12,6 +12,7 @@ const EVENT_LABELS: Record<string, string> = {
   investment_settled: "Inversión liquidada",
   budget_alert: "Alerta de presupuesto",
   loan_created: "Préstamo creado",
+  installment_paid: "Cuota cobrada",
 };
 
 const EVENT_ICONS: Record<string, string> = {
@@ -20,6 +21,7 @@ const EVENT_ICONS: Record<string, string> = {
   investment_settled: "✅",
   budget_alert: "📊",
   loan_created: "🤝",
+  installment_paid: "💰",
 };
 
 export default function Notifications() {
@@ -68,8 +70,8 @@ export default function Notifications() {
     if (notification.read_at == null) {
       await handleRead(notification.id);
     }
-    if (notification.event_type === "loan_created") {
-      navigate(`/prestamos/${notification.reference_id}`);
+    if (notification.loan_id) {
+      navigate(`/prestamos/${notification.loan_id}`);
     }
   }
 
@@ -132,7 +134,7 @@ export default function Notifications() {
                     <span className="mt-0.5 block text-theme-xs text-gray-500">
                       {formatDateTime(notification.created_at)}
                     </span>
-                    {notification.event_type === "loan_created" && (
+                    {notification.loan_id && (
                       <span className="mt-1 block text-theme-xs font-medium text-brand-500">
                         Ver préstamo →
                       </span>

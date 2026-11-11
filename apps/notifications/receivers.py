@@ -13,7 +13,12 @@ from django.dispatch import receiver
 
 from apps.budgets.signals import budget_alert
 from apps.investments.signals import investment_settled
-from apps.loans.signals import installment_due_soon, installment_overdue, loan_created
+from apps.loans.signals import (
+    installment_due_soon,
+    installment_overdue,
+    installment_paid,
+    loan_created,
+)
 from apps.notifications.models import Notification
 from apps.notifications.services import create_notification
 from apps.notifications.tasks import send_notification_email
@@ -60,6 +65,16 @@ def handle_loan_created(sender, loan_id, borrower_user_id, lender_user_id, **kwa
             event_type=Notification.EventType.LOAN_CREATED,
             reference_id=loan_id,
         )
+
+
+@receiver(installment_paid)
+def handle_installment_paid(sender, installment_id, lender_user_id, **kwargs):
+    """Avisa al prestamista que el prestatario pagó una cuota."""
+    dispatch_notification(
+        user_id=lender_user_id,
+        event_type=Notification.EventType.INSTALLMENT_PAID,
+        reference_id=installment_id,
+    )
 
 
 @receiver(installment_due_soon)

@@ -213,6 +213,14 @@ def _run_the_flow(currency):
     assert response.status_code == 200, response.data
     assert response.data['status'] == 'paid'
 
+    # El prestamista recibe el aviso de la cuota cobrada y puede abrir el préstamo
+    response = lender_client.get('/api/v1/notifications/')
+    assert response.status_code == 200, response.data
+    lender_events = {item['event_type']: item for item in response.data['results']}
+    assert 'loan_created' in lender_events
+    assert 'installment_paid' in lender_events
+    assert lender_events['installment_paid']['loan_id'] == loan_id
+
     # 8. Inversión a plazo fijo (perfil inversor)
     product = create_investment_product(currency)
     response = investor_client.post(

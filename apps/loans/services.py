@@ -245,6 +245,11 @@ def pay_installment(
             number,
             borrower_user_id,
         )
+        signals.installment_paid.send(
+            sender=None,
+            installment_id=installment.id,
+            lender_user_id=loan.lender_user_id,
+        )
         return installment
 
 

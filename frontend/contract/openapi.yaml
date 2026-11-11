@@ -1988,6 +1988,7 @@ components:
       - investment_settled
       - budget_alert
       - loan_created
+      - installment_paid
       type: string
       description: |-
         * `installment_due_soon` - Cuota por vencer
@@ -1995,6 +1996,7 @@ components:
         * `investment_settled` - Inversión liquidada
         * `budget_alert` - Alerta de presupuesto
         * `loan_created` - Préstamo creado
+        * `installment_paid` - Cuota cobrada
     Expense:
       type: object
       description: 'Gasto personal: un movimiento del ledger con su categoría.'
@@ -2791,6 +2793,11 @@ components:
           type: string
           format: uuid
           readOnly: true
+        loan_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
         status:
           allOf:
           - $ref: '#/components/schemas/NotificationStatusEnum'
