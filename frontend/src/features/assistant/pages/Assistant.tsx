@@ -30,12 +30,14 @@ const SUGGESTIONS = [
 ];
 
 const INVESTOR_SUGGESTIONS = [
-  "¿Cómo está bitcoin?",
-  "¿Cómo está el mercado?",
+  "¿Cómo invierto paso a paso?",
+  "¿Qué productos hay?",
+  "¿Qué riesgos tiene?",
+  "¿Puedo retirar antes?",
+  "¿Cuánto voy a ganar?",
+  "No me deja invertir",
   "¿Qué es invertir en Presto?",
-  "¿Cómo van mis inversiones?",
   "Marco legal de inversiones",
-  "¿Qué acciones me convienen?",
 ];
 
 const GREETING =
@@ -62,10 +64,12 @@ function changeBadge(pct: number | null | undefined) {
 }
 
 function InvestorGuide({
+  loading,
   kyc,
   accounts,
   products,
 }: {
+  loading: boolean;
   kyc: KYCVerification | null;
   accounts: Account[];
   products: InvestmentProduct[];
@@ -104,6 +108,14 @@ function InvestorGuide({
         : current,
     null,
   );
+
+  if (loading) {
+    return (
+      <div className="card mb-6">
+        <div className="loading">Cargando tu perfil de inversor…</div>
+      </div>
+    );
+  }
 
   const warnings: string[] = [];
   if (product && hasAmount && amountNumber < minimum) {
@@ -817,6 +829,7 @@ export default function Assistant() {
   const [investorKyc, setInvestorKyc] = useState<KYCVerification | null>(null);
   const [investorAccounts, setInvestorAccounts] = useState<Account[]>([]);
   const [investorProducts, setInvestorProducts] = useState<InvestmentProduct[]>([]);
+  const [investorLoading, setInvestorLoading] = useState(true);
 
   useEffect(() => {
     if (!isInvestor) return;
@@ -825,12 +838,16 @@ export default function Assistant() {
       api.getKyc().catch(() => null),
       api.listAccounts().catch(() => [] as Account[]),
       api.listProducts().catch(() => [] as InvestmentProduct[]),
-    ]).then(([kyc, accounts, products]) => {
-      if (cancelled) return;
-      setInvestorKyc(kyc);
-      setInvestorAccounts(accounts);
-      setInvestorProducts(products);
-    });
+    ])
+      .then(([kyc, accounts, products]) => {
+        if (cancelled) return;
+        setInvestorKyc(kyc);
+        setInvestorAccounts(accounts);
+        setInvestorProducts(products);
+      })
+      .finally(() => {
+        if (!cancelled) setInvestorLoading(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -863,6 +880,7 @@ export default function Assistant() {
 
       {isInvestor && (
         <InvestorGuide
+          loading={investorLoading}
           kyc={investorKyc}
           accounts={investorAccounts}
           products={investorProducts}
