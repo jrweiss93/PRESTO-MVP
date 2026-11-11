@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthContext";
+import Mascot from "@/shared/ui/Mascot";
 import {
   CartIcon,
   DollarLineIcon,
@@ -83,13 +84,14 @@ export default function Landing() {
       </div>
 
       <main>
-        <section className="mx-auto grid max-w-6xl gap-10 px-5 py-14 lg:grid-cols-2 lg:items-center lg:py-20">
+        <section className="landing-hero mx-auto grid max-w-6xl gap-10 px-5 py-14 lg:grid-cols-2 lg:items-center lg:py-20">
           <div>
             <span className="inline-flex rounded-full bg-brand-50 px-3 py-1 text-theme-xs font-medium text-brand-600">
               Finanzas P2P · ARS y USD
             </span>
             <h1 className="mt-4 text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
-              Prestá, pedí prestado e invertí de forma simple.
+              Prestá, pedí prestado e invertí de forma{" "}
+              <span className="text-gradient-brand">simple.</span>
             </h1>
             <p className="mt-4 max-w-xl text-base text-gray-600">
               Presto conecta personas que quieren prestar con personas que
@@ -114,14 +116,22 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6">
-            <h2 className="text-base font-semibold text-gray-800">
-              Cuentas de demostración
-            </h2>
-            <p className="mt-1 text-theme-sm text-gray-600">
-              Entrá con cualquiera de estos usuarios para ver el circuito
-              completo.
-            </p>
+          <div className="landing-demo-card rounded-2xl p-6">
+            <div className="flex items-center gap-3">
+              <Mascot
+                mood="happy"
+                className="presti-float h-12 w-12 shrink-0"
+              />
+              <div>
+                <h2 className="text-base font-semibold text-gray-800">
+                  Cuentas de demostración
+                </h2>
+                <p className="mt-1 text-theme-sm text-gray-600">
+                  Entrá con cualquiera de estos usuarios para ver el circuito
+                  completo.
+                </p>
+              </div>
+            </div>
             <ul className="mt-4 space-y-2">
               {DEMO_USERS.map((demo) => (
                 <li

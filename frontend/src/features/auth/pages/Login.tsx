@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthContext";
 import { ApiError } from "@/shared/api/client";
 import { EyeCloseIcon, EyeIcon } from "@/shared/ui/icons";
+import Mascot from "@/shared/ui/Mascot";
 
 export default function Login() {
   const { login } = useAuth();
@@ -30,7 +31,7 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      <div className="flex w-full flex-col justify-between bg-brand-500 px-6 py-10 sm:px-10 lg:w-2/5 lg:py-12 xl:w-1/3">
+      <div className="auth-hero flex w-full flex-col justify-between px-6 py-10 sm:px-10 lg:w-2/5 lg:py-12 xl:w-1/3">
         <Link to="/" className="text-title-sm font-semibold text-white">
           Presto<span className="text-brand-100">.</span>
         </Link>
@@ -43,6 +44,13 @@ export default function Login() {
             Completá tu KYC, publicá o financiá ofertas y seguí todo en tiempo
             real.
           </p>
+          <div className="mt-8 flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+            <Mascot mood="happy" className="h-14 w-14 shrink-0" />
+            <p className="text-theme-xs leading-5 text-brand-100">
+              Presti te guía paso a paso: cuentas de respaldo, ofertas, cuotas,
+              inversiones y marco legal.
+            </p>
+          </div>
         </div>
         <p className="text-theme-xs text-brand-100">
           © {new Date().getFullYear()} Presto. Todos los derechos reservados.

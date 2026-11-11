@@ -196,14 +196,14 @@ const AppSidebar: React.FC = () => {
               Presto<span className="text-brand-500">.</span>
             </span>
           ) : (
-            <span className="flex size-8 items-center justify-center rounded-lg bg-brand-500 text-lg font-semibold text-white">
+            <span className="brand-mark flex size-8 items-center justify-center rounded-lg text-lg font-semibold text-white">
               P
             </span>
           )}
         </NavLink>
       </div>
 
-      <div className="no-scrollbar flex flex-col overflow-y-auto duration-300 ease-linear">
+      <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto duration-300 ease-linear">
         <nav className="mb-6">
           <div>
             <h2
@@ -242,6 +242,30 @@ const AppSidebar: React.FC = () => {
           </div>
         </nav>
       </div>
+
+      {ENABLE_ASSISTANT && (
+        <div className={cn("pb-5", showLabels ? "block" : "hidden")}>
+          <NavLink
+            to="/asistente"
+            className="sidebar-presti group block rounded-2xl p-4 text-white transition hover:-translate-y-0.5"
+          >
+            <div className="flex items-center gap-3">
+              <span className="flex size-9 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/20">
+                <SparkIcon className="size-4" />
+              </span>
+              <div>
+                <div className="text-theme-sm font-semibold">Presti</div>
+                <div className="text-[11px] text-white/70">
+                  Tu asistente financiero
+                </div>
+              </div>
+            </div>
+            <p className="mt-2 text-[11px] leading-4 text-white/75">
+              Mercado, cuotas, inversiones y marco legal, sin vueltas.
+            </p>
+          </NavLink>
+        </div>
+      )}
     </aside>
   );
 };

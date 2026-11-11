@@ -64,7 +64,7 @@ export default function AppHeader() {
     .toUpperCase();
 
   return (
-    <header className="sticky top-0 z-99999 flex w-full border-gray-200 bg-white xl:border-b">
+    <header className="sticky top-0 z-99999 flex w-full border-gray-200/80 bg-white/80 backdrop-blur-xl xl:border-b">
       <div className="flex grow flex-col items-center justify-between xl:flex-row xl:px-6">
         <div className="flex w-full items-center justify-between gap-2 border-b border-gray-200 px-3 py-3 sm:gap-4 xl:justify-normal xl:border-b-0 xl:px-0 xl:py-4">
           <button

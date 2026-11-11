@@ -18,6 +18,7 @@ import {
 import { PROFILE_LABELS } from "@/shared/lib/profiles";
 import { sumDecimals, compareDecimals } from "@/shared/lib/decimal";
 import { DollarLineIcon, PieChartIcon, UserMoneyIcon } from "@/shared/ui/icons";
+import Mascot from "@/shared/ui/Mascot";
 
 export default function Dashboard() {
   const { user, activeProfile } = useAuth();
@@ -71,11 +72,30 @@ export default function Dashboard() {
 
   return (
     <>
-      <h1>Hola, {user?.first_name || user?.email}</h1>
-      <p className="page-subtitle">
-        Tu resumen financiero en Presto
-        {activeProfile && ` · Perfil ${PROFILE_LABELS[activeProfile]}`}.
-      </p>
+      <div className="dashboard-hero">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <span className="hero-kicker">
+              Tu panel
+              {activeProfile && ` · Perfil ${PROFILE_LABELS[activeProfile]}`}
+            </span>
+            <h1 className="mt-3">Hola, {user?.first_name || user?.email}</h1>
+            <p className="mt-2 max-w-xl text-theme-sm text-white/75">
+              Tu resumen financiero en Presto. Todo lo importante, en un solo
+              lugar.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="hero-chip">Billetera ARS y USD</span>
+              <span className="hero-chip">Dinero simulado</span>
+              <span className="hero-chip">Presti te acompaña</span>
+            </div>
+          </div>
+          <Mascot
+            mood="happy"
+            className="presti-float h-28 w-28 shrink-0 self-start sm:self-center"
+          />
+        </div>
+      </div>
 
       {error && <div className="alert error">{error}</div>}
 
