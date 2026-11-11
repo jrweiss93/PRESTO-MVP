@@ -282,11 +282,12 @@ def _run_the_flow(currency):
     assert response.status_code == 200, response.data
     assert response.data['alert_triggered'] is True
 
-    # 11. Los avisos del usuario (la alerta del presupuesto)
+    # 11. Los avisos del usuario (la alerta del presupuesto y el préstamo creado)
     response = borrower_client.get('/api/v1/notifications/')
     assert response.status_code == 200, response.data
-    assert response.data['count'] == 1
-    assert response.data['results'][0]['event_type'] == 'budget_alert'
+    event_types = {item['event_type'] for item in response.data['results']}
+    assert 'budget_alert' in event_types
+    assert 'loan_created' in event_types
 
     # 12. El ledger quedó cuadrado: la suma de los saldos de la moneda es cero
     assert total_balance(currency) == Decimal('0.00')

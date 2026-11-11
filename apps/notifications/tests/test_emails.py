@@ -321,13 +321,12 @@ def test_settling_a_position_creates_the_notification_and_sends_the_email(
 def test_build_email_of_a_loan_created():
     """El email del préstamo menciona el capital, la tasa y el rol del destinatario."""
     from apps.notifications.emails import build_email
-    from apps.notifications.tests.factories import NotificationFactory
 
     user = create_user(email='loan-email-borrower@example.com')
     installment = create_installment(user, key='loan-email')
     loan = installment.loan
 
-    notification = NotificationFactory(
+    notification = Notification.objects.get(
         user_id=loan.lender_user_id,
         event_type=Notification.EventType.LOAN_CREATED,
         reference_id=loan.id,
