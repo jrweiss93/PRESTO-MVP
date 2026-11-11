@@ -10,10 +10,16 @@ from datetime import date
 from decimal import Decimal
 
 from apps.assistant import market, regulations, selectors
+from apps.core.money import effective_annual_rate, simple_interest
 
 GREETING = (
     '¡Hola! Soy Presti. Puedo contarte el mercado, tu saldo, tus préstamos, '
     'tus inversiones y el marco legal para operar. ¿Qué querés saber?'
+)
+
+INVESTOR_GREETING = (
+    '¡Hola! Soy Presti, tu asesor de inversiones. Te guío paso a paso para '
+    'invertir sin errores: perfil, KYC, saldo, productos, riesgos y vencimientos.'
 )
 
 SUGGESTIONS = (
@@ -21,6 +27,29 @@ SUGGESTIONS = (
     '“¿cuánto pago de cuota?”, “¿cómo van mis inversiones?” o '
     '“¿qué necesito para prestar?”.'
 )
+
+INVESTOR_MENU = (
+    'Para no equivocarte, elegí una opción:\n'
+    '• “¿Cómo invierto paso a paso?”\n'
+    '• “¿Qué productos hay?”\n'
+    '• “¿Qué riesgos tiene?”\n'
+    '• “¿Puedo retirar antes?”\n'
+    '• “¿Cuánto voy a ganar?”\n'
+    '• “No me deja invertir”\n'
+    '• “¿Qué es invertir en Presto?”\n'
+    '• “¿Cómo van mis inversiones?”\n'
+    '• “Marco legal”'
+)
+
+INVESTOR_DISCLAIMER = (
+    'Esto es información general para la demo, no asesoramiento financiero personalizado.'
+)
+
+PROFILE_LABELS = {
+    'borrower': 'Prestatario',
+    'lender': 'Prestamista',
+    'investor': 'Inversor',
+}
 
 
 def _normalize(text: str) -> str:
@@ -39,6 +68,11 @@ def _money(amount: Decimal | str, currency: str) -> str:
     value = Decimal(str(amount))
     formatted = f'{value:,.2f}'.replace(',', '_').replace('.', ',').replace('_', '.')
     return f'{currency} {formatted}'
+
+
+def _rate(value: str | Decimal) -> str:
+    """Formatea una tasa con coma decimal para español."""
+    return str(value).replace('.', ',')
 
 
 def _number(value: float | None) -> str:
@@ -97,7 +131,8 @@ def _investments_reply(user_id) -> str:
     summary = selectors.get_investments_summary(user_id=user_id)
     if not summary['count']:
         return (
-            'No tenés inversiones activas. Podés abrir un plazo fijo desde la sección Inversiones.'
+            'No tenés inversiones activas. Si querés empezar, preguntame '
+            '“¿cómo invierto paso a paso?”.'
         )
     lines = [
         '*Tus inversiones*',
@@ -110,6 +145,9 @@ def _investments_reply(user_id) -> str:
         )
     if summary['next_maturity']:
         lines.append(f'Próximo vencimiento: {_date(summary["next_maturity"])}.')
+    lines.append(
+        'El interés es estimado y se acredita al vencimiento. No incluye impuestos ni comisiones.'
+    )
     return '\n'.join(lines)
 
 
@@ -212,15 +250,225 @@ def _legal_reply(text: str) -> str:
     )
 
 
+def _profile_label(kind: str | None) -> str:
+    """Devuelve el nombre legible del perfil activo."""
+    return PROFILE_LABELS.get(kind or '', 'sin perfil')
+
+
+def _kyc_line(status: str) -> str:
+    """Devuelve el estado KYC con un texto accionable."""
+    return {
+        'approved': '✅ Aprobado',
+        'pending': '⏳ Pendiente (esperá la aprobación)',
+        'rejected': '❌ Rechazado (volvé a solicitarlo en Perfil)',
+        'missing': '❌ Sin solicitar (completalo en Perfil y KYC)',
+    }.get(status, f'❌ {status}')
+
+
+def _product_lines(products: list[dict]) -> list[str]:
+    """Formatea los productos activos para el chat."""
+    return [
+        (
+            f'• {product["name"]}: {product["term_days"]} días · '
+            f'TNA {_rate(product["annual_rate_tna"])}% · mínimo '
+            f'{_money(product["min_amount"], product["currency"])}'
+        )
+        for product in products
+    ]
+
+
+def _investor_tutorial_reply(user_id) -> str:
+    """Guía paso a paso para invertir sin errores."""
+    kind = selectors.get_profile_kind(user_id)
+    kyc = selectors.get_kyc_status(user_id)
+    balances = selectors.get_wallet_balances(user_id)
+    products = selectors.get_active_investment_products()
+
+    if kind == 'investor':
+        profile_line = '✅ Inversor'
+    else:
+        profile_line = f'❌ {_profile_label(kind)} (invertir requiere perfil Inversor)'
+
+    lines = [
+        '*Guía para invertir en Presto*',
+        f'1. Perfil: {profile_line}.',
+        f'2. KYC: {_kyc_line(kyc)}.',
+    ]
+    if balances:
+        balance_text = ', '.join(_money(amount, currency) for currency, amount in balances.items())
+        lines.append(f'3. Saldo en billetera: {balance_text}.')
+    else:
+        lines.append('3. Saldo: no tenés billetera todavía. Creala o depositá en Billetera.')
+
+    if products:
+        lines.append(f'4. Productos activos: {len(products)}.')
+        lines.extend(f'   {line}' for line in _product_lines(products))
+    else:
+        lines.append('4. Productos activos: no hay ninguno disponible ahora.')
+
+    lines.extend(
+        [
+            '5. Elegí un producto y un monto igual o mayor al mínimo. La moneda '
+            'del producto debe coincidir con tu billetera.',
+            '6. Confirmá en Inversiones → Abrir inversión. El dinero se descuenta '
+            'de tu billetera al abrir la posición.',
+            '7. El capital y el interés se acreditan al vencimiento. No hay retiro '
+            'anticipado ni pagos parciales.',
+            '8. Si el botón no responde o da error, preguntame “no me deja invertir”.',
+            INVESTOR_DISCLAIMER,
+        ]
+    )
+    return '\n'.join(lines)
+
+
+def _investor_checklist_reply(user_id) -> str:
+    """Revisa los requisitos reales y explica por qué podría fallar."""
+    kind = selectors.get_profile_kind(user_id)
+    kyc = selectors.get_kyc_status(user_id)
+    balances = selectors.get_wallet_balances(user_id)
+    products = selectors.get_active_investment_products()
+
+    lines = ['*Checklist antes de invertir*']
+    if kind == 'investor':
+        lines.append('• Perfil Inversor: ✅')
+    else:
+        lines.append(
+            f'• Perfil Inversor: ❌ tu perfil es {_profile_label(kind)}. '
+            'Este perfil no puede invertir por diseño.'
+        )
+    lines.append(f'• KYC: {_kyc_line(kyc)}.')
+
+    ars = balances.get('ARS')
+    if ars is None:
+        lines.append('• Saldo ARS: ❌ no tenés billetera ARS. Depositá en Billetera.')
+    else:
+        lines.append(f'• Saldo ARS: ✅ {_money(ars, "ARS")}.')
+
+    if products:
+        cheapest = min(products, key=lambda product: Decimal(product['min_amount']))
+        lines.append(
+            f'• Productos activos: ✅ {len(products)}. Mínimo más bajo: '
+            f'{_money(cheapest["min_amount"], cheapest["currency"])}.'
+        )
+    else:
+        lines.append('• Productos activos: ❌ no hay productos disponibles.')
+
+    lines.extend(
+        [
+            '• Monto: debe ser ≥ mínimo y ≤ saldo disponible.',
+            '• Moneda: el producto y tu billetera deben coincidir.',
+            '• Plazo: el dinero queda inmovilizado hasta el vencimiento.',
+            'Si todo está ✅ y el botón falla, reintentá o avisá a soporte.',
+            INVESTOR_DISCLAIMER,
+        ]
+    )
+    return '\n'.join(lines)
+
+
+def _investment_products_reply() -> str:
+    """Lista los productos activos y explica cómo compararlos."""
+    products = selectors.get_active_investment_products()
+    if not products:
+        return 'No hay productos de inversión activos en este momento.'
+
+    lines = ['*Productos de inversión activos*', *_product_lines(products)]
+    lines.extend(
+        [
+            '',
+            '*Cómo comparar*',
+            '• Más plazo significa más tiempo con el dinero inmovilizado.',
+            '• La TNA es nominal y se prorratea por días; la TEA equivalente puede ser distinta.',
+            '• No hago recomendaciones personalizadas: elegí según tu horizonte '
+            'y tu necesidad de liquidez.',
+        ]
+    )
+    if any(
+        'invert' in _normalize(product['name']) and 'presto' in _normalize(product['name'])
+        for product in products
+    ):
+        lines.append(
+            '• “Invertí en Presto” es renta fija simulada: no es una acción ni '
+            'una participación societaria.'
+        )
+    lines.append(INVESTOR_DISCLAIMER)
+    return '\n'.join(lines)
+
+
+def _investment_interest_reply() -> str:
+    """Explica el cálculo de interés y la diferencia TNA/TEA."""
+    amount = Decimal('10000.00')
+    rate = Decimal('22.00')
+    days = 90
+    interest = simple_interest(amount, rate, days)
+    total = amount + interest
+    tea = effective_annual_rate(rate)
+    return (
+        '*Cómo se calcula tu interés*\n'
+        'La TNA se prorratea por días: interés = monto × TNA/100 × días/365.\n'
+        f'Ejemplo: {_money(amount, "ARS")} al 22,00% TNA a 90 días → interés '
+        f'{_money(interest, "ARS")}, total {_money(total, "ARS")}.\n'
+        f'La TEA equivalente de una TNA del 22,00% es {_rate(tea)}% '
+        '(capitalización mensual).\n'
+        'El interés se acredita al vencimiento, no mes a mes. En la demo no se '
+        'cobran comisiones ni impuestos.\n'
+        f'{INVESTOR_DISCLAIMER}'
+    )
+
+
+def _investment_risks_reply() -> str:
+    """Explica los riesgos y límites para evitar expectativas erróneas."""
+    return (
+        '*Riesgos y límites*\n'
+        '• No hay garantía de capital: podés perder parte o todo.\n'
+        '• El dinero queda inmovilizado hasta el vencimiento: no hay retiro '
+        'anticipado.\n'
+        '• Existe riesgo de contraparte y de plataforma.\n'
+        '• Producto de demo, sujeto a autorización regulatoria (CNV/BCRA).\n'
+        '• La TNA no es la TEA; el rendimiento efectivo puede diferir.\n'
+        '• Invertí solo dinero que no necesites antes del vencimiento.\n'
+        f'{INVESTOR_DISCLAIMER}'
+    )
+
+
+def _investment_liquidity_reply() -> str:
+    """Aclara que el plazo fijo no se puede rescatar antes."""
+    return (
+        '*Liquidez*\n'
+        'Los plazos fijos no se pueden retirar, cancelar ni rescatar antes del '
+        'vencimiento. Si necesitás el dinero antes, no lo inviertas o elegí el '
+        'plazo más corto disponible (30 días).\n'
+        f'{INVESTOR_DISCLAIMER}'
+    )
+
+
 def _presto_investment_reply() -> str:
     """Explica el producto para invertir en el propio Presto."""
-    return (
-        '*Invertí en Presto*\n'
-        'Es un plazo fijo simulado para financiar el crecimiento de Presto. '
-        'No es una oferta pública de inversión ni una participación societaria.\n'
-        'Podés verlo en la sección Inversiones, con su plazo, TNA y monto mínimo.\n'
-        f'{regulations.DISCLAIMER}'
+    products = selectors.get_active_investment_products()
+    presto = next(
+        (
+            product
+            for product in products
+            if 'invert' in _normalize(product['name']) and 'presto' in _normalize(product['name'])
+        ),
+        None,
     )
+    lines = ['*Invertí en Presto*']
+    if presto is not None:
+        lines.append(
+            f'Producto: {presto["name"]} · {presto["term_days"]} días · '
+            f'TNA {_rate(presto["annual_rate_tna"])}% · mínimo '
+            f'{_money(presto["min_amount"], presto["currency"])}.'
+        )
+    lines.extend(
+        [
+            'Es un plazo fijo simulado para financiar el crecimiento de Presto. '
+            'No es una acción ni una participación societaria.',
+            'No hay garantía de capital y el dinero no se puede retirar antes del vencimiento.',
+            'Podés verlo y abrirlo en la sección Inversiones.',
+            f'{regulations.DISCLAIMER}',
+        ]
+    )
+    return '\n'.join(lines)
 
 
 def answer_question(user_id, message: str) -> dict:
@@ -240,29 +488,126 @@ def answer_question(user_id, message: str) -> dict:
             'intent': 'empty',
         }
 
+    is_investor = selectors.get_profile_kind(user_id) == 'investor'
+
     if _matches(text, 'hola', 'buenas', 'que podes', 'ayuda', 'que sabes'):
+        if is_investor:
+            return {
+                'reply': f'{INVESTOR_GREETING}\n\n{INVESTOR_MENU}',
+                'intent': 'rules',
+            }
         return {'reply': f'{GREETING}\n\n{SUGGESTIONS}', 'intent': 'rules'}
     if _matches(text, 'saldo', 'cuenta', 'billetera', 'cuanto tengo'):
         return {'reply': _balance_reply(user_id), 'intent': 'rules'}
     if _matches(text, 'cuota', 'prestamo', 'deuda', 'debo'):
         return {'reply': _loans_reply(user_id), 'intent': 'rules'}
-    if _matches(text, 'presto') and _matches(text, 'invertir', 'inversion', 'inverti'):
+    if _matches(text, 'dolar', 'blue', 'cotizacion'):
+        return {'reply': _dollar_reply(), 'intent': 'rules'}
+    if _matches(text, 'bitcoin', 'btc', 'cripto', 'ethereum', 'eth'):
+        return {'reply': _coins_reply(), 'intent': 'rules'}
+    if _matches(text, 'mercado', 'acciones', 'bolsa', 'merval'):
+        return {'reply': _market_reply(), 'intent': 'rules'}
+    if _matches(text, 'legal', 'ley', 'norma', 'regulacion', 'cnv', 'bcra', 'uif', 'impuesto'):
+        return {'reply': _legal_reply(text), 'intent': 'rules'}
+    if _matches(text, 'presto') and _matches(text, 'invertir', 'inversion', 'inverti', 'invierto'):
         return {'reply': _presto_investment_reply(), 'intent': 'rules'}
-    if _matches(text, 'inversion', 'plazo fijo', 'rendimiento', 'interes ganado'):
+    if _matches(
+        text,
+        'como invierto',
+        'paso a paso',
+        'tutorial',
+        'guia',
+        'empezar a invertir',
+        'primera inversion',
+        'como hago para invertir',
+        'como puedo invertir',
+        'quiero invertir',
+        'que es invertir',
+        'como funciona',
+    ):
+        return {'reply': _investor_tutorial_reply(user_id), 'intent': 'rules'}
+    if _matches(
+        text,
+        'no me deja',
+        'no puedo invertir',
+        'no me permite',
+        'error al invertir',
+        'problema para invertir',
+        'requisito',
+        'que necesito para invertir',
+        'cuanto necesito',
+        'monto minimo',
+        'minimo',
+    ):
+        return {'reply': _investor_checklist_reply(user_id), 'intent': 'rules'}
+    if _matches(
+        text,
+        'retirar antes',
+        'rescatar',
+        'cancelar',
+        'liquidez',
+        'antes del vencimiento',
+        'sacar antes',
+        'retiro anticipado',
+    ):
+        return {'reply': _investment_liquidity_reply(), 'intent': 'rules'}
+    if _matches(
+        text,
+        'riesgo',
+        'garantia',
+        'seguro',
+        'puedo perder',
+        'que pasa si',
+        'contraparte',
+        'perder dinero',
+    ):
+        return {'reply': _investment_risks_reply(), 'intent': 'rules'}
+    if _matches(
+        text,
+        'cuanto gano',
+        'cuanto voy a ganar',
+        'interes',
+        'rendimiento',
+        'tna',
+        'tea',
+        'calcula',
+        'cuanto me rinde',
+    ):
+        return {'reply': _investment_interest_reply(), 'intent': 'rules'}
+    if _matches(
+        text,
+        'producto',
+        'productos',
+        'opciones',
+        'comparar',
+        'que me conviene',
+        'conviene',
+        'donde invierto',
+        'que puedo invertir',
+        'plazo fijo',
+    ):
+        return {'reply': _investment_products_reply(), 'intent': 'rules'}
+    if _matches(
+        text,
+        'mis inversiones',
+        'como van',
+        'posiciones',
+        'vencimiento',
+        'cuando cobro',
+        'cuando vence',
+        'cuando termina',
+    ):
         return {'reply': _investments_reply(user_id), 'intent': 'rules'}
     if _matches(text, 'prestar', 'prestamista', 'publicar', 'oferta', 'captar'):
         return {'reply': _publish_offer_reply(user_id), 'intent': 'rules'}
     if _matches(text, 'kyc', 'verificacion', 'identidad'):
         return {'reply': _kyc_reply(user_id), 'intent': 'rules'}
-    if _matches(text, 'legal', 'ley', 'norma', 'regulacion', 'cnv', 'bcra', 'uif', 'impuesto'):
-        return {'reply': _legal_reply(text), 'intent': 'rules'}
-    if _matches(text, 'dolar', 'blue', 'cotizacion'):
-        return {'reply': _dollar_reply(), 'intent': 'rules'}
-    if _matches(text, 'bitcoin', 'btc', 'cripto', 'ethereum', 'eth'):
-        return {'reply': _coins_reply(), 'intent': 'rules'}
-    if _matches(text, 'mercado', 'acciones', 'bolsa'):
-        return {'reply': _market_reply(), 'intent': 'rules'}
 
+    if is_investor:
+        return {
+            'reply': f'No entendí esa consulta.\n\n{INVESTOR_MENU}',
+            'intent': 'fallback',
+        }
     return {
         'reply': f'No entendí esa consulta. {SUGGESTIONS}',
         'intent': 'fallback',

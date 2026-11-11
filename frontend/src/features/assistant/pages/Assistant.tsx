@@ -1,12 +1,17 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import * as api from "@/shared/api/endpoints";
 import { ApiError } from "@/shared/api/client";
 import type {
+  Account,
+  InvestmentProduct,
+  KYCVerification,
   MarketSnapshot,
   NewsFeed,
   RegulationsResponse,
 } from "@/shared/api/types";
 import { useAuth } from "@/features/auth/AuthContext";
+import { formatDate, formatMoney, formatRate } from "@/shared/lib/format";
 import { SendIcon } from "@/shared/ui/icons";
 import Mascot from "@/shared/ui/Mascot";
 
@@ -53,6 +58,182 @@ function changeBadge(pct: number | null | undefined) {
     <span className={up ? "text-success-500" : "text-error-500"}>
       {up ? "▲" : "▼"} {Math.abs(pct).toFixed(2)}%
     </span>
+  );
+}
+
+function InvestorGuide({
+  kyc,
+  accounts,
+  products,
+}: {
+  kyc: KYCVerification | null;
+  accounts: Account[];
+  products: InvestmentProduct[];
+}) {
+  const [productId, setProductId] = useState("");
+  const [amount, setAmount] = useState("");
+
+  useEffect(() => {
+    if (!productId && products.length > 0) {
+      setProductId(products[0].id);
+    }
+  }, [productId, products]);
+
+  const product =
+    products.find((item) => item.id === productId) ?? products[0] ?? null;
+  const arsWallet = accounts.find((account) => account.currency === "ARS");
+  const balance = arsWallet?.balance ?? "0";
+  const amountNumber = Number(amount.replace(",", "."));
+  const minimum = Number(product?.min_amount ?? 0);
+  const balanceNumber = Number(balance);
+  const hasAmount = Number.isFinite(amountNumber) && amountNumber > 0;
+  const interest =
+    product && hasAmount
+      ? amountNumber * (Number(product.annual_rate_tna) / 100) * (product.term_days / 365)
+      : 0;
+  const total = hasAmount ? amountNumber + interest : 0;
+  const maturity =
+    product != null
+      ? new Date(Date.now() + product.term_days * 86_400_000)
+      : null;
+  const kycApproved = kyc?.status === "approved";
+  const cheapest = products.reduce<InvestmentProduct | null>(
+    (current, item) =>
+      current == null || Number(item.min_amount) < Number(current.min_amount)
+        ? item
+        : current,
+    null,
+  );
+
+  const warnings: string[] = [];
+  if (product && hasAmount && amountNumber < minimum) {
+    warnings.push(
+      `El mínimo de ${product.name} es ${formatMoney(product.min_amount, product.currency)}.`,
+    );
+  }
+  if (product && hasAmount && amountNumber > balanceNumber) {
+    warnings.push(
+      `Saldo insuficiente: tenés ${formatMoney(balance, "ARS")} en tu billetera ARS.`,
+    );
+  }
+
+  return (
+    <div className="card mb-6">
+      <div className="section-header">
+        <h2 className="mt-0 mb-0">Guía rápida para invertir</h2>
+        <span className="badge info">Presti te guía</span>
+      </div>
+
+      <div className="card-grid">
+        <div className="stat-card">
+          <div className="label">1. Perfil</div>
+          <div className="value">Inversor ✅</div>
+          <div className="small text-muted">Tu perfil ya permite invertir.</div>
+        </div>
+        <div className="stat-card">
+          <div className="label">2. KYC</div>
+          <div className="value">{kycApproved ? "Aprobado ✅" : "Pendiente ⚠️"}</div>
+          {!kycApproved && (
+            <Link className="small text-brand-500" to="/perfil">
+              Completar en Perfil y KYC
+            </Link>
+          )}
+        </div>
+        <div className="stat-card">
+          <div className="label">3. Saldo ARS</div>
+          <div className="value">{formatMoney(balance, "ARS")}</div>
+          {balanceNumber <= 0 && (
+            <Link className="small text-brand-500" to="/billetera">
+              Depositar fondos
+            </Link>
+          )}
+        </div>
+        <div className="stat-card">
+          <div className="label">4. Productos</div>
+          <div className="value">{products.length}</div>
+          <div className="small text-muted">
+            {cheapest
+              ? `Mínimo más bajo: ${formatMoney(cheapest.min_amount, cheapest.currency)}`
+              : "No hay productos activos"}
+          </div>
+        </div>
+      </div>
+
+      <div className="alert warning">
+        Antes de confirmar: el monto debe ser <strong>igual o mayor al mínimo</strong>,
+        la moneda del producto debe coincidir con tu billetera y{" "}
+        <strong>no vas a poder retirar el dinero antes del vencimiento</strong>.
+      </div>
+
+      <div className="rounded-xl border border-gray-200 p-4">
+        <h3 className="mt-0">Simulador de inversión</h3>
+        <div className="form-grid">
+          <label className="field">
+            Producto
+            <select
+              value={productId}
+              onChange={(event) => setProductId(event.target.value)}
+            >
+              {products.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} · {item.term_days} días · {formatRate(item.annual_rate_tna)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            Monto a invertir ({product?.currency ?? "ARS"})
+            <input
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+              placeholder="Ej. 10000"
+            />
+          </label>
+        </div>
+
+        {warnings.map((warning) => (
+          <div className="alert error mt-2" key={warning}>
+            {warning}
+          </div>
+        ))}
+
+        {product && hasAmount && warnings.length === 0 && (
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="stat-card">
+              <div className="label">Interés estimado</div>
+              <div className="value">{formatMoney(interest, product.currency)}</div>
+            </div>
+            <div className="stat-card">
+              <div className="label">Total al vencimiento</div>
+              <div className="value">{formatMoney(total, product.currency)}</div>
+            </div>
+            <div className="stat-card">
+              <div className="label">Vencimiento</div>
+              <div className="value" style={{ fontSize: "1rem" }}>
+                {maturity ? formatDate(maturity.toISOString()) : "—"}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="btn-row mt-3">
+          <Link className="btn" to="/inversiones">
+            Ir a invertir
+          </Link>
+          <span className="small text-muted">
+            TNA nominal; la TEA equivalente puede ser distinta. No incluye impuestos.
+          </span>
+        </div>
+      </div>
+
+      <p className="small text-muted mb-0 mt-3">
+        Presti muestra condiciones y riesgos, pero no hace recomendaciones
+        personalizadas. Invertí solo dinero que no necesites antes del vencimiento.
+      </p>
+    </div>
   );
 }
 
@@ -633,6 +814,27 @@ export default function Assistant() {
   const [tab, setTab] = useState<"chat" | "legal">("chat");
   const [market, setMarket] = useState<MarketSnapshot | null>(null);
   const [news, setNews] = useState<NewsFeed | null>(null);
+  const [investorKyc, setInvestorKyc] = useState<KYCVerification | null>(null);
+  const [investorAccounts, setInvestorAccounts] = useState<Account[]>([]);
+  const [investorProducts, setInvestorProducts] = useState<InvestmentProduct[]>([]);
+
+  useEffect(() => {
+    if (!isInvestor) return;
+    let cancelled = false;
+    Promise.all([
+      api.getKyc().catch(() => null),
+      api.listAccounts().catch(() => [] as Account[]),
+      api.listProducts().catch(() => [] as InvestmentProduct[]),
+    ]).then(([kyc, accounts, products]) => {
+      if (cancelled) return;
+      setInvestorKyc(kyc);
+      setInvestorAccounts(accounts);
+      setInvestorProducts(products);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isInvestor]);
 
   useEffect(() => {
     let cancelled = false;
@@ -658,6 +860,14 @@ export default function Assistant() {
           ? "Tu asesor de inversiones. Mercado en vivo, acciones, bitcoin, tus posiciones en Presto y el marco legal."
           : "Tu mago de finanzas. Mercado en vivo, noticias, tu cuenta y el marco legal para operar."}
       </p>
+
+      {isInvestor && (
+        <InvestorGuide
+          kyc={investorKyc}
+          accounts={investorAccounts}
+          products={investorProducts}
+        />
+      )}
 
       <div className="mb-5 inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
         <button

@@ -161,3 +161,25 @@ def get_kyc_status(user_id: uuid.UUID) -> str:
     if verification is None:
         return 'missing'
     return verification.status
+
+
+def get_profile_kind(user_id: uuid.UUID) -> str | None:
+    """Devuelve el perfil activo del usuario, o None si no tiene."""
+    profile = identity_selectors.get_active_profile(user_id=user_id)
+    return profile.kind if profile is not None else None
+
+
+def get_active_investment_products() -> list[dict]:
+    """Devuelve los productos de inversión activos, sin exponer modelos."""
+    return [
+        {
+            'id': str(product.id),
+            'name': product.name or 'Plazo fijo',
+            'description': product.description,
+            'currency': product.currency,
+            'term_days': product.term_days,
+            'annual_rate_tna': str(product.annual_rate_tna),
+            'min_amount': str(product.min_amount),
+        }
+        for product in investments_selectors.list_active_products()
+    ]

@@ -91,6 +91,96 @@ def test_chat_answers_the_investments_summary(client, user):
     assert 'ARS 500,00' in response.data['reply']
 
 
+def test_chat_answers_the_investor_tutorial(client):
+    """Presti guía paso a paso para invertir sin errores."""
+    response = ask(client, '¿Cómo invierto paso a paso?')
+
+    assert response.status_code == 200
+    assert 'Guía para invertir' in response.data['reply']
+    assert 'Perfil' in response.data['reply']
+    assert 'KYC' in response.data['reply']
+
+
+def test_chat_lists_the_investment_products(client):
+    """Presti lista los productos activos con plazo, TNA y mínimo."""
+    from apps.investments.tests.factories import InvestmentProductFactory
+
+    InvestmentProductFactory(
+        name='Invertí en Presto',
+        term_days=90,
+        annual_rate_tna=Decimal('22.00'),
+    )
+
+    response = ask(client, '¿Qué productos hay?')
+
+    assert response.status_code == 200
+    assert 'Invertí en Presto' in response.data['reply']
+    assert '90 días' in response.data['reply']
+    assert '22,00%' in response.data['reply']
+
+
+def test_chat_explains_the_investment_risks(client):
+    """Presti aclara que no hay garantía ni retiro anticipado."""
+    response = ask(client, '¿Qué riesgos tiene?')
+
+    assert response.status_code == 200
+    assert 'No hay garantía de capital' in response.data['reply']
+    assert 'retiro anticipado' in response.data['reply']
+
+
+def test_chat_explains_the_investment_liquidity(client):
+    """Presti aclara que el plazo fijo no se puede retirar antes."""
+    response = ask(client, '¿Puedo retirar antes del vencimiento?')
+
+    assert response.status_code == 200
+    assert 'no se pueden retirar' in response.data['reply']
+    assert 'vencimiento' in response.data['reply']
+
+
+def test_chat_explains_the_interest_calculation(client):
+    """Presti explica TNA, TEA y el interés estimado."""
+    response = ask(client, '¿Cuánto voy a ganar?')
+
+    assert response.status_code == 200
+    assert 'TNA' in response.data['reply']
+    assert 'TEA' in response.data['reply']
+    assert '365' in response.data['reply']
+
+
+def test_chat_guides_the_investment_troubleshooting(client):
+    """Presti revisa perfil, KYC y saldo cuando algo no deja invertir."""
+    response = ask(client, 'No me deja invertir')
+
+    assert response.status_code == 200
+    assert 'Checklist antes de invertir' in response.data['reply']
+    assert 'Perfil Inversor' in response.data['reply']
+    assert 'KYC' in response.data['reply']
+
+
+def test_chat_fallback_shows_the_investor_menu():
+    """Un inversor recibe un menú claro cuando Presti no entiende."""
+    from apps.identity.services import register_user
+
+    user = register_user(
+        email='presti-menu-inversor@example.com',
+        password='TestPass123!',
+        profile_kind='investor',
+    )
+    api = APIClient()
+    token = RefreshToken.for_user(user)
+    api.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
+
+    response = api.post(
+        '/api/v1/assistant/chat/',
+        {'message': 'xyz sin sentido'},
+        format='json',
+    )
+
+    assert response.status_code == 200
+    assert 'Cómo invierto' in response.data['reply']
+    assert 'Qué productos hay' in response.data['reply']
+
+
 def test_chat_explains_investing_in_presto(client):
     """Presti explica el producto 'Invertí en Presto'."""
     response = ask(client, '¿Qué es invertir en Presto?')
