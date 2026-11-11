@@ -29,6 +29,20 @@ function Protected({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function ProfileOnly({
+  allow,
+  children,
+}: {
+  allow: string[];
+  children: React.ReactNode;
+}) {
+  const { activeProfile } = useAuth();
+  if (activeProfile && !allow.includes(activeProfile)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <>{children}</>;
+}
+
 export default function App() {
   const { user, loading } = useAuth();
 
@@ -60,13 +74,62 @@ export default function App() {
       >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/billetera" element={<Wallet />} />
-        <Route path="/pagos" element={<Payments />} />
-        <Route path="/presupuestos" element={<Budgets />} />
-        <Route path="/marketplace" element={<Marketplace />} />
-        <Route path="/ofertas" element={<Offers />} />
-        <Route path="/prestamos" element={<Loans />} />
-        <Route path="/prestamos/:loanId" element={<LoanDetail />} />
-        <Route path="/inversiones" element={<Investments />} />
+        <Route
+          path="/pagos"
+          element={
+            <ProfileOnly allow={["borrower", "lender"]}>
+              <Payments />
+            </ProfileOnly>
+          }
+        />
+        <Route
+          path="/presupuestos"
+          element={
+            <ProfileOnly allow={["borrower", "lender"]}>
+              <Budgets />
+            </ProfileOnly>
+          }
+        />
+        <Route
+          path="/marketplace"
+          element={
+            <ProfileOnly allow={["borrower"]}>
+              <Marketplace />
+            </ProfileOnly>
+          }
+        />
+        <Route
+          path="/ofertas"
+          element={
+            <ProfileOnly allow={["lender"]}>
+              <Offers />
+            </ProfileOnly>
+          }
+        />
+        <Route
+          path="/prestamos"
+          element={
+            <ProfileOnly allow={["borrower", "lender"]}>
+              <Loans />
+            </ProfileOnly>
+          }
+        />
+        <Route
+          path="/prestamos/:loanId"
+          element={
+            <ProfileOnly allow={["borrower", "lender"]}>
+              <LoanDetail />
+            </ProfileOnly>
+          }
+        />
+        <Route
+          path="/inversiones"
+          element={
+            <ProfileOnly allow={["investor"]}>
+              <Investments />
+            </ProfileOnly>
+          }
+        />
         <Route path="/notificaciones" element={<Notifications />} />
         {ENABLE_ASSISTANT && (
           <Route path="/asistente" element={<Assistant />} />
