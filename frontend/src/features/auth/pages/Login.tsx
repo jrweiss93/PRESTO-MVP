@@ -4,6 +4,7 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { ApiError } from "@/shared/api/client";
 import { EyeCloseIcon, EyeIcon } from "@/shared/ui/icons";
 import Mascot from "@/shared/ui/Mascot";
+import ThemeToggle from "@/shared/ui/ThemeToggle";
 
 export default function Login() {
   const { login } = useAuth();
@@ -30,7 +31,7 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
+    <div className="auth-page flex min-h-screen flex-col lg:flex-row">
       <div className="auth-hero flex w-full flex-col justify-between px-6 py-10 sm:px-10 lg:w-2/5 lg:py-12 xl:w-1/3">
         <Link to="/" className="text-title-sm font-semibold text-white">
           Presto<span className="text-brand-100">.</span>
@@ -57,15 +58,18 @@ export default function Login() {
         </p>
       </div>
 
-      <div className="flex flex-1 flex-col justify-center bg-white px-6 py-10 sm:px-12 lg:px-16">
+      <div className="flex flex-1 flex-col justify-center bg-white px-6 py-10 sm:px-12 lg:px-16 dark:bg-gray-950">
         <div className="mx-auto w-full max-w-md">
-          <div className="mb-8">
-            <h1 className="mb-2 text-title-sm font-semibold text-gray-800">
-              Iniciar sesión
-            </h1>
-            <p className="text-theme-sm text-gray-500">
-              Ingresá tu email y contraseña para continuar.
-            </p>
+          <div className="mb-8 flex items-start justify-between gap-4">
+            <div>
+              <h1 className="mb-2 text-title-sm font-semibold text-gray-800">
+                Iniciar sesión
+              </h1>
+              <p className="text-theme-sm text-gray-500">
+                Ingresá tu email y contraseña para continuar.
+              </p>
+            </div>
+            <ThemeToggle />
           </div>
 
           {error && <div className="alert error">{error}</div>}

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthContext";
 import Mascot from "@/shared/ui/Mascot";
+import ThemeToggle from "@/shared/ui/ThemeToggle";
 import {
   CartIcon,
   DollarLineIcon,
@@ -41,7 +42,7 @@ export default function Landing() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="landing-page min-h-screen bg-white dark:bg-gray-950">
       <header className="border-b border-gray-200">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
           <Link
@@ -54,6 +55,7 @@ export default function Landing() {
             Presto<span className="text-brand-500">.</span>
           </Link>
           <nav className="flex items-center gap-3">
+            <ThemeToggle />
             <Link
               to="/legal"
               className="hidden text-theme-sm text-gray-600 hover:text-gray-900 sm:block"
@@ -81,7 +83,7 @@ export default function Landing() {
         </div>
       </header>
 
-      <div className="border-b border-amber-200 bg-amber-50 px-5 py-2 text-center text-theme-xs text-amber-900">
+      <div className="border-b border-amber-200 bg-amber-50 px-5 py-2 text-center text-theme-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
         <strong>Demo pública.</strong> El dinero es simulado: no se mueve plata
         real.{" "}
         <Link to="/legal" className="underline">
@@ -170,7 +172,7 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="border-t border-gray-200 bg-gray-50/60">
+        <section className="border-t border-gray-200 bg-gray-50/60 dark:border-gray-800 dark:bg-white/[0.02]">
           <div className="mx-auto max-w-6xl px-5 py-14">
             <h2 className="text-2xl font-semibold text-gray-900">
               Todo el circuito, en un solo lugar
