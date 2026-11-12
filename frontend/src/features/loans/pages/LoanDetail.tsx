@@ -7,6 +7,7 @@ import { useAuth } from "@/features/auth/AuthContext";
 import {
   INSTALLMENT_STATUS_LABELS,
   LOAN_STATUS_LABELS,
+  currencyLabel,
   formatDate,
   formatDateTime,
   formatMoney,
@@ -18,6 +19,18 @@ const INSTALLMENT_BADGE: Record<string, string> = {
   paid: "success",
   overdue: "danger",
 };
+
+type SnapshotTerms = {
+  amount?: unknown;
+  currency?: unknown;
+  interest_rate?: unknown;
+  term_months?: unknown;
+  requirements?: unknown;
+};
+
+function readSnapshotTerms(value: unknown): SnapshotTerms {
+  return value && typeof value === "object" ? (value as SnapshotTerms) : {};
+}
 
 export default function LoanDetailPage() {
   const { loanId } = useParams<{ loanId: string }>();
@@ -82,6 +95,25 @@ export default function LoanDetailPage() {
   const payables = loan.installments.filter(
     (i: Installment) => i.status === "pending" || i.status === "overdue",
   );
+
+  const snapshot = readSnapshotTerms(loan.terms_snapshot.snapshot_data);
+  const snapshotCurrency =
+    typeof snapshot.currency === "string" ? snapshot.currency : loan.currency;
+  const snapshotAmount =
+    typeof snapshot.amount === "string" ? snapshot.amount : loan.principal;
+  const snapshotRate =
+    typeof snapshot.interest_rate === "string"
+      ? snapshot.interest_rate
+      : loan.interest_rate;
+  const snapshotTerm =
+    typeof snapshot.term_months === "number"
+      ? snapshot.term_months
+      : loan.term_months;
+  const snapshotRequirements =
+    typeof snapshot.requirements === "string" &&
+    snapshot.requirements.trim() !== ""
+      ? snapshot.requirements
+      : null;
 
   return (
     <>
@@ -211,14 +243,88 @@ export default function LoanDetailPage() {
       </div>
 
       <div className="card">
-        <h2>Términos originales (snapshot inmutable)</h2>
-        <pre className="mono" style={{ whiteSpace: "pre-wrap", margin: 0 }}>
-          {JSON.stringify(loan.terms_snapshot.snapshot_data, null, 2)}
-        </pre>
-        <p className="small text-muted" style={{ marginBottom: 0 }}>
-          Registrado {formatDateTime(loan.terms_snapshot.accepted_at)} ·{" "}
-          {loan.terms_snapshot.is_immutable ? "Inmutable" : "Mutable"}
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="mb-1">Condiciones aceptadas</h2>
+            <p className="text-theme-sm text-gray-500">
+              Copia exacta de la oferta al cerrar el préstamo. Aunque la oferta
+              original cambie o se elimine, estas condiciones no se modifican.
+            </p>
+          </div>
+          <span
+            className={`badge ${loan.terms_snapshot.is_immutable ? "success" : "warning"}`}
+          >
+            {loan.terms_snapshot.is_immutable ? "Inmutable" : "Mutable"}
+          </span>
+        </div>
+
+        <dl className="mt-5 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div>
+            <dt className="text-theme-xs font-medium uppercase tracking-wide text-gray-500">
+              Monto
+            </dt>
+            <dd className="mt-1 text-theme-sm font-medium text-gray-800">
+              {formatMoney(snapshotAmount, snapshotCurrency)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-theme-xs font-medium uppercase tracking-wide text-gray-500">
+              Tasa
+            </dt>
+            <dd className="mt-1 text-theme-sm font-medium text-gray-800">
+              {formatRate(snapshotRate)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-theme-xs font-medium uppercase tracking-wide text-gray-500">
+              Plazo
+            </dt>
+            <dd className="mt-1 text-theme-sm font-medium text-gray-800">
+              {snapshotTerm} meses
+            </dd>
+          </div>
+          <div>
+            <dt className="text-theme-xs font-medium uppercase tracking-wide text-gray-500">
+              Moneda
+            </dt>
+            <dd className="mt-1 text-theme-sm font-medium text-gray-800">
+              {currencyLabel(snapshotCurrency)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-theme-xs font-medium uppercase tracking-wide text-gray-500">
+              Aceptado por
+            </dt>
+            <dd className="mt-1 text-theme-sm font-medium text-gray-800">
+              {loan.borrower_email}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-theme-xs font-medium uppercase tracking-wide text-gray-500">
+              Fecha de aceptación
+            </dt>
+            <dd className="mt-1 text-theme-sm font-medium text-gray-800">
+              {formatDateTime(loan.terms_snapshot.accepted_at)}
+            </dd>
+          </div>
+          <div className="sm:col-span-2 xl:col-span-3">
+            <dt className="text-theme-xs font-medium uppercase tracking-wide text-gray-500">
+              Requisitos de la oferta
+            </dt>
+            <dd className="mt-1 text-theme-sm text-gray-700">
+              {snapshotRequirements ?? "Sin requisitos adicionales."}
+            </dd>
+          </div>
+        </dl>
+
+        <details className="mt-5">
+          <summary className="cursor-pointer text-theme-sm font-medium text-brand-500 hover:text-brand-600">
+            Ver datos técnicos
+          </summary>
+          <pre className="mono mt-3 overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 p-4 text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+            {JSON.stringify(loan.terms_snapshot.snapshot_data, null, 2)}
+          </pre>
+        </details>
       </div>
     </>
   );
