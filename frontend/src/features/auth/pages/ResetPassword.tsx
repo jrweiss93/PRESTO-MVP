@@ -61,7 +61,7 @@ export default function ResetPassword() {
           <div className="alert error">
             El enlace está incompleto o venció. Pedí uno nuevo.
           </div>
-          <Link to="/recuperar" className="btn block">
+          <Link to="/recuperar" className="btn w-full">
             Pedir otro enlace
           </Link>
         </>
@@ -70,7 +70,7 @@ export default function ResetPassword() {
           <div className="alert success">
             Contraseña actualizada. Ya podés iniciar sesión con la nueva.
           </div>
-          <Link to="/login" className="btn block">
+          <Link to="/login" className="btn w-full">
             Iniciar sesión
           </Link>
         </>
@@ -125,7 +125,7 @@ export default function ResetPassword() {
                 className="h-11"
               />
             </div>
-            <button className="btn block" type="submit" disabled={submitting}>
+            <button className="btn w-full" type="submit" disabled={submitting}>
               {submitting ? "Guardando…" : "Cambiar contraseña"}
             </button>
           </form>

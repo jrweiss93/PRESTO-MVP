@@ -121,7 +121,7 @@ export default function Login() {
                 </span>
               </div>
             </div>
-            <button className="btn block" type="submit" disabled={submitting}>
+            <button className="btn w-full" type="submit" disabled={submitting}>
               {submitting ? "Ingresando…" : "Ingresar"}
             </button>
           </form>

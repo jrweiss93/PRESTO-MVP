@@ -442,10 +442,6 @@
     @apply h-auto px-3.5 py-2 text-theme-xs;
   }
 
-  .btn.block {
-    @apply w-full;
-  }
-
   .btn-row {
     @apply flex flex-wrap items-center gap-3;
   }

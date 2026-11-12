@@ -169,7 +169,7 @@ export default function Legal() {
           </p>
         </div>
 
-        <Link to="/" className="btn mt-8 inline-block">
+        <Link to="/" className="btn mt-8">
           Volver al inicio
         </Link>
       </main>

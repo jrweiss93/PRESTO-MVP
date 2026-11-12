@@ -163,7 +163,7 @@ export default function Landing() {
                 </li>
               ))}
             </ul>
-            <Link to="/login" className="btn block mt-5">
+            <Link to="/login" className="btn mt-5 w-full">
               Iniciar sesión
             </Link>
             <p className="mt-3 text-theme-xs text-gray-500">

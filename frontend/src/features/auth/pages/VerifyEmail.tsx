@@ -56,7 +56,7 @@ export default function VerifyEmail() {
           <div className="alert success">
             ¡Listo! Tu email quedó verificado.
           </div>
-          <Link to={user ? "/dashboard" : "/login"} className="btn block">
+          <Link to={user ? "/dashboard" : "/login"} className="btn w-full">
             {user ? "Ir al panel" : "Iniciar sesión"}
           </Link>
         </>
@@ -64,7 +64,7 @@ export default function VerifyEmail() {
       {state === "error" && (
         <>
           <div className="alert error">{message}</div>
-          <Link to="/login" className="btn block">
+          <Link to="/login" className="btn w-full">
             Volver al inicio
           </Link>
         </>

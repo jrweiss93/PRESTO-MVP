@@ -199,7 +199,7 @@ export default function Register() {
               </span>
             </label>
             <button
-              className="btn block"
+              className="btn w-full"
               type="submit"
               disabled={submitting || !acceptedTerms}
             >

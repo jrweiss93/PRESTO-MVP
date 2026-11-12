@@ -70,7 +70,7 @@ export default function ForgotPassword() {
                 className="h-11"
               />
             </div>
-            <button className="btn block" type="submit" disabled={submitting}>
+            <button className="btn w-full" type="submit" disabled={submitting}>
               {submitting ? "Enviando…" : "Enviar enlace"}
             </button>
           </form>
