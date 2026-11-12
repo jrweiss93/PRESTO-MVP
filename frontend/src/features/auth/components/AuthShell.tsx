@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import ThemeToggle from "@/shared/ui/ThemeToggle";
 
 interface AuthShellProps {
   title: string;
@@ -18,8 +19,8 @@ export default function AuthShell({
   sideText = "Te enviamos un enlace por email para que vuelvas a entrar sin perder nada de tu información.",
 }: AuthShellProps) {
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
-      <div className="flex w-full flex-col justify-between bg-brand-500 px-6 py-10 sm:px-10 lg:w-2/5 lg:py-12 xl:w-1/3">
+    <div className="auth-page flex min-h-screen flex-col lg:flex-row">
+      <div className="auth-hero flex w-full flex-col justify-between px-6 py-10 sm:px-10 lg:w-2/5 lg:py-12 xl:w-1/3">
         <Link to="/" className="text-title-sm font-semibold text-white">
           Presto<span className="text-brand-100">.</span>
         </Link>
@@ -34,13 +35,16 @@ export default function AuthShell({
         </p>
       </div>
 
-      <div className="flex flex-1 flex-col justify-center bg-white px-6 py-10 sm:px-12 lg:px-16">
+      <div className="flex flex-1 flex-col justify-center bg-white px-6 py-10 sm:px-12 lg:px-16 dark:bg-gray-950">
         <div className="mx-auto w-full max-w-md">
-          <div className="mb-8">
-            <h1 className="mb-2 text-title-sm font-semibold text-gray-800">
-              {title}
-            </h1>
-            <p className="text-theme-sm text-gray-500">{subtitle}</p>
+          <div className="mb-8 flex items-start justify-between gap-4">
+            <div>
+              <h1 className="mb-2 text-title-sm font-semibold text-gray-800">
+                {title}
+              </h1>
+              <p className="text-theme-sm text-gray-500">{subtitle}</p>
+            </div>
+            <ThemeToggle />
           </div>
           {children}
         </div>

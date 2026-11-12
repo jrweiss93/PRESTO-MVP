@@ -897,6 +897,14 @@
   background: radial-gradient(circle, rgba(70, 95, 255, 0.2), transparent 68%);
 }
 
+.dark .app-shell .stat-card .label {
+  color: #94a3b8;
+}
+
+.dark .app-shell .stat-card .value {
+  color: #f8fafc;
+}
+
 .dark .app-shell .btn.secondary {
   background-color: #0f172a;
   border-color: #334155;

@@ -59,7 +59,7 @@ export default function ComplianceBanner() {
   }
 
   return (
-    <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">
+    <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
       <div className="mx-auto flex max-w-(--breakpoint-2xl) items-start gap-3">
         <div className="flex-1">
           <p className="font-semibold">
@@ -74,7 +74,7 @@ export default function ComplianceBanner() {
           </ul>
         </div>
         <button
-          className="rounded border border-amber-300 px-2 py-1 text-amber-800 hover:bg-amber-100"
+          className="rounded border border-amber-300 px-2 py-1 text-amber-800 hover:bg-amber-100 dark:border-amber-500/30 dark:text-amber-200 dark:hover:bg-amber-500/15"
           onClick={dismiss}
           type="button"
         >

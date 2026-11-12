@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import ThemeToggle from "@/shared/ui/ThemeToggle";
 
 const TERMS_SECTIONS = [
   {
@@ -101,15 +102,27 @@ function SectionList({ sections }: { sections: { title: string; body: string }[]
 
 export default function Legal() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="landing-page min-h-screen bg-white dark:bg-gray-950">
       <header className="border-b border-gray-200">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-4">
-          <Link to="/" className="text-title-sm font-semibold text-gray-800">
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-title-sm font-semibold text-gray-800"
+          >
+            <span className="brand-mark flex size-8 items-center justify-center rounded-lg text-lg font-semibold text-white">
+              P
+            </span>
             Presto<span className="text-brand-500">.</span>
           </Link>
-          <Link to="/" className="text-theme-sm text-gray-600 hover:text-gray-900">
-            Volver al inicio
-          </Link>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Link
+              to="/"
+              className="text-theme-sm text-gray-600 hover:text-gray-900"
+            >
+              Volver al inicio
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -138,11 +151,11 @@ export default function Legal() {
           </div>
         </div>
 
-        <div className="mt-10 rounded-lg border border-amber-200 bg-amber-50 p-5 text-theme-sm text-gray-700">
-          <p className="font-medium text-amber-900">
+        <div className="mt-10 rounded-lg border border-amber-200 bg-amber-50 p-5 text-theme-sm text-gray-700 dark:border-amber-500/30 dark:bg-amber-500/10">
+          <p className="font-medium text-amber-900 dark:text-amber-200">
             Antes de un lanzamiento real
           </p>
-          <p className="mt-1 text-amber-900/80">
+          <p className="mt-1 text-amber-900/80 dark:text-amber-200/80">
             Este texto aplica a la demo. Para operar con dinero real hay que
             reemplazarlo por términos, política de privacidad y encuadre
             regulatorio revisados por un profesional. Los pendientes están
