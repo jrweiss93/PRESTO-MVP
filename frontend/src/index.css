@@ -502,6 +502,104 @@
     @apply mb-5 flex flex-wrap items-end justify-between gap-3;
   }
 
+  /* ---- marketplace ---- */
+
+  .market-hero {
+    @apply mb-6 flex flex-wrap items-start justify-between gap-4;
+  }
+
+  .marketplace-filters {
+    @apply mb-6;
+  }
+
+  .marketplace-filters-head {
+    @apply mb-4;
+  }
+
+  .marketplace-filters-head h2 {
+    @apply mb-1;
+  }
+
+  .market-board-section {
+    @apply mt-2;
+  }
+
+  .market-board-head {
+    @apply mb-4 flex flex-wrap items-center justify-between gap-3;
+  }
+
+  .compare-tray {
+    @apply flex flex-wrap items-center gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-theme-sm font-medium text-brand-700;
+  }
+
+  .offer-board {
+    @apply grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3;
+  }
+
+  .offer-card {
+    @apply relative flex flex-col gap-4 overflow-hidden rounded-xl border border-gray-200 bg-white p-5 shadow-theme-xs transition duration-200;
+  }
+
+  .offer-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background-image: linear-gradient(90deg, #465fff, #7a5af8 60%, #2dd4bf);
+  }
+
+  .offer-card:hover {
+    @apply -translate-y-0.5 border-brand-300 shadow-theme-md;
+  }
+
+  .offer-card.selected {
+    @apply border-brand-500 ring-3 ring-brand-500/15;
+  }
+
+  .offer-card-top {
+    @apply flex items-center justify-between gap-3;
+  }
+
+  .offer-compare {
+    @apply inline-flex cursor-pointer items-center gap-1.5 text-theme-xs font-medium text-gray-500;
+  }
+
+  .offer-amount {
+    @apply flex items-baseline gap-2 text-2xl font-semibold tracking-tight text-gray-900;
+  }
+
+  .offer-currency {
+    @apply rounded-md bg-gray-100 px-1.5 py-0.5 text-theme-xs font-semibold uppercase tracking-wide text-gray-500;
+  }
+
+  .offer-metrics {
+    @apply grid grid-cols-2 gap-3 border-y border-gray-100 py-3;
+  }
+
+  .offer-metric-label {
+    @apply block text-theme-xs font-semibold uppercase tracking-wider text-gray-400;
+  }
+
+  .offer-metrics strong {
+    @apply mt-1 block text-theme-sm font-semibold text-gray-800;
+  }
+
+  .offer-requirements p {
+    @apply mt-1 text-theme-xs leading-5 text-gray-600;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .offer-card-footer {
+    @apply mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-4;
+  }
+
+  .offer-lender {
+    @apply text-theme-xs font-medium text-gray-500;
+  }
+
   .mt-0 {
     margin-top: 0;
   }
@@ -894,6 +992,55 @@
 
 .dark .app-shell .card:hover {
   border-color: rgba(70, 95, 255, 0.4);
+}
+
+.dark .offer-card {
+  background-color: #0f172a;
+  background-image: linear-gradient(180deg, #0f172a 0%, #0b1220 100%);
+  border-color: #1f2937;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 22px 48px -34px rgba(0, 0, 0, 0.9);
+}
+
+.dark .offer-card:hover {
+  border-color: rgba(70, 95, 255, 0.5);
+}
+
+.dark .offer-card.selected {
+  border-color: #7a9bff;
+  box-shadow: 0 0 0 3px rgba(70, 95, 255, 0.24);
+}
+
+.dark .offer-amount,
+.dark .offer-metrics strong {
+  color: #f8fafc;
+}
+
+.dark .offer-currency {
+  background-color: #1e293b;
+  color: #94a3b8;
+}
+
+.dark .offer-metric-label,
+.dark .offer-lender,
+.dark .offer-compare {
+  color: #94a3b8;
+}
+
+.dark .offer-requirements p {
+  color: #cbd5e1;
+}
+
+.dark .offer-metrics,
+.dark .offer-card-footer {
+  border-color: #1f2937;
+}
+
+.dark .compare-tray {
+  background-color: rgba(70, 95, 255, 0.12);
+  border-color: rgba(70, 95, 255, 0.3);
+  color: #9cb9ff;
 }
 
 .dark .app-shell .stat-card::after {

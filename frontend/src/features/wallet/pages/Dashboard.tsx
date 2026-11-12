@@ -71,7 +71,13 @@ export default function Dashboard() {
 
   if (loading) return <div className="loading">Cargando resumen…</div>;
 
-  const activeLoans = loans.filter((l) => l.status === "active");
+  const roleLoans =
+    activeProfile === "borrower"
+      ? loans.filter((l) => l.borrower_user_id === user?.id)
+      : activeProfile === "lender"
+        ? loans.filter((l) => l.lender_user_id === user?.id)
+        : [];
+  const activeLoans = roleLoans.filter((l) => l.status === "active");
   const activePositions = positions.filter((p) => p.status === "active");
   const totalInvested = sumDecimals(activePositions.map((p) => p.amount));
   const hasVerifiedBackup = backupAccounts.some(
