@@ -874,9 +874,16 @@
   color: #f8fafc;
 }
 
-.dark .app-shell .page-subtitle,
-.dark .app-shell .text-muted {
+.dark .app-shell .page-subtitle {
   color: #94a3b8;
+}
+
+.dark .app-shell .text-muted {
+  color: #b6c2d4;
+}
+
+.dark .app-shell label.field {
+  color: #cbd5e1;
 }
 
 .dark .app-shell .card,
