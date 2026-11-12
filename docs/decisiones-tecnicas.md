@@ -225,11 +225,34 @@ Esta separación es la decisión estructural más importante del backend.
 
 ## 4. ¿Se usó programación orientada a objetos?
 
-Sí, pero de forma **pragmática y selectiva**. No se intentó convertir todo en
-objetos ni aplicar un DDD académico. Se usó POO donde aporta claridad y se usaron
-funciones donde una clase solo habría agregado ceremonia.
+Sí, pero de forma **pragmática y selectiva**. Python permite mezclar estilos y
+Presto lo hace a propósito: hay clases donde una clase aporta claridad y hay
+funciones donde una clase solo agregaría ceremonia.
 
-### 4.1 Clases que representan entidades: los modelos de Django
+Para entenderlo sin vueltas, una analogía:
+
+> Una **clase** es el plano de una casa. Un **objeto** es una casa construida con
+> ese plano. Los **atributos** son las habitaciones (monto, tasa, plazo). Los
+> **métodos** son las cosas que la casa sabe hacer. La **herencia** es partir de
+> un plano base. El **encapsulamiento** es no dejar que cualquiera toque la
+> instalación eléctrica. La **abstracción** es pedir “un enchufe” sin importar la
+> marca del aparato. El **polimorfismo** es que el mismo enchufe funcione con una
+> lámpara o con una heladera.
+
+### 4.1 Los conceptos de POO aplicados a Presto
+
+| Concepto | Explicación simple | Ejemplo concreto en Presto |
+|---|---|---|
+| **Clase** | El molde o plano para crear algo | `Loan` es el molde de un préstamo |
+| **Objeto** | Una cosa concreta creada con ese molde | El préstamo de Ana por $120.000 a 6 meses |
+| **Atributo** | Un dato que guarda el objeto | `principal`, `interest_rate`, `term_months` |
+| **Método** | Una acción que sabe hacer el objeto | `__str__()` devuelve un texto legible para logs |
+| **Herencia** | Reutilizar un molde base | `Loan` hereda de `BaseModel` el UUID y las fechas |
+| **Encapsulamiento** | Esconder los detalles y exponer solo lo necesario | El saldo solo lo modifica `ledger.services`; una vista no toca `Account.balance` |
+| **Abstracción** | Mostrar el “qué” y ocultar el “cómo” | `PaymentProvider` dice “creá un depósito”, no cómo lo hace cada proveedor |
+| **Polimorfismo** | El mismo mensaje produce comportamientos distintos | `provider.create_deposit()` funciona con el proveedor simulado o con Mercado Pago |
+
+### 4.2 Modelos: clases que representan entidades
 
 Cada modelo es una clase que hereda de `models.Model` y representa una tabla y
 una entidad del negocio. Además de los campos, las clases usan:
@@ -282,35 +305,152 @@ corregir el perfil de las cuentas de demo y elimina cualquier otro perfil del
 usuario; la API no expone un cambio de perfil. Los permisos siempre leen el
 perfil activo, no un dato que el cliente pueda mandar en cada request.
 
-### 4.2 Funciones de servicio: los casos de uso no son clases
+### 4.3 Cómo se lee una clase de Django (comentada)
 
-Las operaciones que escriben son **funciones** en `services.py`, no métodos de
-un “LoanService” o un “LedgerManager”. Por ejemplo:
+Este es el modelo `Loan`, simplificado y con comentarios. La idea es mostrar qué
+representa cada bloque, como si estuviéramos explicando la clase en voz alta:
 
 ```python
-# apps/loans/services.py (simplificado)
-def accept_offer(borrower_user_id, offer_id, idempotency_key, request_hash):
+class Loan(BaseModel):
+    # HERENCIA: BaseModel ya aporta id (UUID), created_at y updated_at.
+    # No repetimos esos tres campos en cada tabla del sistema.
+
+    class Status(models.TextChoices):
+        # ENUMERACIÓN: los únicos estados válidos de un préstamo.
+        # Django los valida y el admin muestra la etiqueta de la derecha.
+        ACTIVE = 'active', 'Activo'
+        PAID = 'paid', 'Pagado'
+        DEFAULTED = 'defaulted', 'En mora'
+
+    # ATRIBUTOS: cada uno es una columna de la tabla loans_loan.
+    # Las referencias a otras apps son UUID, no ForeignKey cruzadas.
+    borrower_user_id = models.UUIDField()
+    lender_user_id = models.UUIDField()
+    offer_id = models.UUIDField()
+
+    # El dinero siempre es Decimal, nunca float.
+    principal = models.DecimalField(max_digits=18, decimal_places=2)
+    interest_rate = models.DecimalField(max_digits=6, decimal_places=2)
+    term_months = models.PositiveIntegerField()
+
+    # El préstamo nace activo: el desembolso ocurre en la misma
+    # transacción de aceptación. No existe un estado "pending".
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.ACTIVE,
+    )
+
+    class Meta:
+        # CONSTRAINTS: reglas que también valida PostgreSQL.
+        # Aunque alguien saltee la API, la base no acepta un monto <= 0.
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(principal__gt=0),
+                name='loans_loan_principal_positive',
+            ),
+            models.CheckConstraint(
+                condition=models.Q(term_months__gt=0),
+                name='loans_loan_term_months_positive',
+            ),
+        ]
+
+    def __str__(self):
+        # MÉTODO SIMPLE: solo sirve para logs y para el admin.
+        # No mueve dinero ni dispara operaciones.
+        return f'Loan<{self.id}:{self.principal}:{self.status}>'
+```
+
+Lo importante es lo que **no** tiene la clase:
+
+- no tiene un `save()` que desembolse dinero;
+- no tiene un método `accept()` que llame al ledger;
+- no conoce las clases internas de `ledger` ni de `offers`;
+- no dispara emails ni notificaciones por sí sola.
+
+Eso está afuera, en un servicio. El modelo sabe **qué es** un préstamo; el
+servicio sabe **cómo se acepta** un préstamo. Esa separación evita que un
+guardado accidental mueva plata.
+
+### 4.4 Las operaciones: servicios como funciones
+
+Las operaciones que escriben son **funciones** en `services.py`, no métodos de
+un “LoanService” o un “LedgerManager”. Otra analogía útil:
+
+> El **modelo** es el expediente. El **servicio** es el cajero que ejecuta el
+> trámite. El **selector** es el archivo donde se consulta. El **serializer** es
+> el formulario que se recibe en la ventanilla. La **vista** es la ventanilla.
+
+El servicio `accept_offer` es el ejemplo más completo. Está comentado paso a
+paso:
+
+```python
+def accept_offer(borrower_user_id, offer_id, idempotency_key):
+    # 1. Calculamos un hash del pedido para detectar si la misma clave
+    #    de idempotencia llega con un payload distinto.
+    request_hash = ledger_services.build_request_hash({'offer_id': str(offer_id)})
+
     with transaction.atomic():
-        existing = _resolve_idempotent(...)
+        # 2. Si esta operación ya se hizo con la misma clave, devolvemos
+        #    el préstamo original. Un doble clic no crea dos préstamos.
+        existing = _resolve_idempotent(borrower_user_id, idempotency_key, request_hash)
         if existing is not None:
             return existing
 
-        offer = offers_services.accept_offer(offer_id=offer_id, ...)
+        # 3. Regla de negocio: el prestatario necesita KYC aprobada.
+        _require_kyc(borrower_user_id)
 
+        # 4. La app offers bloquea la oferta con select_for_update y la
+        #    marca como aceptada. Dos personas no pueden aceptar la misma.
+        offer = offers_services.accept_offer(
+            offer_id=offer_id,
+            borrower_user_id=borrower_user_id,
+        )
+
+        # 5. Salvaguarda de la fase 1: cuenta de respaldo verificada con
+        #    saldo declarado suficiente para la primera cuota.
         require_repayment_source(
             user_id=borrower_user_id,
             currency=offer.currency,
-            minimum_balance=first_installment_amount,
+            minimum_balance=french_installment(
+                offer.amount,
+                offer.interest_rate,
+                offer.term_months,
+            ),
         )
 
-        loan = Loan.objects.create(...)
+        # 6. Creamos el préstamo con las condiciones de la oferta.
+        loan = Loan.objects.create(
+            borrower_user_id=borrower_user_id,
+            lender_user_id=offer.lender_user_id,
+            offer_id=offer.id,
+            principal=offer.amount,
+            currency=offer.currency,
+            interest_rate=offer.interest_rate,
+            term_months=offer.term_months,
+            status=Loan.Status.ACTIVE,
+            idempotency_key=idempotency_key,
+            request_hash=request_hash,
+        )
+
+        # 7. Congelamos una copia de las condiciones aceptadas.
+        #    Si la oferta cambia después, el préstamo no cambia.
         OfferTermsSnapshot.objects.create(
             loan=loan,
             snapshot_data={...},
             is_immutable=True,
         )
+
+        # 8. Calculamos y guardamos el cronograma francés una sola vez.
         _create_installments(loan)
-        _disburse(loan)  # llama a ledger.services.transfer_between_users
+
+        # 9. Movemos el dinero: lender -> borrower, a través del ledger.
+        #    Si el prestamista no tiene saldo, esta llamada falla.
+        _disburse(loan)
+
+        # 10. Si todo salió bien, devolvemos el préstamo. Si cualquier paso
+        #     anterior falla, transaction.atomic revierte TODO: no queda
+        #     préstamo, ni cuotas, ni snapshot, ni dinero movido.
         return loan
 ```
 
@@ -333,10 +473,38 @@ modelo de dominio para los datos**. No es “POO pura”, pero es una decisión
 consciente: el dinero se mueve en procedimientos transaccionales claros, no en
 métodos escondidos dentro de un modelo.
 
-### 4.3 Permisos como clases
+**Importante:** usar funciones no significa “no usar POO”. Significa que la
+POO se reserva para las entidades, los permisos, las interfaces y los objetos de
+valor. Los casos de uso se escriben como procedimientos porque justamente
+necesitamos ver la transacción completa en un solo lugar.
 
-DRF permite declarar permisos como clases que heredan de `BasePermission`. Se
-usaron para reglas de acceso reutilizables:
+### 4.5 Permisos, serializers y vistas: clases de infraestructura
+
+DRF permite declarar permisos como clases que heredan de `BasePermission`. Acá
+la herencia no modela el negocio: **extiende un contrato del framework**. Por
+ejemplo:
+
+```python
+class HasVerifiedBackupAccount(BasePermission):
+    """Exige una cuenta de respaldo verificada para aceptar un préstamo."""
+
+    message = 'Vinculá y verificá una cuenta de respaldo antes de aceptar un préstamo.'
+
+    def has_permission(self, request, view):
+        # Si la exigencia está apagada, no bloqueamos.
+        if not settings.REPAYMENT_SOURCE_REQUIRED:
+            return True
+
+        # Si está encendida, el usuario autenticado debe tener al menos
+        # una cuenta de respaldo en estado verificado.
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and has_verified_backup_account(user_id=request.user.id)
+        )
+```
+
+Se usaron para reglas de acceso reutilizables:
 
 - `IsKycApproved`: exige KYC aprobada.
 - `KycApprovedForUnsafeMethods`: solo exige KYC en POST/PATCH/PUT/DELETE, no en
@@ -347,37 +515,49 @@ usaron para reglas de acceso reutilizables:
 - `IsActiveProfile`: valida que el perfil activo sea el que corresponde a la
   operación.
 
-La regla también vive en `services.py` (**defense in depth**): el permiso da un
-403 temprano y el service vuelve a validar antes de tocar el dinero. Si mañana
-se llama al service desde un comando o un test, la regla sigue vigente.
+Los **serializers** y las **vistas** también son clases de DRF
+(`ModelSerializer`, `APIView` o vistas genéricas). Su trabajo es recibir y
+validar datos, no decidir reglas de dinero. La regla también vive en
+`services.py` (**defense in depth**): el permiso da un 403 temprano y el service
+vuelve a validar antes de tocar el dinero. Si mañana se llama al service desde un
+comando o un test, la regla sigue vigente.
 
-### 4.4 Interfaces y polimorfismo: el caso de los pagos
+### 4.6 Interfaces y polimorfismo: el caso de los pagos
 
 Este es el lugar donde la POO se usa de forma más clásica. `PaymentProvider` es
-una clase abstracta (`abc.ABC`) que define el contrato:
+una clase abstracta (`abc.ABC`) que define el contrato. Pensalo como un
+**enchufe estándar**: el sistema dice “necesito estos métodos”; cada proveedor
+decide cómo los implementa.
 
 ```python
 class PaymentProvider(abc.ABC):
+    """Contrato que todo proveedor de pagos tiene que cumplir."""
+
     name: str = ''
 
     @abc.abstractmethod
     def create_deposit(self, *, payment_id, user_email, amount, currency, ...):
+        # El sistema pide "creá un depósito"; el proveedor decide cómo.
         ...
 
     @abc.abstractmethod
     def create_withdrawal(self, *, payment_id, user_email, amount, currency, ...):
+        # Mismo contrato para un retiro.
         ...
 
     @abc.abstractmethod
     def create_transfer(self, *, payment_id, amount, currency, ...):
+        # Transferencia entre usuarios de Presto.
         ...
 
     @abc.abstractmethod
     def get_balance(self) -> Decimal:
+        # Saldo en la cuenta del proveedor.
         ...
 
     @abc.abstractmethod
     def verify_webhook_signature(self, *, body, headers) -> bool:
+        # Valida la firma ANTES de interpretar el cuerpo del webhook.
         ...
 ```
 
@@ -388,18 +568,20 @@ Hay dos implementaciones:
   webhook.
 
 El service de pagos no sabe cuál está activo. Recibe la implementación según
-`PAYMENTS_PROVIDER`. Esto es el patrón **estrategia** y, visto desde
-arquitectura, un **puerto con adaptadores**: el dominio define lo que necesita
-y la infraestructura provee la implementación.
+`PAYMENTS_PROVIDER` y llama siempre al mismo método. Eso es **polimorfismo**:
+mismo mensaje (`create_deposit`), distinto comportamiento según el objeto. Y
+visto desde arquitectura es un **puerto con adaptadores**: el dominio define lo
+que necesita y la infraestructura provee la implementación.
 
 Los resultados también son objetos simples (`dataclasses`):
 
 - `ProviderResult`: `external_id`, `status`, `payload`, `checkout_url`.
 - `WebhookEventInfo`: lo que el proveedor entendió de un webhook.
 
-Así se evita pasar diccionarios sueltos por todo el flujo.
+Así se evita pasar diccionarios sueltos por todo el flujo y se mantiene un
+contrato claro entre capas.
 
-### 4.5 Lo que se evitó a propósito
+### 4.7 Lo que se evitó a propósito
 
 - **Modelos gordos con lógica financiera.** Un `Loan.save()` que desembolse
   dinero sería peligroso: se ejecutaría en cualquier guardado, incluso en un
@@ -414,7 +596,22 @@ Así se evita pasar diccionarios sueltos por todo el flujo.
   sido sobreingeniería. Se tomaron las ideas útiles: lenguaje ubicuo, límites de
   apps, invariantes explícitos y snapshot de condiciones.
 
----
+### 4.8 Cómo defender esta decisión en la exposición
+
+Si surge la pregunta “¿usaron POO?”, una respuesta corta y sólida:
+
+> “Sí. Usamos clases para las entidades del dominio, para los permisos y para
+> la interfaz de pagos. Los casos de uso que mueven dinero los escribimos como
+> funciones transaccionales para que la transacción se vea completa en un solo
+> lugar. No queremos que un `save()` accidental desembolse un préstamo.”
+
+Y si preguntan por qué no hay `LoanService`:
+
+> “Porque el servicio no tiene estado propio. Necesitamos orquestar varias apps
+> dentro de una transacción atómica y que el flujo se lea de arriba a abajo. Una
+> función expresa mejor ese caso de uso; una clase solo agregaría un objeto que
+> no representa nada del negocio.”
+
 
 ## 5. Las decisiones críticas sobre el dinero
 
