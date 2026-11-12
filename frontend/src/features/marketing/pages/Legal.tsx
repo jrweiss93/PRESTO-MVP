@@ -112,7 +112,9 @@ export default function Legal() {
             <span className="brand-mark flex size-8 items-center justify-center rounded-lg text-lg font-semibold text-white">
               P
             </span>
-            Presto<span className="text-brand-500">.</span>
+            <span>
+              Presto<span className="text-brand-500">.</span>
+            </span>
           </Link>
           <div className="flex items-center gap-3">
             <ThemeToggle />

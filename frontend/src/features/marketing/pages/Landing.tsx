@@ -52,7 +52,9 @@ export default function Landing() {
             <span className="brand-mark flex size-8 items-center justify-center rounded-lg text-lg font-semibold text-white">
               P
             </span>
-            Presto<span className="text-brand-500">.</span>
+            <span>
+              Presto<span className="text-brand-500">.</span>
+            </span>
           </Link>
           <nav className="flex items-center gap-3">
             <ThemeToggle />
