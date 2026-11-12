@@ -407,8 +407,9 @@ export default function Profile() {
                   <div>
                     <strong>{account.display_name}</strong>{" "}
                     <span className="small text-muted">
-                      {providerLabel(account.provider).toLowerCase() !==
-                      account.display_name.trim().toLowerCase()
+                      {!account.display_name
+                        .toLowerCase()
+                        .includes(providerLabel(account.provider).toLowerCase())
                         ? `${providerLabel(account.provider)} · `
                         : ""}
                       {account.masked_ref} · {account.currency}
