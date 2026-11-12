@@ -715,6 +715,7 @@ export default function Profile() {
                 type="checkbox"
                 checked={simulateMismatch}
                 onChange={(e) => setSimulateMismatch(e.target.checked)}
+                className="size-4 shrink-0 accent-brand-500 p-0"
               />
               Simular que el rostro no coincide (para ver el rechazo)
             </span>

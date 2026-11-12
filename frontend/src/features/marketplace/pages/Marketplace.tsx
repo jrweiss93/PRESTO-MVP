@@ -265,6 +265,7 @@ export default function Marketplace() {
                           checked={selected.includes(o.id)}
                           onChange={() => toggleSelect(o.id)}
                           aria-label="Seleccionar oferta para comparar"
+                          className="size-4 accent-brand-500 p-0"
                         />
                       </td>
                       <td>{formatMoney(o.amount, o.currency)}</td>

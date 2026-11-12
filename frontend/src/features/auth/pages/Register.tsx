@@ -184,7 +184,7 @@ export default function Register() {
                 type="checkbox"
                 checked={acceptedTerms}
                 onChange={(e) => setAcceptedTerms(e.target.checked)}
-                className="mt-0.5"
+                className="mt-0.5 size-4 shrink-0 accent-brand-500 p-0"
               />
               <span>
                 Acepto los{" "}
