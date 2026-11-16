@@ -8,6 +8,11 @@ urlpatterns = [
     path('loans/', views.LoanListCreateView.as_view(), name='loans'),
     path('loans/<uuid:loan_id>/', views.LoanDetailView.as_view(), name='loan-detail'),
     path(
+        'loans/<uuid:loan_id>/messages/',
+        views.LoanMessageListCreateView.as_view(),
+        name='loan-messages',
+    ),
+    path(
         'loans/<uuid:loan_id>/installments/<int:number>/pay/',
         views.InstallmentPayView.as_view(),
         name='loan-installment-pay',

@@ -1154,6 +1154,65 @@ paths:
               schema:
                 $ref: '#/components/schemas/Installment'
           description: ''
+  /api/v1/loans/{loan_id}/messages/:
+    get:
+      operationId: loans_messages_list
+      description: Devuelve los mensajes si el usuario es parte del préstamo.
+      summary: Listar los mensajes del chat del préstamo
+      parameters:
+      - in: path
+        name: loan_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - loans
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LoanMessage'
+          description: ''
+    post:
+      operationId: loans_messages_create
+      description: Envía un mensaje si el usuario es parte del préstamo.
+      summary: Enviar un mensaje en el chat del préstamo
+      parameters:
+      - in: path
+        name: loan_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - loans
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoanMessageCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoanMessageCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoanMessageCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanMessage'
+          description: ''
   /api/v1/matching/comparisons/:
     post:
       operationId: matching_comparisons_create
@@ -2774,6 +2833,39 @@ components:
       - status
       - term_months
       - terms_snapshot
+    LoanMessage:
+      type: object
+      description: Mensaje del chat privado de un préstamo.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        sender_user_id:
+          type: string
+          format: uuid
+          readOnly: true
+        body:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - body
+      - created_at
+      - id
+      - sender_user_id
+    LoanMessageCreate:
+      type: object
+      description: Datos para enviar un mensaje en el chat del préstamo.
+      properties:
+        body:
+          type: string
+          maxLength: 1000
+      required:
+      - body
     LoanStatusEnum:
       enum:
       - active

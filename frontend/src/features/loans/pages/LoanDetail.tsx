@@ -4,6 +4,7 @@ import * as api from "@/shared/api/endpoints";
 import { ApiError } from "@/shared/api/client";
 import type { Installment, LoanDetail } from "@/shared/api/types";
 import { useAuth } from "@/features/auth/AuthContext";
+import LoanChat from "@/features/loans/components/LoanChat";
 import {
   INSTALLMENT_STATUS_LABELS,
   LOAN_STATUS_LABELS,
@@ -60,6 +61,17 @@ export default function LoanDetailPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (window.location.hash !== "#chat") return;
+    const timeout = window.setTimeout(() => {
+      document.getElementById("chat")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 120);
+    return () => window.clearTimeout(timeout);
+  }, [loan?.id]);
 
   async function handlePay(number: number) {
     if (!loanId) return;
@@ -133,6 +145,21 @@ export default function LoanDetailPage() {
       {error && <div className="alert error">{error}</div>}
       {notice && <div className="alert success">{notice}</div>}
 
+      {loan.status === "active" && counterpartEmail && (
+        <div className="alert success flex flex-wrap items-center justify-between gap-2">
+          <span>
+            Préstamo activo con {counterpartEmail}. Coordiná los detalles por el
+            chat privado.
+          </span>
+          <a
+            href="#chat"
+            className="font-medium underline underline-offset-2"
+          >
+            Abrir chat
+          </a>
+        </div>
+      )}
+
       <div className="card-grid">
         <div className="stat-card">
           <div className="label">Capital</div>
@@ -170,6 +197,8 @@ export default function LoanDetailPage() {
           </p>
         </div>
       )}
+
+      <LoanChat loan={loan} />
 
       <div className="card">
         <h2>Cuotas</h2>

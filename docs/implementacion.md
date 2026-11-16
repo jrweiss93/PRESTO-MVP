@@ -266,6 +266,9 @@ El webhook es público (lo llama el proveedor), con throttle propio y sin sesió
   (`snapshot_data` JSON, `is_immutable`).
 - `Installment`: número, vencimiento, capital, interés, importe, estado
   (`pending|paid|overdue`), `paid_at`, `ledger_transaction_id`.
+- `LoanMessage`: mensaje privado del préstamo (`loan`, `sender_user_id`, `body`).
+  Solo lo leen y escriben las dos partes; es un canal de coordinación, no un
+  chat general de la plataforma.
 
 **Servicios**
 
@@ -283,6 +286,7 @@ El webhook es público (lo llama el proveedor), con throttle propio y sin sesió
 ```
 GET/POST /api/v1/loans/
 GET /api/v1/loans/{id}/
+GET/POST /api/v1/loans/{id}/messages/
 POST /api/v1/loans/{id}/installments/{number}/pay/
 ```
 

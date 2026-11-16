@@ -20,11 +20,13 @@ from apps.loans import signals
 from apps.loans.exceptions import (
     InstallmentAlreadyPaid,
     InstallmentOutOfOrder,
+    InvalidLoanMessage,
     InvalidLoanTransition,
     LoanNotFound,
     NotTheBorrower,
 )
-from apps.loans.models import Installment, Loan, OfferTermsSnapshot
+from apps.loans.models import Installment, Loan, LoanMessage, OfferTermsSnapshot
+from apps.loans.selectors import get_loan_for_party
 from apps.offers import services as offers_services
 
 logger = logging.getLogger(__name__)
@@ -363,6 +365,49 @@ def _transition(loan: Loan, new_status: str) -> None:
         )
     loan.status = new_status
     loan.save(update_fields=['status', 'updated_at'])
+
+
+def send_loan_message(
+    loan_id: uuid.UUID,
+    sender_user_id: uuid.UUID,
+    body: str,
+) -> LoanMessage:
+    """Envía un mensaje privado a la otra parte del préstamo.
+
+    Args:
+        loan_id: préstamo al que pertenece el chat.
+        sender_user_id: usuario que escribe.
+        body: texto del mensaje.
+
+    Returns:
+        El mensaje creado.
+
+    Raises:
+        LoanNotFound: si el préstamo no existe o el usuario no es parte.
+        InvalidLoanMessage: si el mensaje está vacío o es demasiado largo.
+    """
+    text = (body or '').strip()
+    if not text:
+        raise InvalidLoanMessage('El mensaje no puede estar vacío.')
+    if len(text) > 1000:
+        raise InvalidLoanMessage('El mensaje no puede superar los 1000 caracteres.')
+
+    loan = get_loan_for_party(loan_id=loan_id, user_id=sender_user_id)
+    if loan is None:
+        raise LoanNotFound('El préstamo no existe.')
+
+    message = LoanMessage.objects.create(
+        loan=loan,
+        sender_user_id=sender_user_id,
+        body=text,
+    )
+    logger.info(
+        'Mensaje de préstamo: loan_id=%s sender_user_id=%s message_id=%s',
+        loan.id,
+        sender_user_id,
+        message.id,
+    )
+    return message
 
 
 def _resolve_idempotent(

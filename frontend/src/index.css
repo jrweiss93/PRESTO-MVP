@@ -600,6 +600,49 @@
     @apply text-theme-xs font-medium text-gray-500;
   }
 
+  /* ---- chat del préstamo ---- */
+
+  .loan-chat {
+    scroll-margin-top: 6rem;
+  }
+
+  .chat-messages {
+    @apply mt-5 flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50/60 p-4;
+    max-height: 24rem;
+    overflow-y: auto;
+  }
+
+  .chat-empty {
+    @apply border-0 bg-transparent py-8;
+  }
+
+  .chat-bubble {
+    @apply rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-theme-sm text-gray-700 shadow-theme-xs;
+    max-width: 85%;
+  }
+
+  .chat-bubble.mine {
+    @apply ml-auto border-transparent bg-brand-500 text-white;
+    background-image: linear-gradient(135deg, #465fff, #7a5af8);
+  }
+
+  .chat-bubble-meta {
+    @apply mb-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-theme-xs opacity-70;
+  }
+
+  .chat-bubble p {
+    @apply m-0 whitespace-pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .chat-form {
+    @apply mt-4 flex items-end gap-2;
+  }
+
+  .chat-form input {
+    @apply flex-1;
+  }
+
   .mt-0 {
     margin-top: 0;
   }
@@ -1041,6 +1084,24 @@
   background-color: rgba(70, 95, 255, 0.12);
   border-color: rgba(70, 95, 255, 0.3);
   color: #9cb9ff;
+}
+
+.dark .chat-messages {
+  background-color: rgba(255, 255, 255, 0.02);
+  border-color: #1f2937;
+}
+
+.dark .chat-bubble {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+.dark .chat-bubble.mine {
+  background-color: #465fff;
+  background-image: linear-gradient(135deg, #465fff, #7a5af8);
+  border-color: transparent;
+  color: #ffffff;
 }
 
 .dark .app-shell .stat-card::after {

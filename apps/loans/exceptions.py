@@ -25,3 +25,7 @@ class InstallmentAlreadyPaid(LoansError):
 
 class InvalidLoanTransition(LoansError):
     """La transición de estado del préstamo no es válida."""
+
+
+class InvalidLoanMessage(LoansError):
+    """El mensaje del chat está vacío o supera el largo permitido."""

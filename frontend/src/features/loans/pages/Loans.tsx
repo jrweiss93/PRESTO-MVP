@@ -24,19 +24,41 @@ export default function Loans() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+
+    const load = async (first = false) => {
       try {
-        setLoans(await api.listLoans());
+        const data = await api.listLoans();
+        if (cancelled) return;
+        setLoans(data);
+        setError(null);
       } catch (err) {
+        if (cancelled) return;
         setError(
           err instanceof ApiError
             ? err.message
             : "No se pudieron cargar los préstamos.",
         );
       } finally {
-        setLoading(false);
+        if (!cancelled && first) setLoading(false);
       }
-    })();
+    };
+
+    void load(true);
+    const interval = window.setInterval(() => void load(), 15000);
+    const onFocus = () => void load();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, []);
 
   const isBorrower = activeProfile === "borrower";
@@ -109,7 +131,12 @@ export default function Loans() {
                     </td>
                     <td>{formatDateTime(loan.accepted_at)}</td>
                     <td>
-                      <Link to={`/prestamos/${loan.id}`}>Ver detalle</Link>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Link to={`/prestamos/${loan.id}`}>Ver detalle</Link>
+                        <Link to={`/prestamos/${loan.id}#chat`}>
+                          Chatear
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}

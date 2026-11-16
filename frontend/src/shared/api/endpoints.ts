@@ -38,6 +38,7 @@ import type {
   LedgerTransaction,
   Loan,
   LoanDetail,
+  LoanMessage,
   Login,
   LoginResponse,
   MarketSnapshot,
@@ -254,6 +255,21 @@ export function payInstallment(
   number: number,
 ): Promise<Installment> {
   return apiPost<Installment>(`/loans/${loanId}/installments/${number}/pay/`);
+}
+
+export async function listLoanMessages(
+  loanId: string,
+): Promise<LoanMessage[]> {
+  return asArray(
+    await apiGet<LoanMessage | LoanMessage[]>(`/loans/${loanId}/messages/`),
+  );
+}
+
+export function sendLoanMessage(
+  loanId: string,
+  body: string,
+): Promise<LoanMessage> {
+  return apiPost<LoanMessage>(`/loans/${loanId}/messages/`, { body });
 }
 
 // ---- investments ----

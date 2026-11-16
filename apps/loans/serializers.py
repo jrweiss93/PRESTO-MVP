@@ -5,7 +5,7 @@ from rest_framework import serializers
 
 from apps.core.money import effective_annual_rate
 from apps.identity.selectors import get_user_email
-from apps.loans.models import Installment, Loan, OfferTermsSnapshot
+from apps.loans.models import Installment, Loan, LoanMessage, OfferTermsSnapshot
 
 
 class OfferTermsSnapshotSerializer(serializers.ModelSerializer):
@@ -96,6 +96,25 @@ class LoanDetailSerializer(LoanSerializer):
             'terms_snapshot',
             'installments',
         ]
+
+
+class LoanMessageSerializer(serializers.ModelSerializer):
+    """Mensaje del chat privado de un préstamo."""
+
+    class Meta:
+        model = LoanMessage
+        fields = ['id', 'sender_user_id', 'body', 'created_at']
+        read_only_fields = fields
+
+
+class LoanMessageCreateSerializer(serializers.Serializer):
+    """Datos para enviar un mensaje en el chat del préstamo."""
+
+    body = serializers.CharField(
+        max_length=1000,
+        allow_blank=False,
+        trim_whitespace=True,
+    )
 
 
 class AcceptOfferSerializer(serializers.Serializer):

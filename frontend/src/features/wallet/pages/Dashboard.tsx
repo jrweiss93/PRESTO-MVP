@@ -37,7 +37,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+
+    const load = async (first = false) => {
       try {
         const [acc, ln, pos, kv, backup] = await Promise.all([
           api.listAccounts().catch(() => [] as Account[]),
@@ -52,6 +53,7 @@ export default function Dashboard() {
         setPositions(pos);
         setKyc(kv);
         setBackupAccounts(backup);
+        setError(null);
       } catch (err) {
         if (!cancelled) {
           setError(
@@ -61,11 +63,24 @@ export default function Dashboard() {
           );
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && first) setLoading(false);
       }
-    })();
+    };
+
+    void load(true);
+    const interval = window.setInterval(() => void load(), 15000);
+    const onFocus = () => void load();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       cancelled = true;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
@@ -270,7 +285,12 @@ export default function Dashboard() {
                       </span>
                     </td>
                     <td>
-                      <Link to={`/prestamos/${loan.id}`}>Ver detalle</Link>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Link to={`/prestamos/${loan.id}`}>Ver detalle</Link>
+                        <Link to={`/prestamos/${loan.id}#chat`}>
+                          Chatear
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -18,17 +18,24 @@ from apps.ledger.exceptions import IdempotencyConflict, IdempotencyKeyConflict
 from apps.loans.exceptions import (
     InstallmentAlreadyPaid,
     InstallmentOutOfOrder,
+    InvalidLoanMessage,
     LoanNotFound,
     NotTheBorrower,
 )
-from apps.loans.selectors import get_loan_for_party, list_loans_for_user
+from apps.loans.selectors import (
+    get_loan_for_party,
+    list_loan_messages,
+    list_loans_for_user,
+)
 from apps.loans.serializers import (
     AcceptOfferSerializer,
     InstallmentSerializer,
     LoanDetailSerializer,
+    LoanMessageCreateSerializer,
+    LoanMessageSerializer,
     LoanSerializer,
 )
-from apps.loans.services import accept_offer, pay_installment
+from apps.loans.services import accept_offer, pay_installment, send_loan_message
 from apps.offers.exceptions import (
     CannotAcceptOwnOffer,
     OfferNotAcceptable,
@@ -116,6 +123,55 @@ class LoanDetailView(APIView):
         if loan is None:
             raise NotFound('El préstamo no existe.')
         return Response(LoanDetailSerializer(loan).data, status=status.HTTP_200_OK)
+
+
+class LoanMessageListCreateView(APIView):
+    """Chat privado entre las dos partes de un préstamo."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: LoanMessageSerializer(many=True)},
+        summary='Listar los mensajes del chat del préstamo',
+        operation_id='loans_messages_list',
+    )
+    def get(self, request, loan_id):
+        """Devuelve los mensajes si el usuario es parte del préstamo."""
+        loan = get_loan_for_party(loan_id=loan_id, user_id=request.user.id)
+        if loan is None:
+            raise NotFound('El préstamo no existe.')
+        return Response(
+            LoanMessageSerializer(
+                list_loan_messages(loan_id=loan_id),
+                many=True,
+            ).data,
+            status=status.HTTP_200_OK,
+        )
+
+    @extend_schema(
+        request=LoanMessageCreateSerializer,
+        responses={201: LoanMessageSerializer},
+        summary='Enviar un mensaje en el chat del préstamo',
+        operation_id='loans_messages_create',
+    )
+    def post(self, request, loan_id):
+        """Envía un mensaje si el usuario es parte del préstamo."""
+        serializer = LoanMessageCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            message = send_loan_message(
+                loan_id=loan_id,
+                sender_user_id=request.user.id,
+                body=serializer.validated_data['body'],
+            )
+        except LoanNotFound as exc:
+            raise NotFound(str(exc)) from exc
+        except InvalidLoanMessage as exc:
+            raise ValidationError({'body': [str(exc)]}) from exc
+        return Response(
+            LoanMessageSerializer(message).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class InstallmentPayView(ActiveProfileForUnsafeMethods, APIView):

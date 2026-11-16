@@ -74,6 +74,35 @@ class OfferTermsSnapshot(BaseModel):
         return f'OfferTermsSnapshot<{self.loan_id}>'
 
 
+class LoanMessage(BaseModel):
+    """Mensaje privado entre las partes de un préstamo.
+
+    El chat es del préstamo, no de la plataforma: solo el prestatario y el
+    prestamista pueden leer y escribir. No guarda datos financieros; es un
+    canal de coordinación asociado a una operación concreta.
+    """
+
+    loan = models.ForeignKey(
+        Loan,
+        on_delete=models.CASCADE,
+        related_name='messages',
+    )
+    sender_user_id = models.UUIDField()
+    body = models.CharField(max_length=1000)
+
+    class Meta:
+        ordering = ['created_at']
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(body=''),
+                name='loans_loanmessage_body_not_empty',
+            ),
+        ]
+
+    def __str__(self):
+        return f'LoanMessage<{self.loan_id}:{self.sender_user_id}>'
+
+
 class Installment(BaseModel):
     """Cuota de un préstamo, con su parte de capital y su parte de interés."""
 

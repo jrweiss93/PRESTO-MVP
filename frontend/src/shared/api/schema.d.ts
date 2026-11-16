@@ -811,6 +811,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/loans/{loan_id}/messages/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar los mensajes del chat del préstamo
+         * @description Devuelve los mensajes si el usuario es parte del préstamo.
+         */
+        get: operations["loans_messages_list"];
+        put?: never;
+        /**
+         * Enviar un mensaje en el chat del préstamo
+         * @description Envía un mensaje si el usuario es parte del préstamo.
+         */
+        post: operations["loans_messages_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/matching/comparisons/": {
         parameters: {
             query?: never;
@@ -1669,6 +1693,20 @@ export interface components {
             readonly accepted_at: string;
             readonly terms_snapshot: components["schemas"]["OfferTermsSnapshot"];
             readonly installments: components["schemas"]["Installment"][];
+        };
+        /** @description Mensaje del chat privado de un préstamo. */
+        LoanMessage: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly sender_user_id: string;
+            readonly body: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /** @description Datos para enviar un mensaje en el chat del préstamo. */
+        LoanMessageCreate: {
+            body: string;
         };
         /**
          * @description * `active` - Activo
@@ -3258,6 +3296,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Installment"];
+                };
+            };
+        };
+    };
+    loans_messages_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanMessage"][];
+                };
+            };
+        };
+    };
+    loans_messages_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoanMessageCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["LoanMessageCreate"];
+                "multipart/form-data": components["schemas"]["LoanMessageCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanMessage"];
                 };
             };
         };

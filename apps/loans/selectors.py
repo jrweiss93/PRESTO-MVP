@@ -6,7 +6,7 @@ from decimal import Decimal
 
 from django.db.models import Q, QuerySet
 
-from apps.loans.models import Installment, Loan
+from apps.loans.models import Installment, Loan, LoanMessage
 
 
 def get_loan_for_party(loan_id: uuid.UUID, user_id: uuid.UUID) -> Loan | None:
@@ -39,6 +39,11 @@ def list_loans_for_user(user_id: uuid.UUID) -> QuerySet[Loan]:
         .prefetch_related('installments', 'terms_snapshot')
         .order_by('-accepted_at')
     )
+
+
+def list_loan_messages(loan_id: uuid.UUID) -> QuerySet[LoanMessage]:
+    """Devuelve los mensajes de un préstamo en orden cronológico."""
+    return LoanMessage.objects.filter(loan_id=loan_id).order_by('created_at')
 
 
 def get_installment(installment_id: uuid.UUID) -> Installment | None:
