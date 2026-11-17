@@ -14,18 +14,25 @@ from apps.identity.permissions import (
     ActiveProfileForUnsafeMethods,
     HasVerifiedBackupAccount,
 )
+from apps.identity.selectors import get_user_email
 from apps.ledger.exceptions import IdempotencyConflict, IdempotencyKeyConflict
 from apps.loans.exceptions import (
+    DuplicateLoanReview,
     InstallmentAlreadyPaid,
     InstallmentOutOfOrder,
     InvalidLoanMessage,
+    InvalidLoanReview,
     LoanNotFound,
     NotTheBorrower,
 )
 from apps.loans.selectors import (
     get_loan_for_party,
+    get_reputation_for_user,
+    get_review_for_loan_reviewer,
+    get_review_received_for_loan,
     list_loan_messages,
     list_loans_for_user,
+    list_reviews_for_user,
 )
 from apps.loans.serializers import (
     AcceptOfferSerializer,
@@ -33,9 +40,18 @@ from apps.loans.serializers import (
     LoanDetailSerializer,
     LoanMessageCreateSerializer,
     LoanMessageSerializer,
+    LoanReviewCreateSerializer,
+    LoanReviewSerializer,
+    LoanReviewStatusSerializer,
     LoanSerializer,
+    UserReputationSerializer,
 )
-from apps.loans.services import accept_offer, pay_installment, send_loan_message
+from apps.loans.services import (
+    accept_offer,
+    create_loan_review,
+    pay_installment,
+    send_loan_message,
+)
 from apps.offers.exceptions import (
     CannotAcceptOwnOffer,
     OfferNotAcceptable,
@@ -171,6 +187,98 @@ class LoanMessageListCreateView(APIView):
         return Response(
             LoanMessageSerializer(message).data,
             status=status.HTTP_201_CREATED,
+        )
+
+
+class LoanReviewView(APIView):
+    """Reseña de una parte sobre la otra en un préstamo."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: LoanReviewStatusSerializer},
+        summary='Ver el estado de las reseñas del préstamo',
+        operation_id='loans_review_retrieve',
+    )
+    def get(self, request, loan_id):
+        """Devuelve mi reseña, la recibida y la reputación de la contraparte."""
+        loan = get_loan_for_party(loan_id=loan_id, user_id=request.user.id)
+        if loan is None:
+            raise NotFound('El préstamo no existe.')
+
+        is_borrower = loan.borrower_user_id == request.user.id
+        counterpart_user_id = loan.lender_user_id if is_borrower else loan.borrower_user_id
+        payload = {
+            'my_review': get_review_for_loan_reviewer(
+                loan_id=loan_id,
+                reviewer_user_id=request.user.id,
+            ),
+            'received_review': get_review_received_for_loan(
+                loan_id=loan_id,
+                reviewee_user_id=request.user.id,
+            ),
+            'counterpart_user_id': counterpart_user_id,
+            'counterpart_email': get_user_email(user_id=counterpart_user_id),
+            'counterpart_reputation': get_reputation_for_user(
+                counterpart_user_id,
+            ),
+        }
+        return Response(
+            LoanReviewStatusSerializer(payload).data,
+            status=status.HTTP_200_OK,
+        )
+
+    @extend_schema(
+        request=LoanReviewCreateSerializer,
+        responses={201: LoanReviewSerializer},
+        summary='Dejar una reseña sobre la otra parte del préstamo',
+        operation_id='loans_review_create',
+    )
+    def post(self, request, loan_id):
+        """Crea una reseña si el usuario es parte y todavía no reseñó."""
+        serializer = LoanReviewCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            review = create_loan_review(
+                loan_id=loan_id,
+                reviewer_user_id=request.user.id,
+                recommended=serializer.validated_data['recommended'],
+                comment=serializer.validated_data.get('comment', ''),
+            )
+        except LoanNotFound as exc:
+            raise NotFound(str(exc)) from exc
+        except (DuplicateLoanReview, InvalidLoanReview) as exc:
+            raise ValidationError({'detail': [str(exc)]}) from exc
+        return Response(
+            LoanReviewSerializer(review).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class UserReputationView(APIView):
+    """Reputación pública (para usuarios autenticados) de un usuario."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: UserReputationSerializer},
+        summary='Ver la reputación de un usuario',
+        operation_id='loans_reputation_retrieve',
+    )
+    def get(self, request, user_id):
+        """Devuelve el resumen y las reseñas recibidas por el usuario."""
+        email = get_user_email(user_id=user_id)
+        if email is None:
+            raise NotFound('El usuario no existe.')
+        payload = {
+            'user_id': user_id,
+            'email': email,
+            **get_reputation_for_user(user_id),
+            'reviews': list_reviews_for_user(user_id),
+        }
+        return Response(
+            UserReputationSerializer(payload).data,
+            status=status.HTTP_200_OK,
         )
 
 

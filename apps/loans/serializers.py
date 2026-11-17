@@ -5,7 +5,13 @@ from rest_framework import serializers
 
 from apps.core.money import effective_annual_rate
 from apps.identity.selectors import get_user_email
-from apps.loans.models import Installment, Loan, LoanMessage, OfferTermsSnapshot
+from apps.loans.models import (
+    Installment,
+    Loan,
+    LoanMessage,
+    LoanReview,
+    OfferTermsSnapshot,
+)
 
 
 class OfferTermsSnapshotSerializer(serializers.ModelSerializer):
@@ -115,6 +121,87 @@ class LoanMessageCreateSerializer(serializers.Serializer):
         allow_blank=False,
         trim_whitespace=True,
     )
+
+
+class LoanReviewSerializer(serializers.ModelSerializer):
+    """Reseña de una parte sobre la otra en un préstamo."""
+
+    loan_id = serializers.UUIDField(read_only=True)
+    reviewer_email = serializers.SerializerMethodField()
+    reviewee_email = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LoanReview
+        fields = [
+            'id',
+            'loan_id',
+            'reviewer_user_id',
+            'reviewee_user_id',
+            'reviewer_email',
+            'reviewee_email',
+            'recommended',
+            'comment',
+            'created_at',
+        ]
+        read_only_fields = fields
+
+    @extend_schema_field(serializers.EmailField(allow_null=True))
+    def get_reviewer_email(self, review: LoanReview) -> str | None:
+        return get_user_email(user_id=review.reviewer_user_id)
+
+    @extend_schema_field(serializers.EmailField(allow_null=True))
+    def get_reviewee_email(self, review: LoanReview) -> str | None:
+        return get_user_email(user_id=review.reviewee_user_id)
+
+
+class LoanReviewCreateSerializer(serializers.Serializer):
+    """Datos para dejar una reseña de un préstamo."""
+
+    recommended = serializers.BooleanField()
+    comment = serializers.CharField(
+        max_length=500,
+        allow_blank=True,
+        required=False,
+        trim_whitespace=True,
+    )
+
+
+class ReputationSummarySerializer(serializers.Serializer):
+    """Resumen agregado de reputación de un usuario."""
+
+    total = serializers.IntegerField()
+    recommended = serializers.IntegerField()
+    not_recommended = serializers.IntegerField()
+    recommendation_rate = serializers.FloatField()
+
+
+class UserReputationSerializer(ReputationSummarySerializer):
+    """Reputación de un usuario y sus reseñas recibidas."""
+
+    user_id = serializers.UUIDField()
+    email = serializers.EmailField(allow_null=True)
+    reviews = LoanReviewSerializer(many=True)
+
+    class Meta:
+        fields = [
+            'user_id',
+            'email',
+            'total',
+            'recommended',
+            'not_recommended',
+            'recommendation_rate',
+            'reviews',
+        ]
+
+
+class LoanReviewStatusSerializer(serializers.Serializer):
+    """Estado del intercambio de reseñas de un préstamo."""
+
+    my_review = LoanReviewSerializer(allow_null=True)
+    received_review = LoanReviewSerializer(allow_null=True)
+    counterpart_user_id = serializers.UUIDField()
+    counterpart_email = serializers.EmailField(allow_null=True)
+    counterpart_reputation = ReputationSummarySerializer()
 
 
 class AcceptOfferSerializer(serializers.Serializer):

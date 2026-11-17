@@ -1213,6 +1213,63 @@ paths:
               schema:
                 $ref: '#/components/schemas/LoanMessage'
           description: ''
+  /api/v1/loans/{loan_id}/review/:
+    get:
+      operationId: loans_review_retrieve
+      description: Devuelve mi reseña, la recibida y la reputación de la contraparte.
+      summary: Ver el estado de las reseñas del préstamo
+      parameters:
+      - in: path
+        name: loan_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - loans
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanReviewStatus'
+          description: ''
+    post:
+      operationId: loans_review_create
+      description: Crea una reseña si el usuario es parte y todavía no reseñó.
+      summary: Dejar una reseña sobre la otra parte del préstamo
+      parameters:
+      - in: path
+        name: loan_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - loans
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoanReviewCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoanReviewCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoanReviewCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanReview'
+          description: ''
   /api/v1/matching/comparisons/:
     post:
       operationId: matching_comparisons_create
@@ -1688,6 +1745,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SpendingReport'
+          description: ''
+  /api/v1/reviews/users/{user_id}/:
+    get:
+      operationId: loans_reputation_retrieve
+      description: Devuelve el resumen y las reseñas recibidas por el usuario.
+      summary: Ver la reputación de un usuario
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - reviews
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserReputation'
           description: ''
 components:
   schemas:
@@ -2866,6 +2946,94 @@ components:
           maxLength: 1000
       required:
       - body
+    LoanReview:
+      type: object
+      description: Reseña de una parte sobre la otra en un préstamo.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        loan_id:
+          type: string
+          format: uuid
+          readOnly: true
+        reviewer_user_id:
+          type: string
+          format: uuid
+          readOnly: true
+        reviewee_user_id:
+          type: string
+          format: uuid
+          readOnly: true
+        reviewer_email:
+          type: string
+          format: email
+          nullable: true
+          readOnly: true
+        reviewee_email:
+          type: string
+          format: email
+          nullable: true
+          readOnly: true
+        recommended:
+          type: boolean
+          readOnly: true
+        comment:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - comment
+      - created_at
+      - id
+      - loan_id
+      - recommended
+      - reviewee_email
+      - reviewee_user_id
+      - reviewer_email
+      - reviewer_user_id
+    LoanReviewCreate:
+      type: object
+      description: Datos para dejar una reseña de un préstamo.
+      properties:
+        recommended:
+          type: boolean
+        comment:
+          type: string
+          maxLength: 500
+      required:
+      - recommended
+    LoanReviewStatus:
+      type: object
+      description: Estado del intercambio de reseñas de un préstamo.
+      properties:
+        my_review:
+          allOf:
+          - $ref: '#/components/schemas/LoanReview'
+          nullable: true
+        received_review:
+          allOf:
+          - $ref: '#/components/schemas/LoanReview'
+          nullable: true
+        counterpart_user_id:
+          type: string
+          format: uuid
+        counterpart_email:
+          type: string
+          format: email
+          nullable: true
+        counterpart_reputation:
+          $ref: '#/components/schemas/ReputationSummary'
+      required:
+      - counterpart_email
+      - counterpart_reputation
+      - counterpart_user_id
+      - my_review
+      - received_review
     LoanStatusEnum:
       enum:
       - active
@@ -3864,6 +4032,24 @@ components:
       - categories
       - disclaimer
       - items
+    ReputationSummary:
+      type: object
+      description: Resumen agregado de reputación de un usuario.
+      properties:
+        total:
+          type: integer
+        recommended:
+          type: integer
+        not_recommended:
+          type: integer
+        recommendation_rate:
+          type: number
+          format: double
+      required:
+      - not_recommended
+      - recommendation_rate
+      - recommended
+      - total
     SpendingCategory:
       type: object
       description: El gasto acumulado de una categoría en el período.
@@ -3970,6 +4156,38 @@ components:
       - profile
       - profiles
       - terms_accepted_at
+    UserReputation:
+      type: object
+      description: Reputación de un usuario y sus reseñas recibidas.
+      properties:
+        total:
+          type: integer
+        recommended:
+          type: integer
+        not_recommended:
+          type: integer
+        recommendation_rate:
+          type: number
+          format: double
+        user_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+          nullable: true
+        reviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/LoanReview'
+      required:
+      - email
+      - not_recommended
+      - recommendation_rate
+      - recommended
+      - reviews
+      - total
+      - user_id
     WebhookEvent:
       type: object
       description: Respuesta del endpoint de webhook.

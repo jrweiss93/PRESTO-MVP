@@ -29,3 +29,11 @@ class InvalidLoanTransition(LoansError):
 
 class InvalidLoanMessage(LoansError):
     """El mensaje del chat está vacío o supera el largo permitido."""
+
+
+class InvalidLoanReview(LoansError):
+    """La reseña no cumple las reglas del préstamo."""
+
+
+class DuplicateLoanReview(LoansError):
+    """El usuario ya dejó una reseña para este préstamo."""

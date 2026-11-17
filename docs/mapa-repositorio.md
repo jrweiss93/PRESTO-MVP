@@ -355,19 +355,20 @@ No tiene modelos ni escrituras.
 | `OfferTermsSnapshot` | Copia JSON inmutable de las condiciones aceptadas. |
 | `Installment` | Cuota con capital, interés, vencimiento y estado. |
 | `LoanMessage` | Mensaje privado entre las partes del préstamo; el chat es del préstamo, no global. |
+| `LoanReview` | Recomendación (`recommended`) y comentario de una parte sobre la otra; una por préstamo y revisor. |
 
 ### Archivos
 
 | Archivo | Qué hace / decisión |
 |---|---|
-| `services.py` | `build_installment_schedule`, `accept_offer`, `pay_installment`, `change_loan_status`, `mark_overdue`, `send_loan_message`. `accept_offer` es atómico: bloquea oferta, valida KYC y respaldo, crea préstamo/snapshot/cuotas, desembolsa y revierte todo si falla. |
-| `selectors.py` | `get_loan_for_party`, `list_loans_for_user`, `list_loan_messages`, cuotas, vencidas, próximas y desglose de movimientos. |
-| `serializers.py` | Snapshot, cuota, préstamo, detalle, mensajes y aceptación. |
-| `views.py` | `LoanListCreateView`, `LoanDetailView`, `LoanMessageListCreateView`, `InstallmentPayView`. Terceros reciben 404. |
+| `services.py` | `build_installment_schedule`, `accept_offer`, `pay_installment`, `change_loan_status`, `mark_overdue`, `send_loan_message`, `create_loan_review`. `accept_offer` es atómico: bloquea oferta, valida KYC y respaldo, crea préstamo/snapshot/cuotas, desembolsa y revierte todo si falla. |
+| `selectors.py` | `get_loan_for_party`, `list_loans_for_user`, `list_loan_messages`, reseñas y reputación (`get_review_for_loan_reviewer`, `get_reputation_for_user`), cuotas, vencidas, próximas y desglose de movimientos. |
+| `serializers.py` | Snapshot, cuota, préstamo, detalle, mensajes, reseñas, reputación y aceptación. |
+| `views.py` | `LoanListCreateView`, `LoanDetailView`, `LoanMessageListCreateView`, `LoanReviewView`, `UserReputationView`, `InstallmentPayView`. Terceros reciben 404. |
 | `signals.py` | `loan_created`, `installment_paid`; `notifications` los escucha. |
 | `tasks.py` | `mark_overdue_loans`, `notify_installments_due_soon`, `notify_overdue_installments`; delegan en services. |
 | `management/commands/mark_overdue_loans.py` | Ejecuta el mismo service desde consola. |
-| `urls.py` | `/loans/`, `/{id}/`, `/{id}/messages/`, `/{id}/installments/{n}/pay/`. |
+| `urls.py` | `/loans/`, `/{id}/`, `/{id}/messages/`, `/{id}/review/`, `/reviews/users/{id}/`, `/{id}/installments/{n}/pay/`. |
 | `admin.py` | Consulta de préstamos, snapshot y cuotas; botón para marcar vencidas. |
 
 **Decisiones:**
@@ -382,10 +383,10 @@ No tiene modelos ni escrituras.
 
 **Tests:** `test_services`, `test_api`, `test_models`, `test_concurrency`,
 `test_loan_breakdown`, `test_repayment_source`, `test_commands`, `test_tasks`,
-`test_notify_tasks`, `test_messages`.
+`test_notify_tasks`, `test_messages`, `test_reviews`.
 
 **Migraciones:** `0001` inicial, `0002` `ledger_transaction_id` en cuotas,
-`0003` `LoanMessage`.
+`0003` `LoanMessage`, `0004` `LoanReview`.
 
 ---
 
@@ -811,7 +812,7 @@ explican el contexto y las consecuencias; no son solo “qué hace” sino “po
 
 ## Anexo A. Inventario de archivos de prueba
 
-La suite backend tiene **902 tests** al cierre de este documento. Los archivos se
+La suite backend tiene **905 tests** al cierre de este documento. Los archivos se
 agrupan por app y por tipo de garantía:
 
 | App | Archivo de test | Qué cubre |
@@ -849,7 +850,7 @@ agrupan por app y por tipo de garantía:
 | ledger | `test_selectors.py` / `test_period_selectors.py` / `test_movement_details.py` | Consultas, períodos y detalle. |
 | ledger | `test_models.py` / `test_checks.py` / `test_admin.py` | Constraints, check de demo y admin. |
 | loans | `test_services.py` | Aceptación, cuotas, pago, estados y snapshot. |
-| loans | `test_api.py` / `test_messages.py` | Endpoints, permisos y chat. |
+| loans | `test_api.py` / `test_messages.py` / `test_reviews.py` | Endpoints, permisos, chat y reputación. |
 | loans | `test_concurrency.py` / `test_repayment_source.py` | Aceptación concurrente y respaldo. |
 | loans | `test_loan_breakdown.py` / `test_models.py` | Cronograma, constraints y modelos. |
 | loans | `test_commands.py` / `test_tasks.py` / `test_notify_tasks.py` | Vencimientos y avisos. |

@@ -269,6 +269,9 @@ El webhook es público (lo llama el proveedor), con throttle propio y sin sesió
 - `LoanMessage`: mensaje privado del préstamo (`loan`, `sender_user_id`, `body`).
   Solo lo leen y escriben las dos partes; es un canal de coordinación, no un
   chat general de la plataforma.
+- `LoanReview`: recomendación simple (`recommended`) y comentario opcional que
+  una parte deja sobre la otra. Una por préstamo y revisor; alimenta la
+  reputación agregada del usuario.
 
 **Servicios**
 
@@ -287,6 +290,8 @@ El webhook es público (lo llama el proveedor), con throttle propio y sin sesió
 GET/POST /api/v1/loans/
 GET /api/v1/loans/{id}/
 GET/POST /api/v1/loans/{id}/messages/
+GET/POST /api/v1/loans/{id}/review/
+GET /api/v1/reviews/users/{id}/
 POST /api/v1/loans/{id}/installments/{number}/pay/
 ```
 

@@ -6,7 +6,7 @@ from decimal import Decimal
 
 from django.db.models import Q, QuerySet
 
-from apps.loans.models import Installment, Loan, LoanMessage
+from apps.loans.models import Installment, Loan, LoanMessage, LoanReview
 
 
 def get_loan_for_party(loan_id: uuid.UUID, user_id: uuid.UUID) -> Loan | None:
@@ -44,6 +44,53 @@ def list_loans_for_user(user_id: uuid.UUID) -> QuerySet[Loan]:
 def list_loan_messages(loan_id: uuid.UUID) -> QuerySet[LoanMessage]:
     """Devuelve los mensajes de un préstamo en orden cronológico."""
     return LoanMessage.objects.filter(loan_id=loan_id).order_by('created_at')
+
+
+def get_review_for_loan_reviewer(
+    loan_id: uuid.UUID,
+    reviewer_user_id: uuid.UUID,
+) -> LoanReview | None:
+    """Devuelve la reseña que un usuario dejó para un préstamo, si existe."""
+    return LoanReview.objects.filter(
+        loan_id=loan_id,
+        reviewer_user_id=reviewer_user_id,
+    ).first()
+
+
+def get_review_received_for_loan(
+    loan_id: uuid.UUID,
+    reviewee_user_id: uuid.UUID,
+) -> LoanReview | None:
+    """Devuelve la reseña que recibió un usuario en un préstamo, si existe."""
+    return LoanReview.objects.filter(
+        loan_id=loan_id,
+        reviewee_user_id=reviewee_user_id,
+    ).first()
+
+
+def list_reviews_for_user(user_id: uuid.UUID) -> QuerySet[LoanReview]:
+    """Lista las reseñas recibidas por un usuario, de la más reciente a la más vieja."""
+    return LoanReview.objects.filter(reviewee_user_id=user_id).order_by('-created_at')
+
+
+def get_reputation_for_user(user_id: uuid.UUID) -> dict[str, int | float]:
+    """Agrega las reseñas recibidas por un usuario.
+
+    El porcentaje se devuelve como número entre 0 y 100 con un decimal. Si el
+    usuario todavía no tiene reseñas, el porcentaje es 0 y el total es 0: la UI
+    muestra "Sin reseñas" en lugar de inventar una reputación.
+    """
+    reviews = list_reviews_for_user(user_id)
+    total = reviews.count()
+    recommended = reviews.filter(recommended=True).count()
+    not_recommended = total - recommended
+    rate = round((recommended / total) * 100, 1) if total else 0.0
+    return {
+        'total': total,
+        'recommended': recommended,
+        'not_recommended': not_recommended,
+        'recommendation_rate': rate,
+    }
 
 
 def get_installment(installment_id: uuid.UUID) -> Installment | None:

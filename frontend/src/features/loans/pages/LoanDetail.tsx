@@ -5,6 +5,7 @@ import { ApiError } from "@/shared/api/client";
 import type { Installment, LoanDetail } from "@/shared/api/types";
 import { useAuth } from "@/features/auth/AuthContext";
 import LoanChat from "@/features/loans/components/LoanChat";
+import LoanReviewCard from "@/features/loans/components/LoanReviewCard";
 import {
   INSTALLMENT_STATUS_LABELS,
   LOAN_STATUS_LABELS,
@@ -199,6 +200,13 @@ export default function LoanDetailPage() {
       )}
 
       <LoanChat loan={loan} />
+
+      <div className="card">
+        <h2>Opiná sobre esta operación</h2>
+        <div className="review-grid review-grid-single">
+          <LoanReviewCard loan={loan} />
+        </div>
+      </div>
 
       <div className="card">
         <h2>Cuotas</h2>

@@ -835,6 +835,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/loans/{loan_id}/review/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver el estado de las reseñas del préstamo
+         * @description Devuelve mi reseña, la recibida y la reputación de la contraparte.
+         */
+        get: operations["loans_review_retrieve"];
+        put?: never;
+        /**
+         * Dejar una reseña sobre la otra parte del préstamo
+         * @description Crea una reseña si el usuario es parte y todavía no reseñó.
+         */
+        post: operations["loans_review_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/matching/comparisons/": {
         parameters: {
             query?: never;
@@ -1183,6 +1207,26 @@ export interface paths {
          * @description Devuelve el gasto acumulado por categoría en el rango y la moneda pedidos.
          */
         get: operations["reports_spending"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reviews/users/{user_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver la reputación de un usuario
+         * @description Devuelve el resumen y las reseñas recibidas por el usuario.
+         */
+        get: operations["loans_reputation_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1708,6 +1752,40 @@ export interface components {
         LoanMessageCreate: {
             body: string;
         };
+        /** @description Reseña de una parte sobre la otra en un préstamo. */
+        LoanReview: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly loan_id: string;
+            /** Format: uuid */
+            readonly reviewer_user_id: string;
+            /** Format: uuid */
+            readonly reviewee_user_id: string;
+            /** Format: email */
+            readonly reviewer_email: string | null;
+            /** Format: email */
+            readonly reviewee_email: string | null;
+            readonly recommended: boolean;
+            readonly comment: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /** @description Datos para dejar una reseña de un préstamo. */
+        LoanReviewCreate: {
+            recommended: boolean;
+            comment?: string;
+        };
+        /** @description Estado del intercambio de reseñas de un préstamo. */
+        LoanReviewStatus: {
+            my_review: components["schemas"]["LoanReview"] | null;
+            received_review: components["schemas"]["LoanReview"] | null;
+            /** Format: uuid */
+            counterpart_user_id: string;
+            /** Format: email */
+            counterpart_email: string | null;
+            counterpart_reputation: components["schemas"]["ReputationSummary"];
+        };
         /**
          * @description * `active` - Activo
          *     * `paid` - Pagado
@@ -2150,6 +2228,14 @@ export interface components {
             categories: components["schemas"]["RegulationCategory"][];
             items: components["schemas"]["RegulationCard"][];
         };
+        /** @description Resumen agregado de reputación de un usuario. */
+        ReputationSummary: {
+            total: number;
+            recommended: number;
+            not_recommended: number;
+            /** Format: double */
+            recommendation_rate: number;
+        };
         /** @description El gasto acumulado de una categoría en el período. */
         SpendingCategory: {
             /** Format: uuid */
@@ -2194,6 +2280,19 @@ export interface components {
             readonly profile: components["schemas"]["Profile"] | null;
             readonly profiles: components["schemas"]["PrestoProfile"][];
             readonly active_profile: string | null;
+        };
+        /** @description Reputación de un usuario y sus reseñas recibidas. */
+        UserReputation: {
+            total: number;
+            recommended: number;
+            not_recommended: number;
+            /** Format: double */
+            recommendation_rate: number;
+            /** Format: uuid */
+            user_id: string;
+            /** Format: email */
+            email: string | null;
+            reviews: components["schemas"]["LoanReview"][];
         };
         /** @description Respuesta del endpoint de webhook. */
         WebhookEvent: {
@@ -3348,6 +3447,54 @@ export interface operations {
             };
         };
     };
+    loans_review_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanReviewStatus"];
+                };
+            };
+        };
+    };
+    loans_review_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoanReviewCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["LoanReviewCreate"];
+                "multipart/form-data": components["schemas"]["LoanReviewCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanReview"];
+                };
+            };
+        };
+    };
     matching_comparisons_create: {
         parameters: {
             query?: never;
@@ -3799,6 +3946,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SpendingReport"];
+                };
+            };
+        };
+    };
+    loans_reputation_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserReputation"];
                 };
             };
         };

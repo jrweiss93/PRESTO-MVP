@@ -13,6 +13,16 @@ urlpatterns = [
         name='loan-messages',
     ),
     path(
+        'loans/<uuid:loan_id>/review/',
+        views.LoanReviewView.as_view(),
+        name='loan-review',
+    ),
+    path(
+        'reviews/users/<uuid:user_id>/',
+        views.UserReputationView.as_view(),
+        name='user-reputation',
+    ),
+    path(
         'loans/<uuid:loan_id>/installments/<int:number>/pay/',
         views.InstallmentPayView.as_view(),
         name='loan-installment-pay',

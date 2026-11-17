@@ -66,6 +66,11 @@ export type Loan = Schema<"Loan">;
 export type LoanDetail = Schema<"LoanDetail">;
 export type LoanMessage = Schema<"LoanMessage">;
 export type LoanMessageCreate = Schema<"LoanMessageCreate">;
+export type LoanReview = Schema<"LoanReview">;
+export type LoanReviewCreate = Schema<"LoanReviewCreate">;
+export type LoanReviewStatus = Schema<"LoanReviewStatus">;
+export type ReputationSummary = Schema<"ReputationSummary">;
+export type UserReputation = Schema<"UserReputation">;
 
 export type InvestmentProduct = Schema<"InvestmentProduct">;
 export type Position = Schema<"Position">;

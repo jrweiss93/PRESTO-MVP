@@ -39,6 +39,9 @@ import type {
   Loan,
   LoanDetail,
   LoanMessage,
+  LoanReview,
+  LoanReviewCreate,
+  LoanReviewStatus,
   Login,
   LoginResponse,
   MarketSnapshot,
@@ -58,6 +61,7 @@ import type {
   Position,
   PositionDetail,
   RegulationCard,
+  UserReputation,
   RegulationsResponse,
   Register,
   User,
@@ -270,6 +274,21 @@ export function sendLoanMessage(
   body: string,
 ): Promise<LoanMessage> {
   return apiPost<LoanMessage>(`/loans/${loanId}/messages/`, { body });
+}
+
+export function getLoanReview(loanId: string): Promise<LoanReviewStatus> {
+  return apiGet<LoanReviewStatus>(`/loans/${loanId}/review/`);
+}
+
+export function createLoanReview(
+  loanId: string,
+  payload: LoanReviewCreate,
+): Promise<LoanReview> {
+  return apiPost<LoanReview>(`/loans/${loanId}/review/`, payload);
+}
+
+export function getUserReputation(userId: string): Promise<UserReputation> {
+  return apiGet<UserReputation>(`/reviews/users/${userId}/`);
 }
 
 // ---- investments ----

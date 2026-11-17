@@ -18,14 +18,22 @@ from apps.ledger import services as ledger_services
 from apps.ledger.exceptions import IdempotencyConflict
 from apps.loans import signals
 from apps.loans.exceptions import (
+    DuplicateLoanReview,
     InstallmentAlreadyPaid,
     InstallmentOutOfOrder,
     InvalidLoanMessage,
+    InvalidLoanReview,
     InvalidLoanTransition,
     LoanNotFound,
     NotTheBorrower,
 )
-from apps.loans.models import Installment, Loan, LoanMessage, OfferTermsSnapshot
+from apps.loans.models import (
+    Installment,
+    Loan,
+    LoanMessage,
+    LoanReview,
+    OfferTermsSnapshot,
+)
 from apps.loans.selectors import get_loan_for_party
 from apps.offers import services as offers_services
 
@@ -408,6 +416,67 @@ def send_loan_message(
         message.id,
     )
     return message
+
+
+def create_loan_review(
+    loan_id: uuid.UUID,
+    reviewer_user_id: uuid.UUID,
+    recommended: bool,
+    comment: str = '',
+) -> LoanReview:
+    """Crea la reseña de una parte sobre la otra en un préstamo.
+
+    Args:
+        loan_id: préstamo sobre el que se opina.
+        reviewer_user_id: usuario que deja la reseña.
+        recommended: True si lo recomienda, False si no.
+        comment: comentario opcional.
+
+    Returns:
+        La reseña creada.
+
+    Raises:
+        LoanNotFound: si el préstamo no existe o el usuario no es parte.
+        DuplicateLoanReview: si ya dejó una reseña para ese préstamo.
+        InvalidLoanReview: si el comentario supera el largo permitido.
+    """
+    loan = get_loan_for_party(loan_id=loan_id, user_id=reviewer_user_id)
+    if loan is None:
+        raise LoanNotFound('El préstamo no existe.')
+
+    reviewee_user_id = (
+        loan.lender_user_id if reviewer_user_id == loan.borrower_user_id else loan.borrower_user_id
+    )
+    if reviewee_user_id == reviewer_user_id:
+        raise InvalidLoanReview('No podés reseñarte a vos mismo.')
+
+    text = (comment or '').strip()
+    if len(text) > 500:
+        raise InvalidLoanReview('El comentario no puede superar los 500 caracteres.')
+
+    if LoanReview.objects.filter(
+        loan_id=loan_id,
+        reviewer_user_id=reviewer_user_id,
+    ).exists():
+        raise DuplicateLoanReview('Ya dejaste una reseña para este préstamo.')
+
+    try:
+        review = LoanReview.objects.create(
+            loan=loan,
+            reviewer_user_id=reviewer_user_id,
+            reviewee_user_id=reviewee_user_id,
+            recommended=recommended,
+            comment=text,
+        )
+    except IntegrityError as exc:
+        raise DuplicateLoanReview('Ya dejaste una reseña para este préstamo.') from exc
+    logger.info(
+        'Reseña de préstamo: loan_id=%s reviewer_user_id=%s recommended=%s',
+        loan.id,
+        reviewer_user_id,
+        recommended,
+    )
+    return review
 
 
 def _resolve_idempotent(

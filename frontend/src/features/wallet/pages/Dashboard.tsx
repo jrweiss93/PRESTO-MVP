@@ -24,6 +24,7 @@ import {
   UserMoneyIcon,
 } from "@/shared/ui/icons";
 import Mascot from "@/shared/ui/Mascot";
+import LoanReviewCard from "@/features/loans/components/LoanReviewCard";
 
 export default function Dashboard() {
   const { user, activeProfile } = useAuth();
@@ -34,6 +35,7 @@ export default function Dashboard() {
   const [kyc, setKyc] = useState<KYCVerification | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reviewVersion, setReviewVersion] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -258,6 +260,30 @@ export default function Dashboard() {
           </Link>
         </div>
       </div>
+
+      {activeProfile !== "investor" && roleLoans.length > 0 && (
+        <div className="card">
+          <div className="section-header">
+            <div>
+              <h2 className="mt-0 mb-1">Opiniones de tus operaciones</h2>
+              <p className="small text-muted mb-0">
+                Recomendá a la contraparte y ayudá a construir reputación dentro
+                de Presto.
+              </p>
+            </div>
+          </div>
+          <div className="review-grid">
+            {roleLoans.map((loan) => (
+              <LoanReviewCard
+                key={loan.id}
+                loan={loan}
+                refreshKey={reviewVersion}
+                onReviewed={() => setReviewVersion((value) => value + 1)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {activeProfile !== "investor" && activeLoans.length > 0 && (
         <div className="card">

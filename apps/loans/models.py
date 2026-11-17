@@ -103,6 +103,41 @@ class LoanMessage(BaseModel):
         return f'LoanMessage<{self.loan_id}:{self.sender_user_id}>'
 
 
+class LoanReview(BaseModel):
+    """Opinión de una parte sobre la otra al cerrar o transitar un préstamo.
+
+    Es una recomendación simple (`recommended`) con un comentario opcional.
+    Solo puede escribir una reseña quien participó del préstamo y una sola vez
+    por operación; la reputación se calcula agregando las reseñas recibidas.
+    """
+
+    loan = models.ForeignKey(
+        Loan,
+        on_delete=models.CASCADE,
+        related_name='reviews',
+    )
+    reviewer_user_id = models.UUIDField()
+    reviewee_user_id = models.UUIDField()
+    recommended = models.BooleanField()
+    comment = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['loan', 'reviewer_user_id'],
+                name='loans_loanreview_one_per_loan_reviewer',
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(reviewer_user_id=models.F('reviewee_user_id')),
+                name='loans_loanreview_no_self_review',
+            ),
+        ]
+
+    def __str__(self):
+        return f'LoanReview<{self.loan_id}:{self.reviewer_user_id}:{self.recommended}>'
+
+
 class Installment(BaseModel):
     """Cuota de un préstamo, con su parte de capital y su parte de interés."""
 

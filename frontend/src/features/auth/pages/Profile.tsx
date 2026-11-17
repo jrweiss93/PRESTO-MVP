@@ -3,6 +3,7 @@ import * as api from "@/shared/api/endpoints";
 import { ApiError } from "@/shared/api/client";
 import type { BackupAccount, KYCVerification } from "@/shared/api/types";
 import { useAuth } from "@/features/auth/AuthContext";
+import ReputationPanel from "@/features/loans/components/ReputationPanel";
 import {
   KYC_STATUS_LABELS,
   formatDateTime,
@@ -382,6 +383,8 @@ export default function Profile() {
           </div>
         )}
       </div>
+
+      {user && <ReputationPanel userId={user.id} />}
 
       <div className="card" id="respaldo">
         <h2>Cuentas de respaldo</h2>

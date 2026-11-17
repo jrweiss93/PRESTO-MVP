@@ -643,6 +643,100 @@
     @apply flex-1;
   }
 
+  /* ---- reseñas y reputación ---- */
+
+  .review-grid {
+    @apply grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3;
+  }
+
+  .review-grid-single {
+    @apply md:grid-cols-1 xl:grid-cols-1;
+  }
+
+  .review-item {
+    @apply flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4;
+  }
+
+  .review-item-head {
+    @apply flex items-start justify-between gap-3;
+  }
+
+  .review-eyebrow {
+    @apply text-theme-xs font-semibold uppercase tracking-wider text-gray-400;
+  }
+
+  .review-title {
+    @apply mt-0.5 text-base font-semibold text-gray-800;
+  }
+
+  .review-rate-pill {
+    @apply rounded-full bg-success-50 px-2.5 py-1 text-theme-xs font-semibold text-success-600;
+  }
+
+  .review-rate-pill.muted {
+    @apply bg-gray-100 text-gray-500;
+  }
+
+  .review-loading {
+    @apply py-6;
+  }
+
+  .review-actions {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .review-choice {
+    @apply inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-theme-xs font-medium text-gray-700 transition hover:bg-gray-50;
+  }
+
+  .review-choice.selected {
+    @apply border-success-500 bg-success-50 text-success-600;
+  }
+
+  .review-choice.negative.selected {
+    @apply border-error-500 bg-error-50 text-error-600;
+  }
+
+  .review-form textarea {
+    @apply mt-3 min-h-0 text-theme-sm;
+  }
+
+  .review-form-footer {
+    @apply mt-3 flex flex-wrap items-center justify-between gap-2;
+  }
+
+  .review-comment {
+    @apply mt-2 text-theme-sm leading-5 text-gray-600;
+  }
+
+  .review-done {
+    @apply rounded-lg bg-gray-50/70 p-3;
+  }
+
+  .review-empty {
+    @apply py-8;
+  }
+
+  .reputation-summary {
+    @apply flex items-center gap-4 rounded-xl border border-gray-100 bg-gray-50/60 p-4;
+  }
+
+  .reputation-score {
+    @apply text-3xl font-semibold tracking-tight text-brand-500;
+  }
+
+  .reputation-list {
+    @apply mt-4 space-y-3;
+  }
+
+  .reputation-review {
+    @apply rounded-xl border border-gray-100 p-3;
+  }
+
+  .reputation-review-head {
+    @apply flex flex-wrap items-center justify-between gap-2;
+  }
+
   .mt-0 {
     margin-top: 0;
   }
@@ -1102,6 +1196,64 @@
   background-image: linear-gradient(135deg, #465fff, #7a5af8);
   border-color: transparent;
   color: #ffffff;
+}
+
+.dark .review-item {
+  background-color: #0f172a;
+  border-color: #1f2937;
+}
+
+.dark .review-title {
+  color: #f8fafc;
+}
+
+.dark .review-rate-pill {
+  background-color: rgba(18, 183, 106, 0.14);
+  color: #6ce9a6;
+}
+
+.dark .review-rate-pill.muted {
+  background-color: #1e293b;
+  color: #94a3b8;
+}
+
+.dark .review-choice {
+  background-color: #0b1220;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+.dark .review-choice:hover {
+  background-color: #162033;
+}
+
+.dark .review-choice.selected {
+  background-color: rgba(18, 183, 106, 0.14);
+  border-color: rgba(18, 183, 106, 0.4);
+  color: #6ce9a6;
+}
+
+.dark .review-choice.negative.selected {
+  background-color: rgba(240, 68, 56, 0.14);
+  border-color: rgba(240, 68, 56, 0.4);
+  color: #fda29b;
+}
+
+.dark .review-done {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.dark .review-comment {
+  color: #cbd5e1;
+}
+
+.dark .reputation-summary {
+  background-color: rgba(255, 255, 255, 0.02);
+  border-color: #1f2937;
+}
+
+.dark .reputation-review {
+  border-color: #1f2937;
 }
 
 .dark .app-shell .stat-card::after {
