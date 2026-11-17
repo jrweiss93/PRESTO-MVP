@@ -53,6 +53,7 @@ El superusuario del admin **no tiene contraseña por defecto**: se crea con
   - `implementacion.md` — detalle técnico del código (modelos, servicios, endpoints, front, infra).
   - `implementacion.pdf` / `implementacion.docx` — las mismas versiones para compartir.
   - `decisiones-tecnicas.md` / `.pdf` / `.docx` — decisiones de diseño y explicación de la POO, servicios, dinero, front e infra para la instancia técnica.
+  - `mapa-repositorio.md` / `.pdf` — recorrido carpeta por carpeta, archivo por archivo, con la función y la decisión de cada pieza del repositorio.
   - `resumen-ejecutivo.md` / `.pdf` / `.docx` — resumen de 3 páginas para presentar.
   - `guia-para-mostrar.md` / `.pdf` / `.docx` — guion sin tecnicismos para explicar la demo.
   - `presentacion-presto.pptx` / `.pdf` — presentación de 13 slides con notas del orador.
