@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[3]
 ADR_DIR = ROOT / 'docs/adr'
 ARCHITECTURE = ROOT / 'docs/architecture.md'
 REQUIRED_SECTIONS = ('## Contexto', '## Decisión', '## Consecuencias')
+ADR_FILES = sorted(path for path in ADR_DIR.glob('*.md') if path.name != 'GUIA.md')
 
 
 @pytest.fixture(scope='module')
@@ -22,13 +23,13 @@ def test_the_architecture_document_exists(architecture):
     assert len(architecture) > 2000
 
 
-@pytest.mark.parametrize('adr_path', sorted(ADR_DIR.glob('*.md')), ids=lambda path: path.name)
+@pytest.mark.parametrize('adr_path', ADR_FILES, ids=lambda path: path.name)
 def test_every_adr_is_linked_from_the_architecture_document(adr_path, architecture):
     """Cada ADR está enlazado desde la documentación de arquitectura."""
     assert adr_path.name in architecture
 
 
-@pytest.mark.parametrize('adr_path', sorted(ADR_DIR.glob('*.md')), ids=lambda path: path.name)
+@pytest.mark.parametrize('adr_path', ADR_FILES, ids=lambda path: path.name)
 def test_every_adr_has_the_expected_sections(adr_path):
     """Cada ADR tiene contexto, decisión y consecuencias."""
     content = adr_path.read_text(encoding='utf-8')
