@@ -59,7 +59,7 @@ El superusuario del admin **no tiene contraseña por defecto**: se crea con
   - `guia-para-mostrar.md` / `.pdf` / `.docx` — guion sin tecnicismos para explicar la demo.
   - `presentacion-presto.pptx` / `.pdf` — presentación de 13 slides con notas del orador.
   - `presentacion-corta.pptx` / `.pdf` — versión de 8 slides para una exposición de 5 minutos.
-  - `presentacion-presto-canva-5.pptx` — versión de 5 slides lista para importar en Canva, con QR de acceso a la demo.
+  - `presentacion-presto-canva-6.pptx` – portada de bienvenida + 5 slides lista para importar en Canva, con capturas móviles del recorrido y QR de acceso a la demo.
   - `documento-presto.md` / `.pdf` / `.docx` — documento de producto: problema, público, operaciones, beneficios y stack.
   - `architecture.md` y `adr/` — decisiones técnicas.
   - `audit-final.md`, `regulatorio-bcra.md`, `pitch-one-pager.md`.
