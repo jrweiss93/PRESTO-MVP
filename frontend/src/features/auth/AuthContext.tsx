@@ -12,6 +12,13 @@ import * as api from "@/shared/api/endpoints";
 import type { LoginResponse, ProfileKind, User } from "@/shared/api/types";
 import { isProfileKind } from "@/shared/lib/profiles";
 
+export type RegisterIdentity = {
+  dni: string;
+  credential_type: "dni" | "license" | "passport";
+  credential_verified: boolean;
+  face_verified: boolean;
+};
+
 interface AuthContextValue {
   user: User | null;
   activeProfile: ProfileKind | null;
@@ -21,6 +28,7 @@ interface AuthContextValue {
     email: string,
     password: string,
     profile_kind: ProfileKind,
+    identity?: RegisterIdentity,
   ) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -80,8 +88,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (email: string, password: string, profile_kind: ProfileKind) => {
-      await api.register({ email, password, profile_kind, terms_accepted: true });
+    async (
+      email: string,
+      password: string,
+      profile_kind: ProfileKind,
+      identity?: RegisterIdentity,
+    ) => {
+      await api.register({
+        email,
+        password,
+        profile_kind,
+        terms_accepted: true,
+        ...(identity ?? {
+          credential_type: "dni" as const,
+          credential_verified: false,
+          face_verified: false,
+        }),
+      });
       const res = await api.login({ email, password });
       setAccessToken(res.access);
       setUser(res.user);

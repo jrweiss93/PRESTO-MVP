@@ -1521,6 +1521,13 @@ export interface components {
          */
         CreateTransactionTypeEnum: "deposit" | "withdrawal" | "transfer";
         /**
+         * @description * `dni` - dni
+         *     * `license` - license
+         *     * `passport` - passport
+         * @enum {string}
+         */
+        CredentialTypeEnum: "dni" | "license" | "passport";
+        /**
          * @description * `ARS` - Peso argentino
          *     * `USD` - Dólar
          * @enum {string}
@@ -2234,6 +2241,14 @@ export interface components {
             password: string;
             profile_kind?: components["schemas"]["PrestoProfileKindEnum"];
             terms_accepted: boolean;
+            /** @description DNI simulado de 7 u 8 dígitos. No se guarda completo. */
+            dni?: string;
+            /** @default dni */
+            credential_type: components["schemas"]["CredentialTypeEnum"];
+            /** @default false */
+            credential_verified: boolean;
+            /** @default false */
+            face_verified: boolean;
         };
         /** @description Ficha del marco regulatorio. */
         RegulationCard: {

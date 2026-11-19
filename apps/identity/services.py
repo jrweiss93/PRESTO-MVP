@@ -124,13 +124,26 @@ def get_refresh_token(request) -> str | None:
     return token or None
 
 
-def register_user(email: str, password: str, profile_kind: str = 'borrower') -> User:
+def register_user(
+    email: str,
+    password: str,
+    profile_kind: str = 'borrower',
+    *,
+    dni: str | None = None,
+    credential_type: str = 'dni',
+    credential_verified: bool = False,
+    face_verified: bool = False,
+) -> User:
     """Registra un usuario con un único perfil de Presto fijo.
 
     Args:
         email: email único del usuario.
         password: contraseña en texto plano; se hashea antes de guardar.
         profile_kind: perfil fijo del usuario (`borrower`, `lender` o `investor`).
+        dni: DNI simulado de 7 u 8 dígitos. No se guarda completo.
+        credential_type: tipo de credencial simulada (`dni`, `license`, `passport`).
+        credential_verified: si la credencial fue validada en la simulación.
+        face_verified: si el rostro fue validado en la simulación.
 
     Returns:
         El usuario creado, con su perfil asociado.
@@ -156,6 +169,27 @@ def register_user(email: str, password: str, profile_kind: str = 'borrower') -> 
         )
         Profile.objects.create(user=user)
         PrestoProfile.objects.create(user=user, kind=profile_kind, is_active=True)
+
+        # La validación de identidad del alta es una simulación explícita.
+        # Solo se guarda el tipo de credencial y los últimos 4 dígitos del DNI:
+        # nunca la selfie, la imagen del documento ni el DNI completo.
+        if dni and credential_verified and face_verified:
+            verification = submit_kyc(
+                user=user,
+                documents={
+                    'source': 'registration_simulation',
+                    'dni_last4': dni[-4:],
+                    'credential_type': credential_type,
+                    'credential_verified': True,
+                    'face_verified': True,
+                },
+            )
+            if getattr(settings, 'DEMO_MODE', False):
+                resolve_kyc(
+                    verification_id=verification.id,
+                    status=KYCVerification.Status.APPROVED,
+                    resolved_by_user_id=None,
+                )
     logger.info('Usuario registrado: user_id=%s profile=%s', user.id, profile_kind)
     send_email_verification(user)
     return user

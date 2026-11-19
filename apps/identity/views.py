@@ -118,6 +118,10 @@ class RegisterView(APIView):
                 profile_kind=serializer.validated_data.get(
                     'profile_kind', PrestoProfile.Kind.BORROWER
                 ),
+                dni=serializer.validated_data.get('dni'),
+                credential_type=serializer.validated_data.get('credential_type', 'dni'),
+                credential_verified=serializer.validated_data.get('credential_verified', False),
+                face_verified=serializer.validated_data.get('face_verified', False),
             )
         except EmailAlreadyRegistered as exc:
             raise ValidationError({'email': [str(exc)]}) from exc

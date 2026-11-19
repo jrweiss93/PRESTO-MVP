@@ -983,6 +983,76 @@
     z-index: 1;
   }
 
+  /* ---- verificación simulada del alta ---- */
+
+  .step-dot {
+    @apply flex size-7 items-center justify-center rounded-full border border-gray-300 bg-white text-theme-xs font-semibold text-gray-400;
+  }
+
+  .step-dot.active {
+    @apply border-brand-500 bg-brand-500 text-white;
+  }
+
+  .step-line {
+    @apply h-px w-8 bg-gray-200;
+  }
+
+  .identity-card {
+    @apply rounded-xl border border-gray-200 bg-white p-4;
+  }
+
+  .identity-card.done {
+    @apply border-success-300 bg-success-50/40;
+  }
+
+  .identity-card-head {
+    @apply flex items-center gap-3;
+  }
+
+  .identity-icon {
+    @apply flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-500;
+  }
+
+  .identity-card-head strong {
+    @apply block text-theme-sm font-semibold text-gray-800;
+  }
+
+  .identity-check {
+    @apply ml-auto text-success-500;
+  }
+
+  .identity-action-row {
+    @apply mt-3 flex flex-wrap items-center gap-2;
+  }
+
+  .identity-action-row input,
+  .identity-action-row select {
+    @apply h-10 min-w-0 flex-1;
+  }
+
+  .identity-success {
+    @apply mt-2 text-theme-xs font-medium text-success-600;
+  }
+
+  .face-frame {
+    @apply relative mt-3 flex h-28 flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 text-center text-theme-xs text-gray-500;
+  }
+
+  .face-frame.verified {
+    @apply border-success-300 bg-success-50/40 text-success-600;
+  }
+
+  .face-frame.scanning::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #465fff, transparent);
+    box-shadow: 0 0 14px rgba(70, 95, 255, 0.7);
+    animation: face-scan 1.4s ease-in-out infinite;
+  }
+
   .landing-hero {
     background-image:
       radial-gradient(48rem 30rem at 88% -10%, rgba(70, 95, 255, 0.16), transparent 64%),
@@ -1196,6 +1266,70 @@
   background-image: linear-gradient(135deg, #465fff, #7a5af8);
   border-color: transparent;
   color: #ffffff;
+}
+
+@keyframes face-scan {
+  0% {
+    top: 8%;
+  }
+  50% {
+    top: 88%;
+  }
+  100% {
+    top: 8%;
+  }
+}
+
+.dark .step-dot {
+  background-color: #0b1220;
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+.dark .step-dot.active {
+  background-color: #465fff;
+  border-color: #465fff;
+  color: #ffffff;
+}
+
+.dark .step-line {
+  background-color: #1f2937;
+}
+
+.dark .identity-card {
+  background-color: #0f172a;
+  border-color: #1f2937;
+}
+
+.dark .identity-card.done {
+  background-color: rgba(18, 183, 106, 0.08);
+  border-color: rgba(18, 183, 106, 0.35);
+}
+
+.dark .identity-icon {
+  background-color: rgba(70, 95, 255, 0.14);
+  color: #9cb9ff;
+}
+
+.dark .identity-card-head strong {
+  color: #f8fafc;
+}
+
+.dark .identity-check,
+.dark .identity-success {
+  color: #6ce9a6;
+}
+
+.dark .face-frame {
+  background-color: #0b1220;
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+.dark .face-frame.verified {
+  background-color: rgba(18, 183, 106, 0.08);
+  border-color: rgba(18, 183, 106, 0.35);
+  color: #6ce9a6;
 }
 
 .dark .review-item {

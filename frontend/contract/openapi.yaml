@@ -2369,6 +2369,16 @@ components:
         * `deposit` - deposit
         * `withdrawal` - withdrawal
         * `transfer` - transfer
+    CredentialTypeEnum:
+      enum:
+      - dni
+      - license
+      - passport
+      type: string
+      description: |-
+        * `dni` - dni
+        * `license` - license
+        * `passport` - passport
     CurrencyEnum:
       enum:
       - ARS
@@ -3985,6 +3995,20 @@ components:
           $ref: '#/components/schemas/PrestoProfileKindEnum'
         terms_accepted:
           type: boolean
+        dni:
+          type: string
+          description: DNI simulado de 7 u 8 dígitos. No se guarda completo.
+          pattern: ^\d{7,8}$
+        credential_type:
+          allOf:
+          - $ref: '#/components/schemas/CredentialTypeEnum'
+          default: dni
+        credential_verified:
+          type: boolean
+          default: false
+        face_verified:
+          type: boolean
+          default: false
       required:
       - email
       - password

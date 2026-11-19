@@ -33,12 +33,37 @@ class RegisterSerializer(serializers.Serializer):
         required=False,
     )
     terms_accepted = serializers.BooleanField()
+    dni = serializers.RegexField(
+        r'^\d{7,8}$',
+        required=False,
+        help_text='DNI simulado de 7 u 8 dígitos. No se guarda completo.',
+    )
+    credential_type = serializers.ChoiceField(
+        choices=['dni', 'license', 'passport'],
+        required=False,
+        default='dni',
+    )
+    credential_verified = serializers.BooleanField(required=False, default=False)
+    face_verified = serializers.BooleanField(required=False, default=False)
 
     def validate_terms_accepted(self, value):
         """Exige que el usuario haya aceptado los términos y condiciones."""
         if value is not True:
             raise serializers.ValidationError('Debés aceptar los términos y condiciones.')
         return value
+
+    def validate(self, attrs):
+        """La simulación de identidad debe venir completa o no venir."""
+        has_simulation = any(
+            attrs.get(field) for field in ('dni', 'credential_verified', 'face_verified')
+        )
+        if has_simulation and not (
+            attrs.get('dni') and attrs.get('credential_verified') and attrs.get('face_verified')
+        ):
+            raise serializers.ValidationError(
+                'La simulación de identidad requiere DNI, credencial y rostro verificados.'
+            )
+        return attrs
 
 
 class LoginSerializer(serializers.Serializer):

@@ -191,9 +191,9 @@ otra.
 
 | Archivo | Qué hace / decisión |
 |---|---|
-| `services.py` | `register_user`, `set_profile`, `submit_kyc`, `resolve_kyc`, `run_biometric_check`, `update_profile`, `request_password_reset`, `confirm_password_reset`, `send_email_verification`, `confirm_email_verification`, `create_backup_account`, `verify_backup_account`, `delete_backup_account`, `require_repayment_source`, `close_account`, `change_password`, cookies y blacklist. Todo lo que escribe pasa por acá. |
+| `services.py` | `register_user`, `set_profile`, `submit_kyc`, `resolve_kyc`, `run_biometric_check`, `update_profile`, `request_password_reset`, `confirm_password_reset`, `send_email_verification`, `confirm_email_verification`, `create_backup_account`, `verify_backup_account`, `delete_backup_account`, `require_repayment_source`, `close_account`, `change_password`, cookies y blacklist. `register_user` acepta una simulación de DNI/credencial/rostro y crea el KYC asociado. |
 | `selectors.py` | `get_profile`, `get_kyc_for_user`, `is_kyc_approved`, `get_active_profile`, `list_backup_accounts_for_user`, `has_verified_backup_account`, `has_active_loan_as_borrower`, `get_active_financial_operations`, `get_user_email`. Aíslan por usuario. |
-| `serializers.py` | Registro, login, perfil, KYC, biometría, backup, cierre de cuenta, tokens y mensajes. Validan formato; no deciden reglas de dinero. |
+| `serializers.py` | Registro (incluida la simulación de DNI/credencial/rostro), login, perfil, KYC, biometría, backup, cierre de cuenta, tokens y mensajes. Validan formato; no deciden reglas de dinero. |
 | `views.py` | `RegisterView`, `LoginView`, `TokenRefreshView`, `LogoutView`, `MeView`, `KycView`, `KycBiometricView`, reset/verify/password change, backup accounts y `CloseAccountView`. |
 | `permissions.py` | Throttles de login/registro/reset/verificación; `IsKycApproved`, `KycApprovedForUnsafeMethods`, `HasVerifiedBackupAccount`, `IsActiveProfile`, `ActiveProfileForUnsafeMethods`. |
 | `tokens.py` | `encode_uid`, `decode_uid` y generador de token de email que no incluye `last_login`. |
@@ -220,8 +220,9 @@ otra.
 
 `test_api`, `test_services`, `test_models`, `test_permissions`, `test_profiles`,
 `test_selectors`, `test_backup_accounts`, `test_biometric`,
-`test_email_verification`, `test_password_reset`, `test_admin`. Cubren login,
-tokens, KYC, perfiles, respaldo, biometría simulada y cierre.
+`test_email_verification`, `test_password_reset`, `test_admin`,
+`test_registration_identity`. Cubren login, tokens, KYC, perfiles, respaldo,
+biometría simulada, cierre y simulación de identidad en el alta.
 
 ### Migraciones
 
@@ -812,7 +813,7 @@ explican el contexto y las consecuencias; no son solo “qué hace” sino “po
 
 ## Anexo A. Inventario de archivos de prueba
 
-La suite backend tiene **910 tests** al cierre de este documento. Los archivos se
+La suite backend tiene **914 tests** al cierre de este documento. Los archivos se
 agrupan por app y por tipo de garantía:
 
 | App | Archivo de test | Qué cubre |
@@ -840,6 +841,7 @@ agrupan por app y por tipo de garantía:
 | identity | `test_profiles.py` / `test_permissions.py` | Perfil fijo, gates de KYC y respaldo. |
 | identity | `test_backup_accounts.py` / `test_biometric.py` | Respaldo, verificación y biometría simulada. |
 | identity | `test_email_verification.py` / `test_password_reset.py` / `test_admin.py` | Emails, tokens y admin. |
+| identity | `test_registration_identity.py` | Simulación de DNI, credencial y rostro en el alta. |
 | investments | `test_api.py` / `test_services.py` | Productos, apertura, interés y liquidación. |
 | investments | `test_models.py` / `test_concurrency.py` | Constraints y carreras. |
 | investments | `test_commands.py` / `test_tasks.py` / `test_settlement_notification.py` | Comando, Celery y aviso. |
