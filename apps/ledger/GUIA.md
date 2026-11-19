@@ -11,6 +11,7 @@ Libro mayor de doble entrada: cuentas, transacciones, asientos, saldos, idempote
 | `admin.py` | Admin de cuentas y movimientos; los asientos no se editan, solo se consultan o reversan. |
 | `checks.py` | `ledger.E001`: bloquea depósitos simulados en producción si no está `DEMO_MODE`. |
 | `exceptions.py` | Errores de cuentas, moneda, idempotencia, saldo y depósitos simulados. |
+| `policies.py` | Registro de guardas que otros dominios ejecutan antes de un retiro. |
 | `models.py` | `Account`, `LedgerTransaction` y `LedgerEntry` con constraints de moneda, saldo e idempotencia. |
 | `selectors.py` | Cuentas, saldos, movimientos, períodos, desglose y detalle de movimientos. |
 | `serializers.py` | Cuentas, transacciones, creación y saldo. |

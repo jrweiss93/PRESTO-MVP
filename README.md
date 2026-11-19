@@ -107,7 +107,7 @@ El compose de desarrollo ya lo trae activado. La guía completa está en
 Para tener datos con los que mostrar la aplicación:
 
 ```sh
-python manage.py seed_demo   # personas, préstamo, inversión, presupuesto y pagos
+python manage.py seed_demo   # personas, préstamo, inversión y pagos
 ```
 
 El comando es idempotente (puede correrlo las veces que quiera sin duplicar

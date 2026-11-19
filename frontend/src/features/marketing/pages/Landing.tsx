@@ -107,7 +107,7 @@ export default function Landing() {
             <p className="mt-4 max-w-xl text-base text-gray-600">
               Presto conecta personas que quieren prestar con personas que
               necesitan financiarse. Todo en un solo lugar: billetera, ofertas,
-              cuotas, inversiones y reportes.
+              cuotas, chat y reputación.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link to={user ? "/dashboard" : "/login"} className="btn">
@@ -238,8 +238,8 @@ export default function Landing() {
                   3
                 </span>
                 <p className="text-theme-sm text-gray-700">
-                  Abrí un plazo fijo, armá un presupuesto y preguntale a Presti
-                  por tu saldo o el marco legal.
+                  Abrí un plazo fijo y preguntale a Presti por tu saldo o el
+                  marco legal.
                 </p>
               </li>
             </ol>

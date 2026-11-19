@@ -34,9 +34,21 @@ class SimulatedDepositsDisabled(LedgerError):
     """Los depósitos simulados están deshabilitados."""
 
 
+class WithdrawalBlockedByActiveLoan(LedgerError):
+    """El usuario tiene un préstamo vigente como prestatario y no puede retirar."""
+
+
 class IdempotencyKeyConflict(APIException):
     """HTTP 409: la clave de idempotencia ya existe con un payload distinto."""
 
     status_code = status.HTTP_409_CONFLICT
     default_detail = 'Ya existe una operación con esa clave de idempotencia.'
     default_code = 'idempotency_conflict'
+
+
+class WithdrawalBlocked(APIException):
+    """HTTP 409: el retiro está bloqueado por una regla de negocio."""
+
+    status_code = status.HTTP_409_CONFLICT
+    default_detail = 'No podés retirar mientras tengas un préstamo vigente.'
+    default_code = 'withdrawal_blocked'

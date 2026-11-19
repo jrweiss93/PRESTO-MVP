@@ -7,9 +7,10 @@ Préstamos aceptados, snapshot de condiciones, cronograma de cuotas, pago, cance
 | Archivo | Qué hace |
 |---|---|
 | `__init__.py` | Marca el directorio como paquete Python. No contiene lógica de negocio. |
-| `apps.py` | Configuración de la app para Django (`AppConfig`): nombre y etiqueta. |
+| `apps.py` | Configuración de la app; registra la guarda de retiro en el ledger al arrancar. |
 | `admin.py` | Consulta de préstamos, snapshot y cuotas; botón para marcar vencidas. |
 | `exceptions.py` | Errores de préstamo, cuota, transición, mensaje, reseña, cancelación y archivado. |
+| `policies.py` | Guarda de retiro: bloquea retiros si el usuario debe un préstamo vigente. |
 | `models.py` | `Loan`, `OfferTermsSnapshot`, `Installment`, `LoanMessage` y `LoanReview`. |
 | `selectors.py` | Préstamos por parte, mensajes, reseñas, reputación, cuotas, vencidas y desglose. |
 | `serializers.py` | Snapshot, cuota, préstamo, detalle, mensajes, reseñas, reputación y aceptación. |

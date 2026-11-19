@@ -22,6 +22,7 @@ from apps.ledger.exceptions import (
     SimulatedDepositsDisabled,
 )
 from apps.ledger.models import Account, LedgerEntry, LedgerTransaction
+from apps.ledger.policies import check_withdrawal_allowed
 
 logger = logging.getLogger(__name__)
 
@@ -145,12 +146,15 @@ def withdraw(
     Raises:
         InvalidAmount: si el importe no es un Decimal positivo.
         KYCNotCompleted: si el usuario no tiene KYC aprobada.
+        WithdrawalBlockedByActiveLoan: si el dominio de préstamos bloquea el
+            retiro porque el usuario tiene un préstamo vigente.
         InsufficientFunds: si la billetera quedaría en negativo.
         SimulatedDepositsDisabled: si los depósitos simulados están deshabilitados.
         IdempotencyConflict: si la clave ya existe con otro payload.
     """
     _assert_valid_amount(amount)
     _require_kyc(user_id)
+    check_withdrawal_allowed(user_id)
     _require_simulated_deposits_enabled()
     request_hash = build_request_hash(
         {

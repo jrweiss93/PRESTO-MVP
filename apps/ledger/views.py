@@ -19,6 +19,8 @@ from apps.ledger.exceptions import (
     IdempotencyKeyConflict,
     SameAccountTransfer,
     SimulatedDepositsDisabled,
+    WithdrawalBlocked,
+    WithdrawalBlockedByActiveLoan,
 )
 from apps.ledger.models import Account, LedgerTransaction
 from apps.ledger.selectors import (
@@ -97,6 +99,8 @@ def create_transaction(request, data, idempotency_key):
         raise ValidationError({'amount': [str(exc)]}) from exc
     except SimulatedDepositsDisabled as exc:
         raise ValidationError({'type': [str(exc)]}) from exc
+    except WithdrawalBlockedByActiveLoan as exc:
+        raise WithdrawalBlocked(str(exc)) from exc
     except (AccountNotFound, AccountKindNotAllowed, CurrencyMismatch, SameAccountTransfer) as exc:
         raise ValidationError({'detail': [str(exc)]}) from exc
 

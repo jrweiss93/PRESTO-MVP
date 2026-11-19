@@ -114,10 +114,10 @@ docker compose up -d --build
 2. **Prestamos → detalle**: pagar la cuota 1 (pide `Idempotency-Key`; el pago
    mueve el ledger y actualiza el estado).
 3. Entrar como **carla** en otra ventana: **Inversiones → abrir plazo fijo**.
-4. **Billetera**: depósito simulado y transferencia a otra persona por alias.
-5. **Presupuestos**: categoría + límite mensual + gasto.
-6. **Reportes** (desde el dashboard): gasto por categoría y movimientos.
-7. Volver a **beto**: el préstamo aparece como prestamista y ve el pago.
+4. **Billetera**: depósito simulado.
+5. **Regla de retiro**: con el préstamo activo, la billetera no ofrece
+   "Retiro" y muestra el aviso; por API el retiro devuelve `409`.
+6. Volver a **beto**: el préstamo aparece como prestamista y ve el pago.
 
 Todo el dinero es **simulado** (`DEMO_MODE=true`): no hay pasarela conectada.
 

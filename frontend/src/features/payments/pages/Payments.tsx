@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { newIdempotencyKey } from "@/shared/api/client";
 import * as api from "@/shared/api/endpoints";
+import { useAuth } from "@/features/auth/AuthContext";
 import type {
   Account,
   CreatePayment,
   Currency,
+  Loan,
   Payment,
   PaymentDirection,
 } from "@/shared/api/types";
@@ -28,8 +31,10 @@ const DIRECTION_LABELS: Record<PaymentDirection, string> = {
 };
 
 export default function Payments() {
+  const { user } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [hasActiveLoan, setHasActiveLoan] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
@@ -44,12 +49,20 @@ export default function Payments() {
     setLoading(true);
     setError(null);
     try {
-      const [payList, accList] = await Promise.all([
+      const [payList, accList, loans] = await Promise.all([
         api.listPayments(),
         api.listAccounts(),
+        api.listLoans().catch(() => [] as Loan[]),
       ]);
       setPayments(payList);
       setAccounts(accList);
+      setHasActiveLoan(
+        loans.some(
+          (loan) =>
+            loan.borrower_user_id === user?.id &&
+            (loan.status === "active" || loan.status === "defaulted"),
+        ),
+      );
       if (accList.length > 0) setCurrency(accList[0].currency);
     } catch (err) {
       setError(
@@ -63,6 +76,10 @@ export default function Payments() {
   useEffect(() => {
     void load();
   }, []);
+
+  useEffect(() => {
+    if (hasActiveLoan && direction === "withdrawal") setDirection("deposit");
+  }, [hasActiveLoan, direction]);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -99,6 +116,9 @@ export default function Payments() {
     accounts.length > 0
       ? Array.from(new Set(accounts.map((a) => a.currency)))
       : ["ARS", "USD"];
+  const availableDirections = (
+    Object.keys(DIRECTION_LABELS) as PaymentDirection[]
+  ).filter((item) => !(hasActiveLoan && item === "withdrawal"));
 
   return (
     <div className="space-y-6">
@@ -108,6 +128,16 @@ export default function Payments() {
           Depósitos, retiros y transferencias entre usuarios de Presto.
         </p>
       </header>
+
+      {hasActiveLoan && (
+        <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Tenés un préstamo vigente: podés depositar y pagar cuotas, pero no
+          retirar hasta terminarlo o cancelarlo.{" "}
+          <Link to="/prestamos" className="underline">
+            Ver mis préstamos
+          </Link>
+        </p>
+      )}
 
       <section className="rounded-2xl border border-gray-200 bg-white p-5">
         <h2 className="text-base font-semibold text-gray-800">Nuevo pago</h2>
@@ -119,13 +149,11 @@ export default function Payments() {
               value={direction}
               onChange={(e) => setDirection(e.target.value as PaymentDirection)}
             >
-              {(Object.keys(DIRECTION_LABELS) as PaymentDirection[]).map(
-                (d) => (
-                  <option key={d} value={d}>
-                    {DIRECTION_LABELS[d]}
-                  </option>
-                ),
-              )}
+              {availableDirections.map((d) => (
+                <option key={d} value={d}>
+                  {DIRECTION_LABELS[d]}
+                </option>
+              ))}
             </select>
           </label>
           <label className="flex flex-col gap-1 text-sm text-gray-600">

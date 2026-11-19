@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import * as api from "@/shared/api/endpoints";
 import { ApiError } from "@/shared/api/client";
+import { useAuth } from "@/features/auth/AuthContext";
 import { useIdempotencyKey } from "@/shared/lib/useIdempotencyKey";
 import type {
   Account,
   CreateTransactionType,
   Currency,
   LedgerTransaction,
+  Loan,
 } from "@/shared/api/types";
 import {
   TX_TYPE_LABELS,
@@ -17,8 +20,10 @@ import {
 const TX_TYPES: CreateTransactionType[] = ["deposit", "withdrawal", "transfer"];
 
 export default function Wallet() {
+  const { user } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [transactions, setTransactions] = useState<LedgerTransaction[]>([]);
+  const [hasActiveLoan, setHasActiveLoan] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -36,12 +41,20 @@ export default function Wallet() {
 
   const load = useCallback(async () => {
     try {
-      const [acc, txs] = await Promise.all([
+      const [acc, txs, loans] = await Promise.all([
         api.listAccounts(),
         api.listTransactions().catch(() => [] as LedgerTransaction[]),
+        api.listLoans().catch(() => [] as Loan[]),
       ]);
       setAccounts(acc);
       setTransactions(txs);
+      setHasActiveLoan(
+        loans.some(
+          (loan) =>
+            loan.borrower_user_id === user?.id &&
+            (loan.status === "active" || loan.status === "defaulted"),
+        ),
+      );
       setError(null);
     } catch (err) {
       setError(
@@ -52,11 +65,15 @@ export default function Wallet() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (hasActiveLoan && txType === "withdrawal") setTxType("deposit");
+  }, [hasActiveLoan, txType]);
 
   async function handleCreateAccount(e: FormEvent) {
     e.preventDefault();
@@ -112,6 +129,9 @@ export default function Wallet() {
   }
 
   const otherAccounts = accounts.filter((a) => a.currency === txCurrency);
+  const transactionTypes = hasActiveLoan
+    ? TX_TYPES.filter((type) => type !== "withdrawal")
+    : TX_TYPES;
 
   if (loading) return <div className="loading">Cargando billetera…</div>;
 
@@ -125,6 +145,13 @@ export default function Wallet() {
 
       {error && <div className="alert error">{error}</div>}
       {notice && <div className="alert success">{notice}</div>}
+      {hasActiveLoan && (
+        <div className="alert warning">
+          Tenés un préstamo vigente: podés depositar y pagar cuotas, pero no
+          retirar hasta terminarlo o cancelarlo.{" "}
+          <Link to="/prestamos">Ver mis préstamos</Link>
+        </div>
+      )}
 
       <div className="card-grid">
         {accounts.length === 0 && (
@@ -181,7 +208,7 @@ export default function Wallet() {
                   setTxType(e.target.value as CreateTransactionType)
                 }
               >
-                {TX_TYPES.map((t) => (
+                {transactionTypes.map((t) => (
                   <option key={t} value={t}>
                     {TX_TYPE_LABELS[t]}
                   </option>

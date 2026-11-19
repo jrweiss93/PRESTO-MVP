@@ -7,7 +7,6 @@ import { NavLink } from "react-router-dom";
 import {
   BellIcon,
   CartIcon,
-  CheckCircleIcon,
   DollarLineIcon,
   FileIcon,
   GridIcon,
@@ -60,18 +59,6 @@ const navItems: NavItem[] = [
       />
     ),
     path: "/pagos",
-    profiles: ["borrower", "lender"],
-  },
-  {
-    name: "Presupuestos",
-    icon: (a) => (
-      <CheckCircleIcon
-        className={
-          a ? "text-brand-500" : "text-gray-500 group-hover:text-gray-700"
-        }
-      />
-    ),
-    path: "/presupuestos",
     profiles: ["borrower", "lender"],
   },
   {

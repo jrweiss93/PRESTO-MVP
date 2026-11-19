@@ -17,6 +17,7 @@ from rest_framework.views import APIView
 from apps.core.exceptions import InsufficientFunds, InvalidAmount, KYCNotCompleted
 from apps.core.pagination import StandardPagination
 from apps.identity.permissions import KycApprovedForUnsafeMethods
+from apps.ledger.exceptions import WithdrawalBlocked, WithdrawalBlockedByActiveLoan
 from apps.payments.exceptions import (
     DestinationAccountRequired,
     IdempotencyConflict,
@@ -92,6 +93,8 @@ class PaymentListCreateView(KycApprovedForUnsafeMethods, APIView):
             raise ValidationError({'amount': [str(exc)]}) from exc
         except InvalidAmount as exc:
             raise ValidationError({'amount': [str(exc)]}) from exc
+        except WithdrawalBlockedByActiveLoan as exc:
+            raise WithdrawalBlocked(str(exc)) from exc
         except DestinationAccountRequired as exc:
             raise ValidationError({'destination_user_id': [str(exc)]}) from exc
         except ProviderNotConfigured as exc:

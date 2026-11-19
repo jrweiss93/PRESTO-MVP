@@ -77,12 +77,13 @@ se puede pagar dos veces por error.”
 **Decí:** “Carla puso parte de su saldo en un plazo fijo. Acá ve el monto, la
 tasa, el interés estimado y la fecha en que recupera el dinero.”
 
-### 7. Los presupuestos (30 segundos)
+### 7. La regla de retiro (30 segundos)
 
-**Hacé:** entrá a **Presupuestos**.
+**Hacé:** entrá como `ana@presto.demo` y abrí **Billetera**.
 
-**Decí:** “El usuario puede poner un límite mensual por categoría, por ejemplo
-comida o transporte. La app le avisa cuando se acerca al límite.”
+**Decí:** "Mientras Ana tenga un préstamo vigente puede depositar y pagar sus
+cuotas, pero no retirar. Así el dinero del préstamo no sale de Presto. Cuando
+termina o cancela el préstamo, el retiro vuelve a estar disponible."
 
 ### 8. Presti, el asistente (45 segundos)
 
@@ -131,8 +132,8 @@ documentos.”
 ## Para cerrar la presentación
 
 “Presto ya tiene el circuito completo funcionando: billetera, préstamos,
-inversiones, presupuestos, reportes y un asistente que explica. Lo que sigue es
-conectar los pagos reales y completar la parte legal y de identidad.”
+inversiones y un asistente que explica. Lo que sigue es
+conectar los pagos reales y completar la parte legal y de identidad."
 
 **Demo:** <https://presto-mvp-alpha.vercel.app>
 **Repositorio y documentación:** <https://github.com/jrweiss93/PRESTO-MVP>

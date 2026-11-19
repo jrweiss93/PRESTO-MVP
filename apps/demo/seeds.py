@@ -9,7 +9,6 @@ serializers) para armar una historia completa y verificable:
 - un depósito de fondos;
 - una oferta de préstamo aceptada, con su cronograma y una cuota pagada;
 - un plazo fijo abierto;
-- un presupuesto con una alerta disparada;
 - un pago confirmado por el proveedor y una transferencia entre usuarios.
 
 Todo se hace con **claves de idempotencia fijas**, así que volver a sembrar
@@ -28,8 +27,6 @@ from decimal import Decimal
 from django.apps import apps as django_apps
 from django.utils import timezone
 
-from apps.budgets import selectors as budget_selectors
-from apps.budgets import services as budget_services
 from apps.demo.welcome import grant_welcome_bonus
 from apps.identity import selectors as identity_selectors
 from apps.identity import services as identity_services
@@ -82,11 +79,6 @@ PRESTO_INVESTMENT_DESCRIPTION = (
 PRESTO_INVESTMENT_RATE = Decimal('22.00')
 PRESTO_INVESTMENT_TERM_DAYS = 90
 PRESTO_INVESTMENT_MIN_AMOUNT = Decimal('10000.00')
-
-#: Presupuesto de Ana.
-BUDGET_LIMIT = Decimal('80000.00')
-BUDGET_ALERT_THRESHOLD = 50
-SPENDING_AMOUNT = Decimal('65000.00')
 
 #: Pagos: un depósito del proveedor y una transferencia interna.
 PAYMENT_DEPOSIT = Decimal('50000.00')
@@ -368,47 +360,6 @@ def _ensure_position(user, product, currency: str, amount: Decimal, key: str) ->
     )
 
 
-def _ensure_budget(user, currency: str) -> None:
-    """Arma el presupuesto con su alerta disparada.
-
-    Args:
-        user: dueño del presupuesto.
-        currency: moneda del presupuesto.
-
-    Returns:
-        None.
-    """
-    categories = budget_selectors.list_categories_for_user(user.id)
-    category = categories.filter(name='Supermercado').first()
-    if category is None:
-        category = budget_services.create_category(user_id=user.id, name='Supermercado')
-
-    budgets = budget_selectors.list_budgets_for_user(user.id)
-    if not budgets.filter(category=category).exists():
-        budget_services.create_budget(
-            user_id=user.id,
-            category_id=category.id,
-            limit_amount=BUDGET_LIMIT,
-            currency=currency,
-            alert_threshold=BUDGET_ALERT_THRESHOLD,
-        )
-
-    expenses = budget_selectors.list_expenses_for_user(user.id)
-    if not expenses.filter(category=category).exists():
-        movement = ledger_services.withdraw(
-            user_id=user.id,
-            currency=currency,
-            amount=SPENDING_AMOUNT,
-            idempotency_key='demo-gasto-supermercado',
-            description='Compra del súper',
-        )
-        budget_services.categorize_movement(
-            user_id=user.id,
-            ledger_transaction_id=movement.id,
-            category_id=category.id,
-        )
-
-
 def _ensure_payments(borrower, investor, currency: str) -> list[str]:
     """Crea el pago del proveedor y la transferencia interna.
 
@@ -506,8 +457,6 @@ def seed_demo(currency: str = 'ARS', password: str = DEMO_PASSWORD) -> DemoSumma
     product = _ensure_product(currency)
     _ensure_presto_product(currency)
     _ensure_position(investor, product, currency, INVESTMENT_AMOUNT, 'demo-plazo-fijo-carla')
-
-    _ensure_budget(borrower, currency)
 
     summary.payment_ids = _ensure_payments(borrower, investor, currency)
 

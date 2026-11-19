@@ -7,7 +7,6 @@ import Profile from "@/features/auth/pages/Profile";
 import Register from "@/features/auth/pages/Register";
 import ResetPassword from "@/features/auth/pages/ResetPassword";
 import VerifyEmail from "@/features/auth/pages/VerifyEmail";
-import Budgets from "@/features/budgets/pages/Budgets";
 import Investments from "@/features/investments/pages/Investments";
 import Landing from "@/features/marketing/pages/Landing";
 import Legal from "@/features/marketing/pages/Legal";
@@ -79,14 +78,6 @@ export default function App() {
           element={
             <ProfileOnly allow={["borrower", "lender"]}>
               <Payments />
-            </ProfileOnly>
-          }
-        />
-        <Route
-          path="/presupuestos"
-          element={
-            <ProfileOnly allow={["borrower", "lender"]}>
-              <Budgets />
             </ProfileOnly>
           }
         />

@@ -49,6 +49,24 @@ def list_loans_for_user(
     return queryset.order_by('-accepted_at')
 
 
+def has_open_borrower_loan(user_id: uuid.UUID) -> bool:
+    """Indica si el usuario tiene un préstamo vigente como prestatario.
+
+    Un préstamo activo o en mora cuenta como deuda abierta: mientras exista,
+    el usuario no puede retirar fondos de su billetera.
+
+    Args:
+        user_id: identificador del usuario.
+
+    Returns:
+        True si el usuario debe un préstamo P2P vigente.
+    """
+    return Loan.objects.filter(
+        borrower_user_id=user_id,
+        status__in=(Loan.Status.ACTIVE, Loan.Status.DEFAULTED),
+    ).exists()
+
+
 def list_loan_messages(loan_id: uuid.UUID) -> QuerySet[LoanMessage]:
     """Devuelve los mensajes de un préstamo en orden cronológico."""
     return LoanMessage.objects.filter(loan_id=loan_id).order_by('created_at')

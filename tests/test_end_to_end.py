@@ -244,7 +244,7 @@ def _run_the_flow(currency):
     assert response.status_code == 200, response.data
 
     # 10. Un presupuesto que se dispara al categorizar un gasto
-    response = borrower_client.post(
+    response = lender_client.post(
         '/api/v1/budgets/categories/',
         {'name': 'Comida'},
         format='json',
@@ -252,7 +252,7 @@ def _run_the_flow(currency):
     assert response.status_code == 201, response.data
     category_id = response.data['id']
 
-    response = borrower_client.post(
+    response = lender_client.post(
         '/api/v1/budgets/',
         {
             'category_id': category_id,
@@ -265,7 +265,7 @@ def _run_the_flow(currency):
     assert response.status_code == 201, response.data
     budget_id = response.data['id']
 
-    response = borrower_client.post(
+    response = lender_client.post(
         '/api/v1/ledger/transactions/',
         {
             'type': 'withdrawal',
@@ -279,23 +279,27 @@ def _run_the_flow(currency):
     assert response.status_code == 201, response.data
     movement_id = response.data['id']
 
-    response = borrower_client.post(
+    response = lender_client.post(
         '/api/v1/budgets/expenses/',
         {'category_id': category_id, 'ledger_transaction_id': movement_id},
         format='json',
     )
     assert response.status_code == 201, response.data
 
-    response = borrower_client.get(f'/api/v1/budgets/{budget_id}/status/')
+    response = lender_client.get(f'/api/v1/budgets/{budget_id}/status/')
     assert response.status_code == 200, response.data
     assert response.data['alert_triggered'] is True
 
-    # 11. Los avisos del usuario (la alerta del presupuesto y el préstamo creado)
+    # 11. Los avisos: el préstamo para el prestatario y la alerta para el prestamista
     response = borrower_client.get('/api/v1/notifications/')
     assert response.status_code == 200, response.data
     event_types = {item['event_type'] for item in response.data['results']}
-    assert 'budget_alert' in event_types
     assert 'loan_created' in event_types
+
+    response = lender_client.get('/api/v1/notifications/')
+    assert response.status_code == 200, response.data
+    lender_events = {item['event_type'] for item in response.data['results']}
+    assert 'budget_alert' in lender_events
 
     # 12. El ledger quedó cuadrado: la suma de los saldos de la moneda es cero
     assert total_balance(currency) == Decimal('0.00')

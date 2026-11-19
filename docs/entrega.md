@@ -46,7 +46,7 @@ El superusuario del admin **no tiene contraseña por defecto**: se crea con
   `matching`, `loans`, `investments`, `budgets`, `reports`, `notifications`,
   `assistant`, `demo` y `core`.
 - **Frontend React + Vite** (`frontend/`): landing, auth, billetera, pagos,
-  presupuestos, marketplace, préstamos, inversiones, perfil/KYC, Presti y legal.
+  marketplace, préstamos, inversiones, perfil/KYC, Presti y legal.
 - **Documentación** (`docs/`):
   - `mvp.md` — arranque local y guion de demo.
   - `deploy-mvp.md` — despliegue, variables, checklist y troubleshooting.

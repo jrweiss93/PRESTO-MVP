@@ -24,6 +24,7 @@ from django.db import IntegrityError, transaction
 from apps.core.exceptions import InsufficientFunds, InvalidAmount, KYCNotCompleted
 from apps.identity.selectors import get_user_email, is_kyc_approved
 from apps.ledger import services as ledger_services
+from apps.ledger.exceptions import WithdrawalBlockedByActiveLoan
 from apps.payments import providers
 from apps.payments.exceptions import (
     DestinationAccountRequired,
@@ -351,7 +352,7 @@ def _move_money(payment: Payment):
             initiated_by_user_id=payment.user_id,
             description=description,
         )
-    except (InsufficientFunds, InvalidAmount, KYCNotCompleted):
+    except (InsufficientFunds, InvalidAmount, KYCNotCompleted, WithdrawalBlockedByActiveLoan):
         raise
     except Exception as exc:
         logger.exception('No se pudo mover el saldo del pago %s', payment.id)
