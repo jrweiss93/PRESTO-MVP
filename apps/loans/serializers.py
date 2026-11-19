@@ -55,6 +55,7 @@ class LoanSerializer(serializers.ModelSerializer):
     )
     borrower_email = serializers.SerializerMethodField()
     lender_email = serializers.SerializerMethodField()
+    can_cancel = serializers.SerializerMethodField()
 
     class Meta:
         model = Loan
@@ -64,6 +65,7 @@ class LoanSerializer(serializers.ModelSerializer):
             'lender_user_id',
             'borrower_email',
             'lender_email',
+            'can_cancel',
             'offer_id',
             'principal',
             'currency',
@@ -88,6 +90,16 @@ class LoanSerializer(serializers.ModelSerializer):
     def get_lender_email(self, loan: Loan) -> str | None:
         """Email del prestamista para que el prestatario pueda coordinar."""
         return get_user_email(user_id=loan.lender_user_id)
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_can_cancel(self, loan: Loan) -> bool:
+        """True si el préstamo está activo y no tiene cuotas pagadas/vencidas."""
+        if loan.status != Loan.Status.ACTIVE:
+            return False
+        return all(
+            installment.status == Installment.Status.PENDING
+            for installment in loan.installments.all()
+        )
 
 
 class LoanDetailSerializer(LoanSerializer):

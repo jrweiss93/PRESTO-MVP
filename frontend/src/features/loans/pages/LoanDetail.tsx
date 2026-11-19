@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import * as api from "@/shared/api/endpoints";
 import { ApiError } from "@/shared/api/client";
 import type { Installment, LoanDetail } from "@/shared/api/types";
@@ -20,6 +20,7 @@ const INSTALLMENT_BADGE: Record<string, string> = {
   pending: "warning",
   paid: "success",
   overdue: "danger",
+  cancelled: "warning",
 };
 
 type SnapshotTerms = {
@@ -36,12 +37,14 @@ function readSnapshotTerms(value: unknown): SnapshotTerms {
 
 export default function LoanDetailPage() {
   const { loanId } = useParams<{ loanId: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [loan, setLoan] = useState<LoanDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [payingNumber, setPayingNumber] = useState<number | null>(null);
+  const [acting, setActing] = useState<"cancel" | "archive" | null>(null);
 
   const load = useCallback(async () => {
     if (!loanId) return;
@@ -92,6 +95,51 @@ export default function LoanDetailPage() {
     }
   }
 
+  async function handleCancel() {
+    if (!loan) return;
+    const confirmed = window.confirm(
+      "¿Cancelar este préstamo? Se revierte el desembolso y se anulan las cuotas. Solo es posible si no hay cuotas pagadas ni vencidas.",
+    );
+    if (!confirmed) return;
+    setActing("cancel");
+    setError(null);
+    setNotice(null);
+    try {
+      await api.cancelLoan(loan.id);
+      setNotice("Préstamo cancelado y desembolso revertido.");
+      await load();
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo cancelar el préstamo.",
+      );
+    } finally {
+      setActing(null);
+    }
+  }
+
+  async function handleArchive() {
+    if (!loan) return;
+    const confirmed = window.confirm(
+      "¿Quitar este préstamo de tu lista? El historial y el ledger se conservan.",
+    );
+    if (!confirmed) return;
+    setActing("archive");
+    setError(null);
+    try {
+      await api.archiveLoan(loan.id);
+      navigate("/prestamos");
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo quitar el préstamo.",
+      );
+      setActing(null);
+    }
+  }
+
   if (loading) return <div className="loading">Cargando préstamo…</div>;
   if (!loan) {
     return (
@@ -137,7 +185,15 @@ export default function LoanDetailPage() {
       <p className="page-subtitle">
         {isBorrower ? "Sos prestatario" : "Sos prestamista"} ·{" "}
         <span
-          className={`badge ${loan.status === "active" ? "info" : loan.status === "paid" ? "success" : "danger"}`}
+          className={`badge ${
+            loan.status === "active"
+              ? "info"
+              : loan.status === "paid"
+                ? "success"
+                : loan.status === "cancelled"
+                  ? "warning"
+                  : "danger"
+          }`}
         >
           {LOAN_STATUS_LABELS[loan.status]}
         </span>
@@ -160,6 +216,46 @@ export default function LoanDetailPage() {
           </a>
         </div>
       )}
+
+      {loan.status === "cancelled" && (
+        <div className="alert warning">
+          Préstamo cancelado. El desembolso fue revertido y las cuotas quedaron
+          anuladas.
+        </div>
+      )}
+
+      <div className="btn-row mb-4">
+        {loan.status === "active" &&
+          (loan.can_cancel ? (
+            <>
+              <button
+                className="btn danger"
+                type="button"
+                onClick={handleCancel}
+                disabled={acting === "cancel"}
+              >
+                {acting === "cancel" ? "Cancelando…" : "Cancelar préstamo"}
+              </button>
+              <span className="small text-muted">
+                Solo si no hay cuotas pagadas ni vencidas.
+              </span>
+            </>
+          ) : (
+            <span className="small text-muted">
+              No se puede cancelar: ya hay cuotas pagadas o vencidas.
+            </span>
+          ))}
+        {(loan.status === "paid" || loan.status === "cancelled") && (
+          <button
+            className="btn secondary"
+            type="button"
+            onClick={handleArchive}
+            disabled={acting === "archive"}
+          >
+            {acting === "archive" ? "Quitando…" : "Quitar de mi lista"}
+          </button>
+        )}
+      </div>
 
       <div className="card-grid">
         <div className="stat-card">
@@ -201,12 +297,14 @@ export default function LoanDetailPage() {
 
       <LoanChat loan={loan} />
 
-      <div className="card">
-        <h2>Opiná sobre esta operación</h2>
-        <div className="review-grid review-grid-single">
-          <LoanReviewCard loan={loan} />
+      {loan.status !== "cancelled" && (
+        <div className="card">
+          <h2>Opiná sobre esta operación</h2>
+          <div className="review-grid review-grid-single">
+            <LoanReviewCard loan={loan} />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="card">
         <h2>Cuotas</h2>

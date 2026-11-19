@@ -24,6 +24,8 @@ from apps.loans.exceptions import (
     InvalidLoanMessage,
     InvalidLoanReview,
     InvalidLoanTransition,
+    LoanNotArchivable,
+    LoanNotCancellable,
     LoanNotFound,
     NotTheBorrower,
 )
@@ -443,6 +445,8 @@ def create_loan_review(
     loan = get_loan_for_party(loan_id=loan_id, user_id=reviewer_user_id)
     if loan is None:
         raise LoanNotFound('El préstamo no existe.')
+    if loan.status == Loan.Status.CANCELLED:
+        raise InvalidLoanReview('No se puede reseñar un préstamo cancelado.')
 
     reviewee_user_id = (
         loan.lender_user_id if reviewer_user_id == loan.borrower_user_id else loan.borrower_user_id
@@ -477,6 +481,84 @@ def create_loan_review(
         recommended,
     )
     return review
+
+
+def cancel_loan(loan_id: uuid.UUID, requested_by_user_id: uuid.UUID) -> Loan:
+    """Cancela un préstamo activo y revierte el desembolso.
+
+    Solo se permite si no hay ninguna cuota pagada ni vencida. El reverso del
+    ledger devuelve el capital al prestamista y descuenta el saldo del
+    prestatario; si el prestatario ya no tiene fondos, la operación falla y no
+    se cancela nada.
+    """
+    with transaction.atomic():
+        loan = Loan.objects.select_for_update().filter(id=loan_id).first()
+        if loan is None:
+            raise LoanNotFound('El préstamo no existe.')
+        if requested_by_user_id not in (loan.borrower_user_id, loan.lender_user_id):
+            raise LoanNotFound('El préstamo no existe.')
+
+        installments = list(Installment.objects.select_for_update().filter(loan=loan))
+        if loan.status != Loan.Status.ACTIVE or any(
+            installment.status != Installment.Status.PENDING for installment in installments
+        ):
+            raise LoanNotCancellable(
+                'Solo se puede cancelar un préstamo activo sin cuotas pagadas ni vencidas.'
+            )
+        if not loan.ledger_transaction_id:
+            raise LoanNotCancellable('El préstamo no tiene un desembolso registrado para revertir.')
+
+        ledger_services.reverse_transaction_for_party(
+            transaction_id=loan.ledger_transaction_id,
+            user_id=requested_by_user_id,
+        )
+        for installment in installments:
+            installment.status = Installment.Status.CANCELLED
+            installment.save(update_fields=['status', 'updated_at'])
+
+        loan.status = Loan.Status.CANCELLED
+        loan.cancelled_at = timezone.now()
+        loan.cancelled_by_user_id = requested_by_user_id
+        loan.save(
+            update_fields=[
+                'status',
+                'cancelled_at',
+                'cancelled_by_user_id',
+                'updated_at',
+            ]
+        )
+        logger.info(
+            'Préstamo cancelado: loan_id=%s cancelled_by_user_id=%s',
+            loan.id,
+            requested_by_user_id,
+        )
+        return loan
+
+
+def archive_loan(loan_id: uuid.UUID, user_id: uuid.UUID) -> Loan:
+    """Quita un préstamo pagado o cancelado de la lista del usuario.
+
+    No se borra la operación ni el ledger: solo se oculta para esa parte. Las
+    cuotas y el historial siguen disponibles por auditoría.
+    """
+    with transaction.atomic():
+        loan = Loan.objects.select_for_update().filter(id=loan_id).first()
+        if loan is None:
+            raise LoanNotFound('El préstamo no existe.')
+        if user_id not in (loan.borrower_user_id, loan.lender_user_id):
+            raise LoanNotFound('El préstamo no existe.')
+        if loan.status not in (Loan.Status.PAID, Loan.Status.CANCELLED):
+            raise LoanNotArchivable('Solo podés quitar de tu lista préstamos pagados o cancelados.')
+
+        if user_id == loan.borrower_user_id:
+            if loan.borrower_archived_at is None:
+                loan.borrower_archived_at = timezone.now()
+                loan.save(update_fields=['borrower_archived_at', 'updated_at'])
+        else:
+            if loan.lender_archived_at is None:
+                loan.lender_archived_at = timezone.now()
+                loan.save(update_fields=['lender_archived_at', 'updated_at'])
+        return loan
 
 
 def _resolve_idempotent(

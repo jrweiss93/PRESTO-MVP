@@ -1126,6 +1126,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/LoanDetail'
           description: ''
+  /api/v1/loans/{loan_id}/archive/:
+    post:
+      operationId: loans_archive
+      description: Oculta el préstamo para esta parte sin borrar el historial.
+      summary: Quitar un préstamo de mi lista
+      parameters:
+      - in: path
+        name: loan_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - loans
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/loans/{loan_id}/cancel/:
+    post:
+      operationId: loans_cancel
+      description: Cancela el préstamo, revierte el dinero y anula las cuotas.
+      summary: Cancelar un préstamo y revertir el desembolso
+      parameters:
+      - in: path
+        name: loan_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - loans
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Loan'
+          description: ''
   /api/v1/loans/{loan_id}/installments/{number}/pay/:
     post:
       operationId: loans_installments_pay_create
@@ -2470,11 +2512,13 @@ components:
       - pending
       - paid
       - overdue
+      - cancelled
       type: string
       description: |-
         * `pending` - Pendiente
         * `paid` - Pagada
         * `overdue` - Vencida
+        * `cancelled` - Cancelada
     IntentEnum:
       enum:
       - rules
@@ -2778,6 +2822,9 @@ components:
           format: email
           nullable: true
           readOnly: true
+        can_cancel:
+          type: boolean
+          readOnly: true
         offer_id:
           type: string
           format: uuid
@@ -2817,6 +2864,7 @@ components:
       - accepted_at
       - borrower_email
       - borrower_user_id
+      - can_cancel
       - currency
       - effective_annual_rate
       - id
@@ -2852,6 +2900,9 @@ components:
           type: string
           format: email
           nullable: true
+          readOnly: true
+        can_cancel:
+          type: boolean
           readOnly: true
         offer_id:
           type: string
@@ -2901,6 +2952,7 @@ components:
       - accepted_at
       - borrower_email
       - borrower_user_id
+      - can_cancel
       - currency
       - effective_annual_rate
       - id
@@ -3039,11 +3091,13 @@ components:
       - active
       - paid
       - defaulted
+      - cancelled
       type: string
       description: |-
         * `active` - Activo
         * `paid` - Pagado
         * `defaulted` - En mora
+        * `cancelled` - Cancelado
     LoansReport:
       type: object
       description: El reporte de préstamos.

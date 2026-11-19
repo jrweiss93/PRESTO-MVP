@@ -260,12 +260,13 @@ El webhook es público (lo llama el proveedor), con throttle propio y sin sesió
 **Modelos**
 
 - `Loan`: prestatario, prestamista, oferta, principal, moneda, tasa, plazo,
-  estado (`active|paid|defaulted`), `accepted_at`, `ledger_transaction_id`,
+  estado (`active|paid|defaulted|cancelled`), `accepted_at`,
+  `ledger_transaction_id`, marcas de cancelación y archivado por parte,
   idempotencia.
 - `OfferTermsSnapshot`: copia **inmutable** de las condiciones aceptadas
   (`snapshot_data` JSON, `is_immutable`).
 - `Installment`: número, vencimiento, capital, interés, importe, estado
-  (`pending|paid|overdue`), `paid_at`, `ledger_transaction_id`.
+  (`pending|paid|overdue|cancelled`), `paid_at`, `ledger_transaction_id`.
 - `LoanMessage`: mensaje privado del préstamo (`loan`, `sender_user_id`, `body`).
   Solo lo leen y escriben las dos partes; es un canal de coordinación, no un
   chat general de la plataforma.
@@ -289,6 +290,8 @@ El webhook es público (lo llama el proveedor), con throttle propio y sin sesió
 ```
 GET/POST /api/v1/loans/
 GET /api/v1/loans/{id}/
+POST /api/v1/loans/{id}/cancel/
+POST /api/v1/loans/{id}/archive/
 GET/POST /api/v1/loans/{id}/messages/
 GET/POST /api/v1/loans/{id}/review/
 GET /api/v1/reviews/users/{id}/

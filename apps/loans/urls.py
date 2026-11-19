@@ -18,6 +18,16 @@ urlpatterns = [
         name='loan-review',
     ),
     path(
+        'loans/<uuid:loan_id>/cancel/',
+        views.LoanCancelView.as_view(),
+        name='loan-cancel',
+    ),
+    path(
+        'loans/<uuid:loan_id>/archive/',
+        views.LoanArchiveView.as_view(),
+        name='loan-archive',
+    ),
+    path(
         'reviews/users/<uuid:user_id>/',
         views.UserReputationView.as_view(),
         name='user-reputation',

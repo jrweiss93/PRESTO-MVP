@@ -126,12 +126,14 @@ export const LOAN_STATUS_LABELS: Record<LoanStatus, string> = {
   active: "Activo",
   paid: "Pagado",
   defaulted: "En mora",
+  cancelled: "Cancelado",
 };
 
 export const INSTALLMENT_STATUS_LABELS: Record<InstallmentStatus, string> = {
   pending: "Pendiente",
   paid: "Pagada",
   overdue: "Vencida",
+  cancelled: "Cancelada",
 };
 
 export const POSITION_STATUS_LABELS: Record<PositionStatus, string> = {

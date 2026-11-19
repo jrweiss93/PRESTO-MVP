@@ -25,20 +25,28 @@ def get_loan_for_party(loan_id: uuid.UUID, user_id: uuid.UUID) -> Loan | None:
     ).first()
 
 
-def list_loans_for_user(user_id: uuid.UUID) -> QuerySet[Loan]:
+def list_loans_for_user(
+    user_id: uuid.UUID,
+    include_hidden: bool = False,
+) -> QuerySet[Loan]:
     """Lista los préstamos en los que el usuario es parte.
 
     Args:
         user_id: identificador del usuario.
+        include_hidden: incluye los préstamos que el usuario quitó de su lista.
 
     Returns:
-        QuerySet con los préstamos del usuario.
+        QuerySet con los préstamos visibles del usuario.
     """
-    return (
-        Loan.objects.filter(Q(borrower_user_id=user_id) | Q(lender_user_id=user_id))
-        .prefetch_related('installments', 'terms_snapshot')
-        .order_by('-accepted_at')
-    )
+    queryset = Loan.objects.filter(
+        Q(borrower_user_id=user_id) | Q(lender_user_id=user_id)
+    ).prefetch_related('installments', 'terms_snapshot')
+    if not include_hidden:
+        queryset = queryset.exclude(
+            Q(borrower_user_id=user_id, borrower_archived_at__isnull=False)
+            | Q(lender_user_id=user_id, lender_archived_at__isnull=False)
+        )
+    return queryset.order_by('-accepted_at')
 
 
 def list_loan_messages(loan_id: uuid.UUID) -> QuerySet[LoanMessage]:

@@ -15,13 +15,15 @@ from apps.identity.permissions import (
     HasVerifiedBackupAccount,
 )
 from apps.identity.selectors import get_user_email
-from apps.ledger.exceptions import IdempotencyConflict, IdempotencyKeyConflict
+from apps.ledger.exceptions import IdempotencyConflict, IdempotencyKeyConflict, LedgerError
 from apps.loans.exceptions import (
     DuplicateLoanReview,
     InstallmentAlreadyPaid,
     InstallmentOutOfOrder,
     InvalidLoanMessage,
     InvalidLoanReview,
+    LoanNotArchivable,
+    LoanNotCancellable,
     LoanNotFound,
     NotTheBorrower,
 )
@@ -48,6 +50,8 @@ from apps.loans.serializers import (
 )
 from apps.loans.services import (
     accept_offer,
+    archive_loan,
+    cancel_loan,
     create_loan_review,
     pay_installment,
     send_loan_message,
@@ -280,6 +284,53 @@ class UserReputationView(APIView):
             UserReputationSerializer(payload).data,
             status=status.HTTP_200_OK,
         )
+
+
+class LoanCancelView(APIView):
+    """Cancelación de un préstamo activo sin cuotas pagadas."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=None,
+        responses={200: LoanSerializer},
+        summary='Cancelar un préstamo y revertir el desembolso',
+        operation_id='loans_cancel',
+    )
+    def post(self, request, loan_id):
+        """Cancela el préstamo, revierte el dinero y anula las cuotas."""
+        try:
+            loan = cancel_loan(
+                loan_id=loan_id,
+                requested_by_user_id=request.user.id,
+            )
+        except LoanNotFound as exc:
+            raise NotFound(str(exc)) from exc
+        except (LoanNotCancellable, InsufficientFunds, LedgerError) as exc:
+            raise ValidationError({'detail': [str(exc)]}) from exc
+        return Response(LoanSerializer(loan).data, status=status.HTTP_200_OK)
+
+
+class LoanArchiveView(APIView):
+    """Quita un préstamo pagado o cancelado de la lista del usuario."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=None,
+        responses={204: None},
+        summary='Quitar un préstamo de mi lista',
+        operation_id='loans_archive',
+    )
+    def post(self, request, loan_id):
+        """Oculta el préstamo para esta parte sin borrar el historial."""
+        try:
+            archive_loan(loan_id=loan_id, user_id=request.user.id)
+        except LoanNotFound as exc:
+            raise NotFound(str(exc)) from exc
+        except LoanNotArchivable as exc:
+            raise ValidationError({'detail': [str(exc)]}) from exc
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class InstallmentPayView(ActiveProfileForUnsafeMethods, APIView):

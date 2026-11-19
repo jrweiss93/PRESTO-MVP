@@ -37,3 +37,11 @@ class InvalidLoanReview(LoansError):
 
 class DuplicateLoanReview(LoansError):
     """El usuario ya dejó una reseña para este préstamo."""
+
+
+class LoanNotCancellable(LoansError):
+    """El préstamo no puede cancelarse en su estado actual."""
+
+
+class LoanNotArchivable(LoansError):
+    """El préstamo no puede quitarse de la lista en su estado actual."""

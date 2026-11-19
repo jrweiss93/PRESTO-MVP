@@ -130,7 +130,7 @@ entorno real sin cambiar la contraseña.
 | ledger | `GET/POST /api/v1/ledger/accounts/`, `GET /api/v1/ledger/accounts/{id}/balance/`, `GET/POST /api/v1/ledger/transactions/`, `GET /api/v1/ledger/transactions/{id}/` |
 | offers | `GET/POST /api/v1/offers/`, `GET/PATCH /api/v1/offers/{id}/` (el PATCH también expira la oferta) |
 | matching | `GET /api/v1/matching/offers/`, `POST /api/v1/matching/comparisons/` |
-| loans | `GET/POST /api/v1/loans/`, `GET /api/v1/loans/{id}/`, `GET/POST /api/v1/loans/{id}/messages/`, `GET/POST /api/v1/loans/{id}/review/`, `GET /api/v1/reviews/users/{id}/`, `POST /api/v1/loans/{id}/installments/{number}/pay/` |
+| loans | `GET/POST /api/v1/loans/`, `GET /api/v1/loans/{id}/`, `POST /api/v1/loans/{id}/cancel/`, `POST /api/v1/loans/{id}/archive/`, `GET/POST /api/v1/loans/{id}/messages/`, `GET/POST /api/v1/loans/{id}/review/`, `GET /api/v1/reviews/users/{id}/`, `POST /api/v1/loans/{id}/installments/{number}/pay/` |
 | investments | `GET /api/v1/investments/products/`, `GET/POST /api/v1/investments/positions/`, `GET /api/v1/investments/positions/{id}/` |
 | budgets | `GET/POST /api/v1/budgets/`, `GET/PATCH /api/v1/budgets/{id}/`, `GET /api/v1/budgets/{id}/status/`, `GET/POST /api/v1/budgets/categories/`, `GET/PATCH /api/v1/budgets/categories/{id}/`, `GET/POST /api/v1/budgets/expenses/` |
 | reports | `GET /api/v1/reports/spending/`, `GET /api/v1/reports/investments/`, `GET /api/v1/reports/loans/`, `GET /api/v1/reports/movements/` |

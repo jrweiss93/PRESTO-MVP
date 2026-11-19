@@ -36,6 +36,9 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [reviewVersion, setReviewVersion] = useState(0);
+  const [actingLoanId, setActingLoanId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,6 +104,31 @@ export default function Dashboard() {
     (account) => account.status === "verified",
   );
 
+  async function handleCancelLoan(loan: Loan) {
+    const confirmed = window.confirm(
+      "¿Cancelar este préstamo? Se revierte el desembolso y se anulan las cuotas. Solo es posible si no hay cuotas pagadas ni vencidas.",
+    );
+    if (!confirmed) return;
+    setActingLoanId(loan.id);
+    setActionError(null);
+    setActionNotice(null);
+    try {
+      const updated = await api.cancelLoan(loan.id);
+      setLoans((current) =>
+        current.map((item) => (item.id === loan.id ? updated : item)),
+      );
+      setActionNotice("Préstamo cancelado y desembolso revertido.");
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo cancelar el préstamo.",
+      );
+    } finally {
+      setActingLoanId(null);
+    }
+  }
+
   return (
     <>
       <div className="dashboard-hero">
@@ -129,6 +157,8 @@ export default function Dashboard() {
       </div>
 
       {error && <div className="alert error">{error}</div>}
+      {actionError && <div className="alert error">{actionError}</div>}
+      {actionNotice && <div className="alert success">{actionNotice}</div>}
 
       {kyc && kyc.status !== "approved" && (
         <div className="alert error">
@@ -261,7 +291,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {activeProfile !== "investor" && roleLoans.length > 0 && (
+      {activeProfile !== "investor" &&
+        roleLoans.some((loan) => loan.status !== "cancelled") && (
         <div className="card">
           <div className="section-header">
             <div>
@@ -273,14 +304,16 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="review-grid">
-            {roleLoans.map((loan) => (
-              <LoanReviewCard
-                key={loan.id}
-                loan={loan}
-                refreshKey={reviewVersion}
-                onReviewed={() => setReviewVersion((value) => value + 1)}
-              />
-            ))}
+            {roleLoans
+              .filter((loan) => loan.status !== "cancelled")
+              .map((loan) => (
+                <LoanReviewCard
+                  key={loan.id}
+                  loan={loan}
+                  refreshKey={reviewVersion}
+                  onReviewed={() => setReviewVersion((value) => value + 1)}
+                />
+              ))}
           </div>
         </div>
       )}
@@ -316,6 +349,18 @@ export default function Dashboard() {
                         <Link to={`/prestamos/${loan.id}#chat`}>
                           Chatear
                         </Link>
+                        {loan.can_cancel && (
+                          <button
+                            className="btn danger small"
+                            type="button"
+                            onClick={() => handleCancelLoan(loan)}
+                            disabled={actingLoanId === loan.id}
+                          >
+                            {actingLoanId === loan.id
+                              ? "Cancelando…"
+                              : "Cancelar"}
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

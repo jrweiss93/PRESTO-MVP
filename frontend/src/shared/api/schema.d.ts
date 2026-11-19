@@ -791,6 +791,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/loans/{loan_id}/archive/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Quitar un préstamo de mi lista
+         * @description Oculta el préstamo para esta parte sin borrar el historial.
+         */
+        post: operations["loans_archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/loans/{loan_id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancelar un préstamo y revertir el desembolso
+         * @description Cancela el préstamo, revierte el dinero y anula las cuotas.
+         */
+        post: operations["loans_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/loans/{loan_id}/installments/{number}/pay/": {
         parameters: {
             query?: never;
@@ -1549,9 +1589,10 @@ export interface components {
          * @description * `pending` - Pendiente
          *     * `paid` - Pagada
          *     * `overdue` - Vencida
+         *     * `cancelled` - Cancelada
          * @enum {string}
          */
-        InstallmentStatusEnum: "pending" | "paid" | "overdue";
+        InstallmentStatusEnum: "pending" | "paid" | "overdue" | "cancelled";
         /**
          * @description * `rules` - rules
          *     * `fallback` - fallback
@@ -1690,6 +1731,7 @@ export interface components {
             readonly borrower_email: string | null;
             /** Format: email */
             readonly lender_email: string | null;
+            readonly can_cancel: boolean;
             /** Format: uuid */
             readonly offer_id: string;
             /** Format: decimal */
@@ -1719,6 +1761,7 @@ export interface components {
             readonly borrower_email: string | null;
             /** Format: email */
             readonly lender_email: string | null;
+            readonly can_cancel: boolean;
             /** Format: uuid */
             readonly offer_id: string;
             /** Format: decimal */
@@ -1790,9 +1833,10 @@ export interface components {
          * @description * `active` - Activo
          *     * `paid` - Pagado
          *     * `defaulted` - En mora
+         *     * `cancelled` - Cancelado
          * @enum {string}
          */
-        LoanStatusEnum: "active" | "paid" | "defaulted";
+        LoanStatusEnum: "active" | "paid" | "defaulted" | "cancelled";
         /** @description El reporte de préstamos. */
         LoansReport: {
             currency: string;
@@ -3373,6 +3417,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LoanDetail"];
+                };
+            };
+        };
+    };
+    loans_archive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    loans_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Loan"];
                 };
             };
         };

@@ -41,7 +41,7 @@ de datos. El motivo está en el ADR del orden de las apps y en `AGENTS.md` §2.
 | `ledger` | Libro mayor de doble entrada: cuentas, movimientos, reversos, transferencias | `Account`, `LedgerTransaction`, `LedgerEntry` | `ledger.services`, `ledger.selectors` |
 | `offers` | Ofertas de préstamo del prestamista | `Offer` | `offers.services`, `offers.selectors` |
 | `matching` | Búsqueda, comparación y recomendación (solo lectura) | — | `matching.selectors` |
-| `loans` | Préstamos, cronograma de cuotas, estados, chat privado y reseñas entre las partes | `Loan`, `OfferTermsSnapshot`, `Installment`, `LoanMessage`, `LoanReview` | `loans.services`, `loans.selectors` |
+| `loans` | Préstamos, cronograma de cuotas, cancelación, archivado, chat privado y reseñas | `Loan`, `OfferTermsSnapshot`, `Installment`, `LoanMessage`, `LoanReview` | `loans.services`, `loans.selectors` |
 | `investments` | Plazos fijos | `InvestmentProduct`, `Position` | `investments.services`, `investments.selectors` |
 | `budgets` | Presupuestos, categorías y gastos (el importe se deriva del ledger) | `Budget`, `Category`, `Expense` | `budgets.services`, `budgets.selectors` |
 | `reports` | Reportes de solo lectura y exportación a CSV | — | `reports.selectors` |

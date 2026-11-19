@@ -31,7 +31,7 @@ def test_loan_status_choices_have_no_pending():
 
     statuses = {status for status, _ in Loan.Status.choices}
 
-    assert statuses == {'active', 'paid', 'defaulted'}
+    assert statuses == {'active', 'paid', 'defaulted', 'cancelled'}
     assert 'pending' not in statuses
 
 

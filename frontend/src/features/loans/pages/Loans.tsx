@@ -15,6 +15,7 @@ const STATUS_BADGE: Record<string, string> = {
   active: "info",
   paid: "success",
   defaulted: "danger",
+  cancelled: "warning",
 };
 
 export default function Loans() {
@@ -22,6 +23,9 @@ export default function Loans() {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actingId, setActingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,6 +76,54 @@ export default function Loans() {
     return isBorrower ? loan.lender_email : loan.borrower_email;
   }
 
+  async function handleCancel(loan: Loan) {
+    const confirmed = window.confirm(
+      "¿Cancelar este préstamo? Se revierte el desembolso y se anulan las cuotas. Solo es posible si no hay cuotas pagadas ni vencidas.",
+    );
+    if (!confirmed) return;
+    setActingId(loan.id);
+    setActionError(null);
+    setActionNotice(null);
+    try {
+      const updated = await api.cancelLoan(loan.id);
+      setLoans((current) =>
+        current.map((item) => (item.id === loan.id ? updated : item)),
+      );
+      setActionNotice("Préstamo cancelado y desembolso revertido.");
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo cancelar el préstamo.",
+      );
+    } finally {
+      setActingId(null);
+    }
+  }
+
+  async function handleArchive(loan: Loan) {
+    const confirmed = window.confirm(
+      "¿Quitar este préstamo de tu lista? El historial y el ledger se conservan.",
+    );
+    if (!confirmed) return;
+    setActingId(loan.id);
+    setActionError(null);
+    setActionNotice(null);
+    try {
+      await api.archiveLoan(loan.id);
+      setLoans((current) => current.filter((item) => item.id !== loan.id));
+      setActionNotice("Préstamo quitado de tu lista.");
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo quitar el préstamo.",
+      );
+    } finally {
+      setActingId(null);
+    }
+  }
+
   return (
     <>
       <h1>{isBorrower ? "Préstamos como prestatario" : "Préstamos como prestamista"}</h1>
@@ -82,6 +134,8 @@ export default function Loans() {
       </p>
 
       {error && <div className="alert error">{error}</div>}
+      {actionError && <div className="alert error">{actionError}</div>}
+      {actionNotice && <div className="alert success">{actionNotice}</div>}
 
       <div className="card">
         {loading ? (
@@ -136,6 +190,27 @@ export default function Loans() {
                         <Link to={`/prestamos/${loan.id}#chat`}>
                           Chatear
                         </Link>
+                        {loan.status === "active" && loan.can_cancel && (
+                          <button
+                            className="btn danger small"
+                            type="button"
+                            onClick={() => handleCancel(loan)}
+                            disabled={actingId === loan.id}
+                          >
+                            {actingId === loan.id ? "Cancelando…" : "Cancelar"}
+                          </button>
+                        )}
+                        {(loan.status === "paid" ||
+                          loan.status === "cancelled") && (
+                          <button
+                            className="btn secondary small"
+                            type="button"
+                            onClick={() => handleArchive(loan)}
+                            disabled={actingId === loan.id}
+                          >
+                            {actingId === loan.id ? "Quitando…" : "Quitar"}
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

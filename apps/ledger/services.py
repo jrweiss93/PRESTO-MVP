@@ -572,6 +572,19 @@ def reverse_transaction(
         )
 
 
+def reverse_transaction_for_party(
+    transaction_id: uuid.UUID,
+    user_id: uuid.UUID,
+) -> LedgerTransaction:
+    """Reverso solicitado por una parte de una operación de dominio.
+
+    La autorización (por ejemplo, que el usuario sea parte de un préstamo) la
+    valida el servicio de la app que llama. El ledger solo ejecuta el reverso
+    compensatorio; no hay endpoint HTTP que exponga esta función directamente.
+    """
+    return reverse_transaction(transaction_id=transaction_id, staff_user_id=user_id)
+
+
 def _post_transaction(
     *,
     movement_type: str,

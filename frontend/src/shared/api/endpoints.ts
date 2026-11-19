@@ -254,6 +254,16 @@ export function getLoan(loanId: string): Promise<LoanDetail> {
   return apiGet<LoanDetail>(`/loans/${loanId}/`);
 }
 
+/** Cancela un préstamo activo y revierte el desembolso. */
+export function cancelLoan(loanId: string): Promise<Loan> {
+  return apiPost<Loan>(`/loans/${loanId}/cancel/`);
+}
+
+/** Quita un préstamo pagado o cancelado de la lista propia. */
+export function archiveLoan(loanId: string): Promise<void> {
+  return apiPost<void>(`/loans/${loanId}/archive/`);
+}
+
 export function payInstallment(
   loanId: string,
   number: number,

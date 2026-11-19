@@ -18,6 +18,7 @@ class Loan(BaseModel):
         ACTIVE = 'active', 'Activo'
         PAID = 'paid', 'Pagado'
         DEFAULTED = 'defaulted', 'En mora'
+        CANCELLED = 'cancelled', 'Cancelado'
 
     class Currency(models.TextChoices):
         ARS = 'ARS', 'Peso argentino'
@@ -36,6 +37,10 @@ class Loan(BaseModel):
     term_months = models.PositiveIntegerField()
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
     accepted_at = models.DateTimeField(default=timezone.now)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancelled_by_user_id = models.UUIDField(null=True, blank=True)
+    borrower_archived_at = models.DateTimeField(null=True, blank=True)
+    lender_archived_at = models.DateTimeField(null=True, blank=True)
     ledger_transaction_id = models.UUIDField(null=True, blank=True)
     idempotency_key = models.CharField(max_length=100)
     request_hash = models.CharField(max_length=64)
@@ -145,6 +150,7 @@ class Installment(BaseModel):
         PENDING = 'pending', 'Pendiente'
         PAID = 'paid', 'Pagada'
         OVERDUE = 'overdue', 'Vencida'
+        CANCELLED = 'cancelled', 'Cancelada'
 
     loan = models.ForeignKey(Loan, on_delete=models.PROTECT, related_name='installments')
     number = models.PositiveIntegerField()
